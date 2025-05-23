@@ -1,4 +1,4 @@
-package entity;
+package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
 

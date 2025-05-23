@@ -1,7 +1,6 @@
-package entity;
+package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
-import net.bytebuddy.asm.Advice;
 
 import java.time.LocalDateTime;
 

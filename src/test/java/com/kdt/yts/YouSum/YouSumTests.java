@@ -1,13 +1,13 @@
-package com.kdt.yts.backend;
+package com.kdt.yts.YouSum;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class BackendSpringApplicationTests {
+class YouSumTests {
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {
+    }
 
 }

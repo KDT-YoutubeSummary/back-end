@@ -1,7 +1,8 @@
-package entity;
+package com.YouSumback.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -15,12 +16,14 @@ public class UserLibraryTagId implements Serializable {
     private long tagId;
 
     // 생성자
-    public UserLibraryTagId() {}
+    public UserLibraryTagId() {
+    }
 
     public UserLibraryTagId(long userLibraryId, long tagId) {
         this.userLibraryId = userLibraryId;
         this.tagId = tagId;
     }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -31,7 +34,7 @@ public class UserLibraryTagId implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(userLibraryId,tagId);
+        return Objects.hash(userLibraryId, tagId);
     }
 
 }
