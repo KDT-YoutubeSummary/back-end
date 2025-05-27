@@ -1,9 +1,11 @@
 package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
+@Getter
 @Entity
 public class Reminder {
     @Id
