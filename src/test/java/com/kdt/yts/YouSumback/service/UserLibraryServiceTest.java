@@ -11,13 +11,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @Transactional
 @AutoConfigureTestDatabase
 public class UserLibraryServiceTest {
@@ -49,7 +52,7 @@ public class UserLibraryServiceTest {
         // 2. 저장 요청 DTO 생성
         UserLibrarySaveRequestDTO requestDto = new UserLibrarySaveRequestDTO();
         requestDto.setUserId(testUser.getUserId());
-        requestDto.setSummaryId(testSummary.getSummary_id());
+        requestDto.setSummaryId(testSummary.getSummaryId());
         requestDto.setTags(List.of("tag1", "tag2", "tag3")); // 새로운 태그 추가
         requestDto.setUserNotes("This is a test note.");
 
@@ -64,6 +67,11 @@ public class UserLibraryServiceTest {
         List<UserLibraryTag> tags = userLibraryTagRepository.findByUserLibrary(userLibrary);
         
         assertEquals(3, tags.size());
-        
+
+        // 5. 태그 내용 확인
+        List<String> tagNames = tags.stream()
+                .map(tag -> tag.getTag().getTagName().toString())
+                .toList();
+        assertTrue(tagNames.containsAll(List.of("tag1", "tag2", "tag3")));
     }
 }

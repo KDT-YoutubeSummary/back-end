@@ -1,5 +1,5 @@
 -- 사용자 (User) 테이블
-CREATE TABLE 'User' (
+CREATE TABLE `User` (
                         user_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                         username VARCHAR(100) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,

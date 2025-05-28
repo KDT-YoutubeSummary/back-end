@@ -18,7 +18,7 @@ public class User {
     private int userId; // 사용자 식별자
 
     @Column(name = "username", length = 100, nullable = false)
-    private String username; // 사용자명
+    private String userName; // 사용자명
 
     @Column(name = "email", length = 255, nullable = false)
     private String email; // 이메일
@@ -30,5 +30,9 @@ public class User {
     private LocalDateTime createAt; // 가입 일시
 
     public User(int i, String testuser, String mail, String pw, LocalDateTime now) {
+    }
+
+    public User() {
+
     }
 }

@@ -1,10 +1,14 @@
 package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 public class UserLibrary {
     @Id
     @Column(name = "user_library_id", nullable = false)
@@ -26,6 +30,5 @@ public class UserLibrary {
 
     @Column(name = "user_notes", columnDefinition = "TEXT", nullable = true)
     private String userNotes; // 사용자 메모
-
 
 }
