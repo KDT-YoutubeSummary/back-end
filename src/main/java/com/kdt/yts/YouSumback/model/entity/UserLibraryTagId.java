@@ -2,11 +2,13 @@ package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.Table;
 
 import java.io.Serializable;
 import java.util.Objects;
 
 @Embeddable
+//@Table(name = "UserLibraryTagId")
 public class UserLibraryTagId implements Serializable {
 
     // 필드

@@ -1,16 +1,19 @@
 package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Getter
-@Setter
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name = "UserLibrary")
 public class UserLibrary {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_library_id", nullable = false)
     private int userLibraryId; // 라이브러리 식별자
 

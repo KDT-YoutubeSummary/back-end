@@ -3,6 +3,7 @@ package com.kdt.yts.YouSumback.model.entity;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "AnswerOption")
 public class AnswerOption {
     @Id
     @Column(name = "answer_option_id", nullable = false)

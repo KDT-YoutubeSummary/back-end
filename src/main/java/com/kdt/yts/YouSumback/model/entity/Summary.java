@@ -1,15 +1,23 @@
 package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "Summary")
 public class Summary {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "summary_id", nullable = false)
     private int summaryId; // 요약 식별자
 
@@ -27,16 +35,10 @@ public class Summary {
     @Column(name = "language_code", length = 225, nullable = false)
     private String languageCode; // 요약 언어 코드
 
-    @Column(name = "create_at", nullable = false)
-    private LocalDateTime createAt; // 생성 일자
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt; // 생성 일자
 
     @Column(name = "summary_type", length = 50, nullable = true)
     private String summaryType; // 요약 유형
 
-    public Summary(int i, String testSummary, String s, LocalDateTime now, User testUser) {
-    }
-
-    public Summary() {
-
-    }
 }

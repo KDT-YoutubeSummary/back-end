@@ -1,10 +1,16 @@
 package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "AudioTranscript")
 public class AudioTranscript {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,10 +20,11 @@ public class AudioTranscript {
     @Column(name = "transcript_text", columnDefinition = "TEXT", nullable = false)
     private String transcriptText; // 추출된 음성 텍스트
 
-    @Column(name = "create_at", nullable = false)
-    private LocalDateTime createAt; // 생성 일자
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt; // 생성 일자
 
     @ManyToOne
     @JoinColumn(name = "video_id", nullable = false)
     private Video video; // 비디오 식별자
+
 }

@@ -1,10 +1,7 @@
 package com.kdt.yts.YouSumback.service;
 
 import com.kdt.yts.YouSumback.model.dto.request.UserLibrarySaveRequestDTO;
-import com.kdt.yts.YouSumback.model.entity.Summary;
-import com.kdt.yts.YouSumback.model.entity.User;
-import com.kdt.yts.YouSumback.model.entity.UserLibrary;
-import com.kdt.yts.YouSumback.model.entity.UserLibraryTag;
+import com.kdt.yts.YouSumback.model.entity.*;
 import com.kdt.yts.YouSumback.repository.*;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
@@ -43,35 +40,60 @@ public class UserLibraryServiceTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private AudioTranscriptRepository audioTranscriptRepository;
+
+    // 새로운 태그를 추가하여 라이브러리에 저장하는 테스트
     @Test
     public void testSaveToLibrary_withNewTags_successfullySavesLibraryAndTags() {
-        // 1. 테스트용 유저 & 요약 객체 저장
-        User testUser = userRepository.save(new User(0, "testuser", "email@test.com", "pw", LocalDateTime.now()));
-        Summary testSummary = summaryRepository.save(new Summary(0, "Test Summary", "This is a test summary.", LocalDateTime.now(), testUser));
+        // 1. 테스트용 유저 저장
+        User testUser = userRepository.save(
+                User.builder()
+                        .userName("testuser")
+                        .email("email@test.com")
+                        .passwordHash("pw")
+                        .createdAt(LocalDateTime.now())
+                        .build()
+        );
+        // 2. 테스트용 음성 텍스트 저장
+        AudioTranscript dummyTranscript = new AudioTranscript();
+        dummyTranscript.setTranscriptText("This is a dummy transcript.");
+        dummyTranscript = audioTranscriptRepository.save(dummyTranscript);
 
-        // 2. 저장 요청 DTO 생성
+        // 3. 테스트용 요약 저장
+        Summary testSummary = summaryRepository.save(
+                Summary.builder()
+                        .summaryText("This is a test summary.")
+                        .audioTranscript(dummyTranscript)
+                        .user(testUser)
+                        .languageCode("ko")
+                        .createdAt(LocalDateTime.now())
+                        .build()
+        );
+
+        // 4. 저장 요청 DTO 생성
         UserLibrarySaveRequestDTO requestDto = new UserLibrarySaveRequestDTO();
         requestDto.setUserId(testUser.getUserId());
         requestDto.setSummaryId(testSummary.getSummaryId());
         requestDto.setTags(List.of("tag1", "tag2", "tag3")); // 새로운 태그 추가
         requestDto.setUserNotes("This is a test note.");
 
-        // 3. 서비스 호출
+        // 5. 서비스 호출
         userLibraryService.saveToLibrary(requestDto);
 
-        // 4. 결과 검증
+        // 6. 결과 검증
         List<UserLibrary> libs = userLibraryRepository.findByUser(testUser);
         assertEquals(1, libs.size());
 
         UserLibrary userLibrary = libs.get(0);
         List<UserLibraryTag> tags = userLibraryTagRepository.findByUserLibrary(userLibrary);
-        
         assertEquals(3, tags.size());
 
-        // 5. 태그 내용 확인
+        // 7. 태그 내용 확인
         List<String> tagNames = tags.stream()
-                .map(tag -> tag.getTag().getTagName().toString())
+                .map(tag -> tag.getTag().getTagName())
                 .toList();
         assertTrue(tagNames.containsAll(List.of("tag1", "tag2", "tag3")));
+
     }
 }
