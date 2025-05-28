@@ -1,12 +1,16 @@
-package com.YouSumback.model.entity;
+package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 public class User {
 
     @Id
@@ -25,4 +29,6 @@ public class User {
     @Column(name = "create_at", nullable = false)
     private LocalDateTime createAt; // 가입 일시
 
+    public User(int i, String testuser, String mail, String pw, LocalDateTime now) {
+    }
 }

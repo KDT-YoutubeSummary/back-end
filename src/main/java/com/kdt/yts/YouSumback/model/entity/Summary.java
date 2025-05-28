@@ -1,10 +1,12 @@
-package com.YouSumback.model.entity;
+package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
 public class Summary {
 
     @Id
@@ -30,4 +32,8 @@ public class Summary {
 
     @Column(name = "summary_type", length = 50, nullable = true)
     private String summary_type; // 요약 유형
+
+    public Summary(int i, String testSummary, String s, LocalDateTime now, User testUser) {
+    }
+
 }

@@ -1,4 +1,4 @@
-package com.YouSumback.model.entity;
+package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

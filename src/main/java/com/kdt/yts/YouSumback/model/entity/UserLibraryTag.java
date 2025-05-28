@@ -1,7 +1,9 @@
-package com.YouSumback.model.entity;
+package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
+@Getter
 @Entity
 @Table(name = "UserLibraryTag")
 public class UserLibraryTag {
@@ -18,4 +20,15 @@ public class UserLibraryTag {
     @MapsId("tagId")
     @JoinColumn(name = "tag_id")
     private Tag tag; // 태그 식별자
+
+    // 생성자
+    public UserLibraryTag(UserLibraryTagId id, UserLibrary userLibrary, Tag tag) {
+        this.id = id;
+        this.userLibrary = userLibrary;
+        this.tag = tag;
+    }
+
+    // 기본 생성자
+    public UserLibraryTag() {
+    }
 }
