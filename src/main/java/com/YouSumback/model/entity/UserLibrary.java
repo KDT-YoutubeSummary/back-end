@@ -7,16 +7,17 @@ import java.time.LocalDateTime;
 @Entity
 public class UserLibrary {
     @Id
-    @Column(name = "user_library_id", nullable = false)
-    private int userLibraryId; // 라이브러리 식별자
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_library_id")
+    private Long userLibraryId; // 리마인더에서 참조하는 user_library_id
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // 유저 ID
+    private User user; // UserLibrary가 참조하는 User@
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "summary_id", nullable = false)
-    private Summary summary; // 요약 식별자
+    private Summary summary; // UserLibrary가 참조하는 Summary
 
     @Column(name = "saved_at", nullable = false)
     private LocalDateTime savedAt; // 저장 일시
