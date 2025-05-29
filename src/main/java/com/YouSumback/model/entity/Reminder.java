@@ -1,51 +1,66 @@
 package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import org.springframework.data.annotation.CreatedDate; // 엔티티 생성 시 자동으로 현재 시간을 주입
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "Reminder")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class Reminder {
+
     @Id
-    @Column(name = "reminder_id", nullable = false)
-    private int reminder_id; // 리마인드 식별자
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "reminder_id")
+    private Long reminderId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // 사용자 식별자
+    private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "user_library", nullable = false)
-    private UserLibrary user_library; // 라이브러리 식별자
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_library_id", nullable = false)
+    private UserLibrary userLibrary;
 
-    @Column(name = "reminder_type", length = 50, nullable = false)
-    private String reminder_type; // 알림 주기 유형
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reminder_type", nullable = false, length = 50) // 리마인더의 반복 타입 (예: ONE_TIME, DAILY, WEEKLY 등)
+    private ReminderType reminderType;
 
-    @Column(name = "frequency_interval", nullable = false)
-    private int frequency_interval; // 알림 간격
+    @Column(name = "frequency_interval") // 반복 주기의 간격 (예: DAILY 타입일 때 2이면 2일마다)
+    private Integer frequencyInterval;
 
-    @Column(name = "day_of_week", nullable = true)
-    private int day_of_week; // 주간 반복 시 요일
+    @Column(name = "day_of_week") // 주간 반복 시 알림이 울릴 요일 (1=월요일, 7=일요일) / 선택 사항
+    private Integer dayOfWeek;
 
-    @Column(name = "day_of_month", nullable = true)
-    private int day_of_month; // 월간 반복 시 날짜
+    @Column(name = "day_of_month") // 월간 반복 시 알림이 울릴 일자 (1~31) /선택 사항
+    private Integer dayOfMonth;
 
-    @Column(name = "base_datetime_for_recurrence", nullable = false)
-    private LocalDateTime base_datetime_for_recurrence; // 반복 패턴의 기준이 되는 날짜/시간
+    @Column(name = "base_datetime_for_recurrence", nullable = false) // 반복 리마인더의 기준이 되는 날짜 및 시간
+    private LocalDateTime baseDatetimeForRecurrence;
 
-    @Column(name = "next_notification_datetome", nullable = false)
-    private LocalDateTime next_notification_datetime; // 다음 알림 예정 시간
+    @Column(name = "next_notification_datetime", nullable = false) // 다음 알림이 발송될 예정 날짜 및 시간
+    private LocalDateTime nextNotificationDatetime;
 
-    @Column(name = "reminder_not", columnDefinition = "TEXT", nullable = true)
-    private String reminder_not; // 사용자 메모
+    @Column(name = "reminder_note", columnDefinition = "TEXT") // 리마인더에 대한 사용자의 메모
+    private String reminderNote;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean is_active; // 알림 활성화 여부
+    @Column(name = "is_active", nullable = false) // 리마인더의 활성화 여부 (true: 활성, false: 비활성)
+    private Boolean isActive;
 
-    @Column(name = "create_at", nullable = false)
-    private LocalDateTime create_at; // 생성 일시
+    @CreatedDate // 자동으로 현재 시간으로 설정 (최초 생성 시간)
+    @Column(name = "created_at", nullable = false, updatable = false) // 생성 시간. 한 번 생성되면 업데이트되지 않음
+    private LocalDateTime createdAt;
 
-    @Column(name = "last_sent_at", nullable = true)
-    private LocalDateTime last_sent_at; // 마지막 알림 발송 시간
-
+    @Column(name = "last_sent_at") // 마지막으로 알림이 발송된 시간
+    private LocalDateTime lastSentAt;
 }

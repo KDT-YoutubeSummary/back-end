@@ -1,8 +1,6 @@
 package com.YouSumback.model.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
@@ -10,8 +8,9 @@ import java.time.LocalDateTime;
 public class User {
 
     @Id
-    @Column(name = "user_id", nullable = false)
-    private int userId; // 사용자 식별자
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
+    private Long userId; // 리마인더에서 참조하는 user_id
 
     @Column(name = "username", length = 100, nullable = false)
     private String username; // 사용자명
