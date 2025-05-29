@@ -42,8 +42,8 @@ public class Reminder {
     @Column(name = "is_active", nullable = false)
     private boolean is_active; // 알림 활성화 여부
 
-    @Column(name = "create_at", nullable = false)
-    private LocalDateTime create_at; // 생성 일시
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime created_at; // 생성 일시
 
     @Column(name = "last_sent_at", nullable = true)
     private LocalDateTime last_sent_at; // 마지막 알림 발송 시간

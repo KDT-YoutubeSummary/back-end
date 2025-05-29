@@ -32,8 +32,8 @@ public class VideoRecommendation {
     @Column(name = "recommendation_reason", columnDefinition = "TEXT", nullable = true)
     private String recommendationReason; // 추천 이유
 
-    @Column(name = "create_at", nullable = false)
-    private LocalDateTime createAt; // 추천 생성 시간
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt; // 추천 생성 시간
 
     @Column(name = "is_clicked", nullable = false)
     private boolean isClicked; // 사용자가 추천영상 클릭여부

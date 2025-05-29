@@ -14,8 +14,8 @@ public class AudioTranscript {
     @Column(name = "transcript_text", columnDefinition = "TEXT", nullable = false)
     private String transcriptText; // 추출된 음성 텍스트
 
-    @Column(name = "create_at", nullable = false)
-    private LocalDateTime createAt; // 생성 일자
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt; // 생성 일자
 
     @ManyToOne
     @JoinColumn(name = "video_id", nullable = false)
@@ -42,12 +42,12 @@ public class AudioTranscript {
 
 
     // 생성 일자 접근자
-    public LocalDateTime getCreateAt() {
-        return createAt;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     } // getter
 
     public void setCreateAt(LocalDateTime createAt) {
-        this.createAt = createAt;
+        this.createdAt = createAt;
     } // setter
 
 

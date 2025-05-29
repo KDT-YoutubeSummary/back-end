@@ -27,8 +27,8 @@ public class UserActivityLog {
     @Column(name = "target_entity_id_int", nullable = true)
     private int targetEntityIdInt; // 활동 대상 정수형 ID
 
-    @Column(name = "create_at", nullable = false)
-    private LocalDateTime createAt; // 활동 발생 일자
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt; // 활동 발생 일자
 
     @Column(name = "activity_detail", columnDefinition = "TEXT", nullable = true)
     private String activityDetail; // 활동 상세 내용

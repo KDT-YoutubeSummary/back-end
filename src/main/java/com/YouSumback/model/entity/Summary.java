@@ -25,8 +25,8 @@ public class Summary {
     @Column(name = "language_code", length = 225, nullable = false)
     private String language_code; // 요약 언어 코드
 
-    @Column(name = "create_at", nullable = false)
-    private LocalDateTime create_at; // 생성 일자
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime created_at; // 생성 일자
 
     @Column(name = "summary_type", length = 50, nullable = true)
     private String summary_type; // 요약 유형
