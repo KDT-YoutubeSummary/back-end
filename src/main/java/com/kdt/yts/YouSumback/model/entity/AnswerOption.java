@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 public class AnswerOption {
     @Id
     @Column(name = "answer_option_id", nullable = false)
-    private int answerOptionId; // 답변 선택지 식별자
+    private Integer answerOptionId; // 답변 선택지 식별자
 
     @ManyToOne
     @JoinColumn(name = "question_id", nullable = false)
@@ -17,5 +17,5 @@ public class AnswerOption {
     private String optionText; // 선택지 내용
 
     @Column(name = "is_correct", nullable = false)
-    private boolean isCorrect; // 정답 여부
+    private Boolean isCorrect; // 정답 여부
 }

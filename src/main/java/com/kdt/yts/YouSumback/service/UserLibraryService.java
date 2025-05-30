@@ -31,6 +31,7 @@ public class UserLibraryService {
 
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    // 유저 라이브러리 저장
     @Transactional
     public UserLibraryResponseListDTO saveLibrary(UserLibraryRequestDTO request) {
         // 1. User 조회 (예외 처리 포함)
@@ -53,7 +54,7 @@ public class UserLibraryService {
         userLibraryRepository.save(userLibrary);
 
 
-        // 태그 저장 및 매핑
+        // 4. 태그 저장 및 매핑
         if (request.getTags() != null) {
             for (String tagName : request.getTags()) {
                 Tag tag = tagRepository.findByTagName(tagName)
@@ -68,19 +69,10 @@ public class UserLibraryService {
         List<String> tagNames = userLibraryTagRepository.findByUserLibrary(userLibrary).stream()
                 .map(t -> t.getTag().getTagName()).toList();
 
-        // 4. 저장 결과 DTO로 반환
-        return UserLibraryResponseListDTO.builder()
-                .userLibraryId(userLibrary.getUserLibraryId())
-                .summaryId(summary.getSummaryId())
-                .videoTitle(summary.getTranscript().getVideo().getTitle())
-                .tags(tagNames)
-                .savedAt(userLibrary.getSavedAt())
-                .lastViewedAt(userLibrary.getLastViewedAt())
-                .userNotes(userLibrary.getUserNotes())
-                .build();
+        return UserLibraryResponseListDTO.fromEntity(userLibrary, tagNames);
     }
 
-    // 특정 유저의 라이브러리 조회
+    // 특정 유저의 라이브러리 목록 전체 조회
     @Transactional
     public List<UserLibraryResponseListDTO> getLibrariesByUserId(long userId) {
         User user = userRepository.findByUserId(userId)
@@ -95,12 +87,12 @@ public class UserLibraryService {
                             .map(t -> t.getTag().getTagName())
                             .toList();
 
-                    return UserLibraryResponseListDTO.fromEntity(library, tagNames); // ✅ 여기 수정
+                    return UserLibraryResponseListDTO.fromEntity(library, tagNames);
                 })
                 .toList();
     }
 
-
+    // 특정 라이브러리 상세 조회 (요약 본문 포함)
     public UserLibraryResponseDTO getLibraryDetail(Long libraryId) {
         UserLibrary library = userLibraryRepository.findById(libraryId)
                 .orElseThrow(() -> new NoSuchElementException("해당 라이브러리를 찾을 수 없습니다."));
@@ -117,12 +109,12 @@ public class UserLibraryService {
     @Transactional
     public void deleteLibrary(Long libraryId) {
         UserLibrary library = userLibraryRepository.findById(libraryId)
-                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 라이브러리"));
+                .orElseThrow(() -> new NoSuchElementException("해당 라이브러리를 찾을 수 없습니다."));
 
         // 관련 태그 연결 먼저 삭제
         userLibraryTagRepository.deleteAllByUserLibrary(library);
 
-        // 2. 라이브러리 삭제
+        // 2라이브러리 삭제
         userLibraryRepository.delete(library);
     }
 
@@ -151,16 +143,8 @@ public class UserLibraryService {
                     .map(userLibraryTag -> userLibraryTag.getTag().getTagName())
                     .toList();
 
-            return UserLibraryResponseListDTO.builder()
-                    .userLibraryId(library.getUserLibraryId())
-                    .summaryId(library.getSummary().getSummaryId())
-                    .videoTitle(library.getSummary().getTranscript().getVideo().getTitle())
-                    .tags(tagList)
-                    .savedAt(library.getSavedAt())
-                    .lastViewedAt(library.getLastViewedAt())
-                    .userNotes(library.getUserNotes())
-                    .build();
-        }).collect(Collectors.toList());
+                    return UserLibraryResponseListDTO.fromEntity(library, tagList);
+                })
+                .collect(Collectors.toList());
     }
-
 }
