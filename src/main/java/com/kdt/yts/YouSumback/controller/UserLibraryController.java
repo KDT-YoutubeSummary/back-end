@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/library")
@@ -40,5 +41,23 @@ public class UserLibraryController {
     public ResponseEntity<Void> deleteLibrary(@PathVariable Long libraryId) {
         userLibraryService.deleteLibraryById(libraryId);
         return ResponseEntity.noContent().build();
+    }
+
+    // 라이브러리 검색 API (제목 또는 태그로 검색)
+    // 검색 조건은 선택적이며, 둘 중 하나 또는 둘 다 제공될 수 있음
+    // 검색 조건 없으면 빈 리스트
+    @GetMapping("/search")
+    public ResponseEntity<?> searchLibrary(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String tags
+    ) {
+        List<UserLibraryResponseDTO> result = userLibraryService.search(title, tags);
+        return ResponseEntity.ok(
+                Map.of(
+                        "code", 200,
+                        "data", result,
+                        "msg", "ok"
+                )
+        );
     }
 }

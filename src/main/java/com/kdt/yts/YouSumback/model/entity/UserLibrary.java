@@ -15,7 +15,7 @@ public class UserLibrary {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_library_id", nullable = false)
-    private int userLibraryId; // 라이브러리 식별자
+    private Long userLibraryId; // 라이브러리 식별자
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

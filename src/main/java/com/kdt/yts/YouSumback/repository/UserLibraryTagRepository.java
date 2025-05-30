@@ -9,6 +9,6 @@ import java.util.List;
 
 @Repository
 public interface UserLibraryTagRepository extends JpaRepository<UserLibraryTag, Long> {
-    List findByUserLibrary(UserLibrary userLibrary);
+    List<UserLibraryTag> findByUserLibrary(UserLibrary userLibrary);
 
 }

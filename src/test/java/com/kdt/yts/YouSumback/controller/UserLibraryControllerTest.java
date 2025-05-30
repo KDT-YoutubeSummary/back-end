@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kdt.yts.YouSumback.model.entity.*;
 import com.kdt.yts.YouSumback.repository.*;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -47,7 +48,7 @@ public class UserLibraryControllerTest {
 
     private Integer savedUserId;
     private Integer savedSummaryId;
-    private Integer savedLibraryId;
+    private Long savedLibraryId;
 
     // 테스트 실행 전: 테스트용 User와 Summary 데이터를 DB에 저장
     @BeforeEach
@@ -147,5 +148,50 @@ public class UserLibraryControllerTest {
         mockMvc.perform(delete("/api/library/{libraryId}", savedLibraryId))
                 .andDo(print())
                 .andExpect(status().isNoContent());
+    }
+
+    // 라이브러리 검색 API 테스트
+    // 1. 제목으로 검색
+    @Test
+    @DisplayName("Search by title only")
+    void searchByTitleOnly() throws Exception {
+        mockMvc.perform(get("/api/library/search")
+                        .param("title", "AI"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data").isArray());
+    }
+
+    // 2. 태그로 검색
+    @Test
+    @DisplayName("Search by tags only")
+    void searchByTagsOnly() throws Exception {
+        mockMvc.perform(get("/api/library/search")
+                        .param("tags", "추천,학습"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data").isArray());
+    }
+
+    // 3. 제목과 태그로 검색
+    @Test
+    @DisplayName("Search by title and tags")
+    void searchByTitleAndTags() throws Exception {
+        mockMvc.perform(get("/api/library/search")
+                        .param("title", "AI")
+                        .param("tags", "추천,학습"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data").isArray());
+    }
+
+    // 4. 검색어가 없는 경우
+    @Test
+    @DisplayName("Search with no parameters")
+    void searchWithNoParams() throws Exception {
+        mockMvc.perform(get("/api/library/search"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data").isArray());
     }
 }

@@ -2,7 +2,6 @@ package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.Table;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -21,7 +20,7 @@ public class UserLibraryTagId implements Serializable {
     public UserLibraryTagId() {
     }
 
-    public UserLibraryTagId(long userLibraryId, long tagId) {
+    public UserLibraryTagId(Long userLibraryId, int tagId) {
         this.userLibraryId = userLibraryId;
         this.tagId = tagId;
     }

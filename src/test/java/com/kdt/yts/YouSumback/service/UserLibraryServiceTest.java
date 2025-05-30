@@ -1,9 +1,11 @@
 package com.kdt.yts.YouSumback.service;
 
 import com.kdt.yts.YouSumback.model.dto.request.UserLibrarySaveRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseDTO;
 import com.kdt.yts.YouSumback.model.entity.*;
 import com.kdt.yts.YouSumback.repository.*;
 import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -13,87 +15,147 @@ import org.springframework.test.context.ActiveProfiles;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@AutoConfigureTestDatabase
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class UserLibraryServiceTest {
 
-    @Autowired
-    private UserLibraryService userLibraryService;
+    @Autowired private UserLibraryService userLibraryService;
+    @Autowired private UserRepository userRepository;
+    @Autowired private VideoRepository videoRepository;
+    @Autowired private AudioTranscriptRepository audioTranscriptRepository;
+    @Autowired private SummaryRepository summaryRepository;
+    @Autowired private UserLibraryRepository userLibraryRepository;
+    @Autowired private TagRepository tagRepository;
+    @Autowired private UserLibraryTagRepository userLibraryTagRepository;
 
-    @Autowired
-    private UserLibraryRepository userLibraryRepository;
+    private User testUser;
+    private Summary testSummary;
 
-    @Autowired
-    private SummaryRepository summaryRepository;
+    @BeforeEach
+    void setUp() {
+        // 테스트용 유저와 요약 데이터 생성
+        testUser = userRepository.save(User.builder()
+                .userName("testuser")
+                .email("test@example.com")
+                .passwordHash("hashed")
+                .createdAt(LocalDateTime.now())
+                .build());
 
-    @Autowired
-    private TagRepository tagRepository;
+        // 비디오와 오디오 트랜스크립트 생성
+        Video video = videoRepository.save(Video.builder()
+                .videoId("vid123")
+                .title("테스트 비디오")
+                .originalUrl("http://test.com")
+                .uploaderName("Uploader")
+                .originalLanguageCode("ko")
+                .durationSeconds(300)
+                .build());
 
-    @Autowired
-    private UserLibraryTagRepository userLibraryTagRepository;
+        AudioTranscript transcript = audioTranscriptRepository.save(AudioTranscript.builder()
+                .transcriptText("이건 테스트 스크립트입니다.")
+                .createdAt(LocalDateTime.now())
+                .video(video)
+                .build());
 
-    @Autowired
-    private UserRepository userRepository;
+        // 요약 데이터 생성
+        testSummary = summaryRepository.save(Summary.builder()
+                .summaryText("AI에 관한 요약입니다.")
+                .audioTranscript(transcript)
+                .user(testUser)
+                .languageCode("ko")
+                .createdAt(LocalDateTime.now())
+                .build());
+    }
 
-    @Autowired
-    private AudioTranscriptRepository audioTranscriptRepository;
-
-    // 새로운 태그를 추가하여 라이브러리에 저장하는 테스트
+    // 라이브러리 저장 테스트
     @Test
-    public void testSaveToLibrary_withNewTags_successfullySavesLibraryAndTags() {
-        // 1. 테스트용 유저 저장
-        User testUser = userRepository.save(
-                User.builder()
-                        .userName("testuser")
-                        .email("email@test.com")
-                        .passwordHash("pw")
-                        .createdAt(LocalDateTime.now())
-                        .build()
-        );
-        // 2. 테스트용 음성 텍스트 저장
-        AudioTranscript dummyTranscript = new AudioTranscript();
-        dummyTranscript.setTranscriptText("This is a dummy transcript.");
-        dummyTranscript = audioTranscriptRepository.save(dummyTranscript);
+    void saveLibrary_successfullySavesLibraryAndTags() {
+        // given
+        UserLibrarySaveRequestDTO dto = new UserLibrarySaveRequestDTO();
+        dto.setUserId(testUser.getUserId());
+        dto.setSummaryId(testSummary.getSummaryId());
+        dto.setTags(List.of("AI", "추천"));
+        dto.setUserNotes("좋은 요약이네요!");
 
-        // 3. 테스트용 요약 저장
-        Summary testSummary = summaryRepository.save(
-                Summary.builder()
-                        .summaryText("This is a test summary.")
-                        .audioTranscript(dummyTranscript)
-                        .user(testUser)
-                        .languageCode("ko")
-                        .createdAt(LocalDateTime.now())
-                        .build()
-        );
+        // when
+        userLibraryService.saveToLibrary(dto);
 
-        // 4. 저장 요청 DTO 생성
-        UserLibrarySaveRequestDTO requestDto = new UserLibrarySaveRequestDTO();
-        requestDto.setUserId(testUser.getUserId());
-        requestDto.setSummaryId(testSummary.getSummaryId());
-        requestDto.setTags(List.of("tag1", "tag2", "tag3")); // 새로운 태그 추가
-        requestDto.setUserNotes("This is a test note.");
+        // then
+        List<UserLibrary> libraries = userLibraryRepository.findByUser(testUser);
+        assertEquals(1, libraries.size());
 
-        // 5. 서비스 호출
-        userLibraryService.saveToLibrary(requestDto);
+        List<UserLibraryTag> tags = userLibraryTagRepository.findByUserLibrary(libraries.get(0));
+        assertEquals(2, tags.size());
+    }
 
-        // 6. 결과 검증
-        List<UserLibrary> libs = userLibraryRepository.findByUser(testUser);
-        assertEquals(1, libs.size());
+    // 라이브러리 저장 후 반환 DTO 테스트
+    @Test
+    void findLibraryByUser_returnsCorrectLibrary() {
+        // given
+        UserLibrary library = userLibraryRepository.save(UserLibrary.builder()
+                .user(testUser)
+                .summary(testSummary)
+                .userNotes("테스트 메모")
+                .savedAt(LocalDateTime.now())
+                .lastViewedAt(LocalDateTime.now())
+                .build());
 
-        UserLibrary userLibrary = libs.get(0);
-        List<UserLibraryTag> tags = userLibraryTagRepository.findByUserLibrary(userLibrary);
-        assertEquals(3, tags.size());
+        // when
+        List<UserLibrary> results = userLibraryRepository.findByUser(testUser);
 
-        // 7. 태그 내용 확인
-        List<String> tagNames = tags.stream()
-                .map(tag -> tag.getTag().getTagName())
-                .toList();
-        assertTrue(tagNames.containsAll(List.of("tag1", "tag2", "tag3")));
+        // then
+        assertEquals(1, results.size());
+        assertEquals("테스트 메모", results.get(0).getUserNotes());
+    }
 
+    // 라이브러리 삭제 테스트
+    @Test
+    void deleteLibraryById_removesLibrary() {
+        // given
+        UserLibrary library = userLibraryRepository.save(UserLibrary.builder()
+                .user(testUser)
+                .summary(testSummary)
+                .savedAt(LocalDateTime.now())
+                .build());
+
+        Long id = (long) library.getUserLibraryId();
+
+        // when
+        userLibraryService.deleteLibraryById(id);
+
+        // then
+        assertFalse(userLibraryRepository.findById(id).isPresent());
+    }
+
+    // 라이브러리 검색 테스트
+    @Test
+    void searchLibraryByTitleAndTags_returnsMatchingResults
+            () {
+        // given
+        UserLibrary library = userLibraryRepository.save(UserLibrary.builder()
+                .user(testUser)
+                .summary(testSummary)
+                .savedAt(LocalDateTime.now())
+                .build());
+
+        Tag tag1 = tagRepository.save(Tag.builder().tagName("AI").build());
+        Tag tag2 = tagRepository.save(Tag.builder().tagName("추천").build());
+
+        userLibraryTagRepository.save(new UserLibraryTag(
+                new UserLibraryTagId(library.getUserLibraryId(), tag1.getTagId()), library, tag1));
+        userLibraryTagRepository.save(new UserLibraryTag(
+                new UserLibraryTagId(library.getUserLibraryId(), tag2.getTagId()), library, tag2));
+
+        // when
+        List<UserLibraryResponseDTO> result = userLibraryService.search("AI", "AI,추천");
+
+        // then
+        assertEquals(1, result.size());
+        assertEquals(testUser.getUserId(), result.get(0).getUserId());
+        assertEquals(testSummary.getSummaryId(), result.get(0).getSummaryId());
     }
 }

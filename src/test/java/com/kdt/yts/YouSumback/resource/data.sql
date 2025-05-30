@@ -1,6 +1,5 @@
-
 -- 사용자 (User) 테이블
-CREATE TABLE `user` (
+CREATE TABLE 'User' (
                         user_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                         username VARCHAR(100) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -20,7 +19,7 @@ CREATE TABLE Video (
 
 -- 태그 (Tag) 테이블
 CREATE TABLE Tag (
-                     tag_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
+                     tag_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                      tag_name VARCHAR(100) UNIQUE NOT NULL
 );
 
@@ -108,7 +107,7 @@ CREATE TABLE AnswerOption (
 -- 사용자 라이브러리 태그 (UserLibraryTag) 연결 테이블
 CREATE TABLE UserLibraryTag (
                                 user_library_id INT NOT NULL, -- BIGINT -> INT
-                                tag_id INT UNSIGNED NOT NULL, -- BIGINT -> INT
+                                tag_id INT NOT NULL, -- BIGINT -> INT
                                 PRIMARY KEY (user_library_id, tag_id),
                                 CONSTRAINT fk_userlibrarytag_userlibrary FOREIGN KEY (user_library_id) REFERENCES UserLibrary(user_library_id) ON DELETE CASCADE,
                                 CONSTRAINT fk_userlibrarytag_tag FOREIGN KEY (tag_id) REFERENCES Tag(tag_id) ON DELETE CASCADE
