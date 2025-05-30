@@ -1,8 +1,8 @@
 package com.kdt.yts.YouSumback.service;
 
 import com.kdt.yts.YouSumback.model.dto.request.UserLibraryRequestDTO;
-import com.kdt.yts.YouSumback.model.dto.request.UserLibrarySaveRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseDTO;
+import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseListDTO;
 import com.kdt.yts.YouSumback.model.entity.*;
 import com.kdt.yts.YouSumback.repository.*;
 import lombok.Getter;
@@ -11,56 +11,28 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Getter
+@Transactional
 public class UserLibraryService {
 
     private final UserRepository userRepository;
     private final SummaryRepository summaryRepository;
-    private final TagRepository tagRepository;
     private final UserLibraryRepository userLibraryRepository;
     private final UserLibraryTagRepository userLibraryTagRepository;
+    private final TagRepository tagRepository;
 
+    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Transactional
-    public void saveToLibrary(UserLibrarySaveRequestDTO requestDto) {
-        // 1. 유저 조회
-        User user = userRepository.findByUserId(requestDto.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        // 2. 요약 조회
-        Summary summary = (Summary) summaryRepository.findBySummaryId(requestDto.getSummaryId())
-                .orElseThrow(() -> new IllegalArgumentException("Summary not found"));
-
-        // 3. UserLibrary 저장
-        UserLibrary userLibrary = UserLibrary.builder()
-                .user(user)
-                .summary(summary)
-                .userNotes(requestDto.getUserNotes())
-                .savedAt(LocalDateTime.now())
-                .build();
-
-        userLibraryRepository.save(userLibrary);
-
-        // 4. 태그 저장 및 UserLibraryTag 연결
-        for (String tagName : requestDto.getTags()) {
-            Tag tag = tagRepository.findByTagName(tagName)
-                    .orElseGet(() -> tagRepository.save(Tag.builder().tagName(tagName).build()));
-
-            UserLibraryTagId tagId = new UserLibraryTagId(userLibrary.getUserLibraryId(), tag.getTagId());
-            UserLibraryTag userLibraryTag = new UserLibraryTag(tagId, userLibrary, tag);
-            userLibraryTagRepository.save(userLibraryTag);
-        }
-    }
-
-    public UserLibraryResponseDTO saveLibrary(UserLibraryRequestDTO request) {
+    public UserLibraryResponseListDTO saveLibrary(UserLibraryRequestDTO request) {
         // 1. User 조회 (예외 처리 포함)
         User user = userRepository.findById(request.getUser_id())
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
@@ -73,106 +45,122 @@ public class UserLibraryService {
         UserLibrary userLibrary = UserLibrary.builder()
                 .user(user)
                 .summary(summary)
-//                .userNotes(request.getUser_notes())
+                .userNotes(request.getUser_notes())
                 .savedAt(LocalDateTime.now())
+                .lastViewedAt(LocalDateTime.now())
                 .build();
 
         userLibraryRepository.save(userLibrary);
 
+
+        // 태그 저장 및 매핑
+        if (request.getTags() != null) {
+            for (String tagName : request.getTags()) {
+                Tag tag = tagRepository.findByTagName(tagName)
+                        .orElseGet(() -> tagRepository.save(Tag.builder().tagName(tagName).build()));
+                UserLibraryTagId tagId = new UserLibraryTagId(userLibrary.getUserLibraryId(), tag.getTagId());
+                UserLibraryTag userLibraryTag = new UserLibraryTag(tagId, userLibrary, tag);
+                userLibraryTagRepository.save(userLibraryTag);
+            }
+        }
+
+        // 태그 이름 리스트
+        List<String> tagNames = userLibraryTagRepository.findByUserLibrary(userLibrary).stream()
+                .map(t -> t.getTag().getTagName()).toList();
+
         // 4. 저장 결과 DTO로 반환
-        return UserLibraryResponseDTO.builder()
-                .userId(user.getUserId())
+        return UserLibraryResponseListDTO.builder()
+                .userLibraryId(userLibrary.getUserLibraryId())
                 .summaryId(summary.getSummaryId())
-//                .userNotes(userLibrary.getUserNotes())
+                .videoTitle(summary.getTranscript().getVideo().getTitle())
+                .tags(tagNames)
+                .savedAt(userLibrary.getSavedAt())
+                .lastViewedAt(userLibrary.getLastViewedAt())
+                .userNotes(userLibrary.getUserNotes())
                 .build();
     }
 
     // 특정 유저의 라이브러리 조회
-    public List<UserLibraryResponseDTO> getLibrariesByUserId(int userId) {
-        // 1. 사용자 존재 여부 확인
+    @Transactional
+    public List<UserLibraryResponseListDTO> getLibrariesByUserId(long userId) {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        // 2. 해당 사용자의 라이브러리 조회
         List<UserLibrary> libraries = userLibraryRepository.findByUserUserId(userId);
 
-//        // 3. 각 라이브러리에 대한 태그 조회 및 DTO 변환
-//        return libraries.stream().map(library -> {
-//            // 라이브러리별 연결된 태그 가져오기
-//            List<String> tags = userLibraryTagRepository.findByUserLibrary(library).stream()
-//                    .map(userLibraryTag -> userLibraryTag.getTag().getTagName())
-//                    .collect(Collectors.toList());
-//
-//            // DTO 생성 (userNotes 제외, tags 포함)
-//            return UserLibraryResponseDTO.builder()
-//                    .userLibraryId(library.getUserLibraryId())
-//                    .videoTitle(library.getSummary().getAudioTranscript().getVideo().getTitle())
-//                    .tags(tags)
-//                    .savedAt(library.getSavedAt())
-//                    .lastViewedAt(library.getLastViewedAt() != null ? library.getLastViewedAt() : null)
-//                    .build();
-//        }).collect(Collectors.toList());
-        // 3. 각 라이브러리에 대한 태그 조회 및 DTO 변환
-        return libraries.stream().map(library -> {
-            List<String> tags = userLibraryTagRepository.findByUserLibrary(library).stream()
-                    .map(userLibraryTag -> userLibraryTag.getTag().getTagName())
-                    .collect(Collectors.toList());
-
-            return UserLibraryResponseDTO.fromEntity(library, tags);
-        }).toList();
-    }
-
-    // 특정 라이브러리 삭제
-    public void deleteLibraryById(Long libraryId) {
-        userLibraryRepository.deleteById(libraryId);
-    }
-
-    // 제목과 태그로 라이브러리 검색
-    public List<UserLibraryResponseDTO> search(String title, String tags) {
-        boolean hasTitle = title != null && !title.isBlank();
-        boolean hasTags = tags != null && !tags.isBlank();
-
-        // 둘 다 비어있으면 빈 리스트 반환
-        if (!hasTitle && !hasTags) {
-            return Collections.emptyList();
-        }
-
-        List<UserLibrary> result;
-
-        // 제목과 태그가 모두 있는 경우
-        if (hasTitle && hasTags) {
-            List<UserLibrary> byTitle = userLibraryRepository.findBySummary_SummaryTextContaining(title);
-            List<UserLibrary> byTags = userLibraryRepository.findByTagNames(parseTags(tags));
-            byTitle.retainAll(byTags);
-            result = byTitle;
-        } else if (hasTitle) { // 제목만 있는 경우
-            result = userLibraryRepository.findBySummary_SummaryTextContaining(title);
-        } else { // 태그만 있는 경우
-            result = userLibraryRepository.findByTagNames(parseTags(tags));
-        }
-
-        // 결과를 DTO로 변환하여 반환
-        return result.stream()
+        return libraries.stream()
                 .map(library -> {
-                    // 라이브러리별 연결된 태그 가져오기
-                    List<String> tagNames = userLibraryTagRepository.findByUserLibrary(library).stream()
-                            .map(userLibraryTag -> userLibraryTag.getTag().getTagName())
-                            .collect(Collectors.toList());
+                    List<UserLibraryTag> tags = userLibraryTagRepository.findByUserLibrary(library);
+                    List<String> tagNames = tags.stream()
+                            .map(t -> t.getTag().getTagName())
+                            .toList();
 
-                    // DTO 생성
-                    return UserLibraryResponseDTO.fromEntity(library, tagNames);
+                    return UserLibraryResponseListDTO.fromEntity(library, tagNames); // ✅ 여기 수정
                 })
                 .toList();
     }
 
-    // 태그 문자열을 List<String>으로 변환
-    private List<String> parseTags(String tags) {
-        if (tags == null || tags.isBlank()) {
-            return Collections.emptyList();
-        }
-        return Arrays.stream(tags.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
+
+    public UserLibraryResponseDTO getLibraryDetail(Long libraryId) {
+        UserLibrary library = userLibraryRepository.findById(libraryId)
+                .orElseThrow(() -> new NoSuchElementException("해당 라이브러리를 찾을 수 없습니다."));
+
+        List<UserLibraryTag> tags = userLibraryTagRepository.findByUserLibrary(library);
+        List<String> tagNames = tags.stream()
+                .map(t -> t.getTag().getTagName())
                 .toList();
+
+        return UserLibraryResponseDTO.fromEntity(library, tagNames);
     }
+
+    // 특정 라이브러리 삭제
+    @Transactional
+    public void deleteLibrary(Long libraryId) {
+        UserLibrary library = userLibraryRepository.findById(libraryId)
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 라이브러리"));
+
+        // 관련 태그 연결 먼저 삭제
+        userLibraryTagRepository.deleteAllByUserLibrary(library);
+
+        // 2. 라이브러리 삭제
+        userLibraryRepository.delete(library);
+    }
+
+    // 제목과 태그로 라이브러리 검색
+    public List<UserLibraryResponseListDTO> search(long userId, String title, String tags) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        // 해당 사용자의 라이브러리 조회 (필요시 사용)
+        List<UserLibrary> userLibraries = userLibraryRepository.findByUser(user);
+
+        return userLibraries.stream().filter(userLibrary ->  {
+            boolean titleMatches = (title == null ||
+                    userLibrary.getSummary().getTranscript().getVideo().getTitle().contains(title));
+
+                    boolean tagMatches = true;
+                    if (tags != null) {
+                        List<String> filterTags = Arrays.asList(tags.split(","));
+                        List<String> actualTags = userLibraryTagRepository.findByUserLibrary(userLibrary).stream()
+                                .map(t -> t.getTag().getTagName()).collect(Collectors.toList());
+                        tagMatches = filterTags.stream().allMatch(actualTags::contains);
+                    }
+                    return titleMatches && tagMatches;
+        }).map(library -> {
+            List<String> tagList = userLibraryTagRepository.findByUserLibrary(library).stream()
+                    .map(userLibraryTag -> userLibraryTag.getTag().getTagName())
+                    .toList();
+
+            return UserLibraryResponseListDTO.builder()
+                    .userLibraryId(library.getUserLibraryId())
+                    .summaryId(library.getSummary().getSummaryId())
+                    .videoTitle(library.getSummary().getTranscript().getVideo().getTitle())
+                    .tags(tagList)
+                    .savedAt(library.getSavedAt())
+                    .lastViewedAt(library.getLastViewedAt())
+                    .userNotes(library.getUserNotes())
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
 }

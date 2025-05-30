@@ -8,7 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface SummaryRepository extends JpaRepository<Summary, Long> {
-    Optional<Object> findBySummaryId(int summaryId);
+    Optional<Object> findBySummaryId(Long summaryId);
 }
 
 

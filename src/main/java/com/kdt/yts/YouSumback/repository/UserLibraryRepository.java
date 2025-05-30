@@ -11,8 +11,10 @@ import java.util.List;
 
 @Repository
 public interface UserLibraryRepository extends JpaRepository<UserLibrary, Long> {
-    List<UserLibrary> findByUserUserId(int userId);
+    // 사용자 ID로 UserLibrary 조회
+    List<UserLibrary> findByUserUserId(long userId);
 
+    // 사용자 엔티티로 UserLibrary 조회
     List<UserLibrary> findByUser(User user);
 
     // 제목 기반 검색

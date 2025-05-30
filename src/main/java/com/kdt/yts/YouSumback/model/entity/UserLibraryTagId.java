@@ -12,15 +12,15 @@ public class UserLibraryTagId implements Serializable {
 
     // 필드
     @Column(name = "user_library_id")
-    private long userLibraryId;
+    private Long userLibraryId;
     @Column(name = "tag_id")
-    private long tagId;
+    private Long tagId;
 
     // 생성자
     public UserLibraryTagId() {
     }
 
-    public UserLibraryTagId(Long userLibraryId, int tagId) {
+    public UserLibraryTagId(Long userLibraryId, Long tagId) {
         this.userLibraryId = userLibraryId;
         this.tagId = tagId;
     }

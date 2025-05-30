@@ -9,7 +9,7 @@ public class UserActivityLog {
 
     @Id
     @Column(name = "log_id", nullable = false)
-    private int log_id; // 로그 식별자
+    private Long log_id; // 로그 식별자
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
@@ -25,7 +25,7 @@ public class UserActivityLog {
     private String targetEntityIdStr; // 활동 대상 문자열 ID
 
     @Column(name = "target_entity_id_int", nullable = true)
-    private int targetEntityIdInt; // 활동 대상 정수형 ID
+    private Long targetEntityIdInt; // 활동 대상 정수형 ID
 
     @Column(name = "create_at", nullable = false)
     private LocalDateTime createAt; // 활동 발생 일자

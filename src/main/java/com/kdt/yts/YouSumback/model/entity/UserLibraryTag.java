@@ -32,4 +32,10 @@ public class UserLibraryTag {
     public UserLibraryTag() {
     }
 
+    // UserLibrary와 Tag를 이용한 생성자
+    public UserLibraryTag(UserLibrary library, Tag tag1) {
+        this.id = new UserLibraryTagId(library.getUserLibraryId(), tag1.getTagId());
+        this.userLibrary = library;
+        this.tag = tag1;
+    }
 }

@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public class Quiz {
     @Id
     @Column(name = "quiz_id", nullable = false)
-    private int quizId; // 퀴즈 식별자
+    private Long quizId; // 퀴즈 식별자
 
     @ManyToOne
     @JoinColumn(name = "summary_id", nullable = false)

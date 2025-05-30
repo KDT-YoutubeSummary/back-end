@@ -1,7 +1,8 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.model.dto.request.UserLibrarySaveRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.request.UserLibraryRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseDTO;
+import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseListDTO;
 import com.kdt.yts.YouSumback.model.entity.*;
 import com.kdt.yts.YouSumback.repository.*;
 import jakarta.transaction.Transactional;
@@ -51,8 +52,6 @@ public class UserLibraryServiceTest {
                 .title("테스트 비디오")
                 .originalUrl("http://test.com")
                 .uploaderName("Uploader")
-                .originalLanguageCode("ko")
-                .durationSeconds(300)
                 .build());
 
         AudioTranscript transcript = audioTranscriptRepository.save(AudioTranscript.builder()
@@ -64,7 +63,7 @@ public class UserLibraryServiceTest {
         // 요약 데이터 생성
         testSummary = summaryRepository.save(Summary.builder()
                 .summaryText("AI에 관한 요약입니다.")
-                .audioTranscript(transcript)
+                .transcript(transcript)
                 .user(testUser)
                 .languageCode("ko")
                 .createdAt(LocalDateTime.now())
@@ -75,14 +74,13 @@ public class UserLibraryServiceTest {
     @Test
     void saveLibrary_successfullySavesLibraryAndTags() {
         // given
-        UserLibrarySaveRequestDTO dto = new UserLibrarySaveRequestDTO();
-        dto.setUserId(testUser.getUserId());
-        dto.setSummaryId(testSummary.getSummaryId());
-        dto.setTags(List.of("AI", "추천"));
-        dto.setUserNotes("좋은 요약이네요!");
+        UserLibraryRequestDTO dto = new UserLibraryRequestDTO();
+        dto.setUser_id(testUser.getUserId());
+        dto.setSummary_id(Long.valueOf((testSummary.getSummaryId())));
+        dto.setUser_notes("좋은 요약이네요!");
 
         // when
-        userLibraryService.saveToLibrary(dto);
+        userLibraryService.saveLibrary(dto);
 
         // then
         List<UserLibrary> libraries = userLibraryRepository.findByUser(testUser);
@@ -125,7 +123,7 @@ public class UserLibraryServiceTest {
         Long id = (long) library.getUserLibraryId();
 
         // when
-        userLibraryService.deleteLibraryById(id);
+        userLibraryService.deleteLibrary(id);
 
         // then
         assertFalse(userLibraryRepository.findById(id).isPresent());
@@ -151,11 +149,10 @@ public class UserLibraryServiceTest {
                 new UserLibraryTagId(library.getUserLibraryId(), tag2.getTagId()), library, tag2));
 
         // when
-        List<UserLibraryResponseDTO> result = userLibraryService.search("AI", "AI,추천");
+        List<UserLibraryResponseListDTO> result = userLibraryService.search(1, "AI", "AI,추천");
 
         // then
         assertEquals(1, result.size());
-        assertEquals(testUser.getUserId(), result.get(0).getUserId());
         assertEquals(testSummary.getSummaryId(), result.get(0).getSummaryId());
     }
 }

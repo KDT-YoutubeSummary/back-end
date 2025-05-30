@@ -2,59 +2,92 @@ package com.kdt.yts.YouSumback.model.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kdt.yts.YouSumback.model.entity.Tag;
 import com.kdt.yts.YouSumback.model.entity.UserLibrary;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
-
 public class UserLibraryResponseDTO {
-    private Long userLibraryId; // 사용자 라이브러리 식별자
+
+    @JsonProperty("library_id")
+    private Long userLibraryId;
 
     @JsonProperty("user_id")
-    private int userId; // 사용자 식별자
+    private Long userId;
 
     @JsonProperty("summary_id")
-    private int summaryId; // 요약 식별자
+    private Long summaryId;
 
     @JsonProperty("video_title")
-    private String videoTitle; // 비디오 제목
+    private String videoTitle;
+
+    @JsonProperty("summary_text")
+    private String summaryText;
 
     @JsonProperty("tags")
-    private List<String> tags; // 태그 목록
+    private List<String> tags;
 
-//    @JsonProperty("user_notes")
-//    private String userNotes;
-    @JsonProperty("saved_at")  // 저장 일시
+    // 📺 비디오 메타데이터
+    @JsonProperty("youtube_id")
+    private String youtubeId;
+
+    @JsonProperty("original_url")
+    private String originalUrl;
+
+    @JsonProperty("thumbnail_url")
+    private String thumbnailUrl;
+
+    @JsonProperty("uploader_name")
+    private String uploaderName;
+
+    @JsonProperty("view_count")
+    private Long viewCount;
+
+    @JsonProperty("published_at")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime publishedAt;
+
+    @JsonProperty("saved_at")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime savedAt;
 
-    @JsonProperty("last_viewed_at") // 최근 시청 일시
+    @JsonProperty("last_viewed_at")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastViewedAt;
 
+    @JsonProperty("user_notes")
+    private String userNotes;
 
     public static UserLibraryResponseDTO fromEntity(UserLibrary entity, List<String> tags) {
+        var summary = entity.getSummary();
+        var transcript = summary.getTranscript();
+        var video = transcript.getVideo();
+
         return UserLibraryResponseDTO.builder()
-                .userLibraryId((long) entity.getUserLibraryId()) // 사용자 라이브러리 식별자
-                .userId(entity.getUser().getUserId()) // 사용자 식별자
-                .summaryId(entity.getSummary().getSummaryId()) // 요약 식별자
-                // .userNotes(entity.getUserNotes())
-                .videoTitle(entity.getSummary().getAudioTranscript().getVideo().getTitle()) // 비디오 제목
+                .userLibraryId(entity.getUserLibraryId())
+                .userId(entity.getUser().getUserId())
+                .summaryId(summary.getSummaryId())
+                .videoTitle(video.getTitle())
+                .summaryText(summary.getSummaryText())
                 .tags(tags)
+
+                // 비디오 메타데이터
+                .youtubeId(video.getYoutubeId())
+                .originalUrl(video.getOriginalUrl())
+                .thumbnailUrl(video.getThumbnailUrl())
+                .uploaderName(video.getUploaderName())
+                .viewCount(video.getViewCount())
+                .publishedAt(video.getPublishedAt())
+
                 .savedAt(entity.getSavedAt())
                 .lastViewedAt(entity.getLastViewedAt())
+                .userNotes(entity.getUserNotes())
                 .build();
     }
-
 }

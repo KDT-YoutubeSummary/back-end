@@ -1,5 +1,5 @@
 -- 사용자 (User) 테이블
-CREATE TABLE 'User' (
+CREATE TABLE `User` (
                         user_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                         username VARCHAR(100) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE 'User' (
 CREATE TABLE Video (
                        video_id VARCHAR(255) PRIMARY KEY,
                        title VARCHAR(255) NOT NULL,
-                       original_url VARCHAR(2048) UNIQUE NOT NULL,
+                       original_url VARCHAR(255) UNIQUE NOT NULL,
                        uploader_name VARCHAR(100),
                        original_language_code VARCHAR(20),
                        duration_seconds BIGINT NOT NULL

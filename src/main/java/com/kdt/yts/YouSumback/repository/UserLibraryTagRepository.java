@@ -11,4 +11,5 @@ import java.util.List;
 public interface UserLibraryTagRepository extends JpaRepository<UserLibraryTag, Long> {
     List<UserLibraryTag> findByUserLibrary(UserLibrary userLibrary);
 
+    void deleteAllByUserLibrary(UserLibrary library);
 }

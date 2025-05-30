@@ -1,0 +1,52 @@
+package com.kdt.yts.YouSumback.model.dto.response;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kdt.yts.YouSumback.model.entity.UserLibrary;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class UserLibraryResponseListDTO {
+
+    @JsonProperty("library_id")
+    private Long userLibraryId;
+
+    @JsonProperty("summary_id")
+    private Long summaryId;
+
+    @JsonProperty("video_title")
+    private String videoTitle;
+
+    @JsonProperty("tags")
+    private List<String> tags;
+
+    @JsonProperty("saved_at")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime savedAt;
+
+    @JsonProperty("last_viewed_at")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime lastViewedAt;
+
+    @JsonProperty("user_notes")
+    private String userNotes;
+
+    public static UserLibraryResponseListDTO fromEntity(UserLibrary entity, List<String> tags) {
+        return UserLibraryResponseListDTO.builder()
+                .userLibraryId(entity.getUserLibraryId())
+                .summaryId(entity.getSummary().getSummaryId())
+                .videoTitle(entity.getSummary().getTranscript().getVideo().getTitle())
+                .tags(tags)
+                .savedAt(entity.getSavedAt())
+                .lastViewedAt(entity.getLastViewedAt())
+                .userNotes(entity.getUserNotes())
+                .build();
+    }
+}

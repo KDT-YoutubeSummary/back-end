@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public class Reminder {
     @Id
     @Column(name = "reminder_id", nullable = false)
-    private int reminderId; // 리마인드 식별자
+    private Long reminderId; // 리마인드 식별자
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

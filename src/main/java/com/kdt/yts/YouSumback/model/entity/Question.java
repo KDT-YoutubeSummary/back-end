@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 public class Question {
     @Id
     @Column(name = "question_id", nullable = false)
-    private int questionId; // 질문 식별자
+    private Long questionId; // 질문 식별자
 
     @ManyToOne
     @JoinColumn(name = "quiz_id", nullable = false)

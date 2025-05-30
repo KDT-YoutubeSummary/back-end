@@ -1,7 +1,6 @@
 package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.dto.request.UserLibraryRequestDTO;
-import com.kdt.yts.YouSumback.model.dto.response.ApiResponse;
 import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseDTO;
 import com.kdt.yts.YouSumback.service.UserLibraryService;
 import lombok.Getter;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/library")
@@ -21,43 +21,94 @@ public class UserLibraryController {
 
     private final UserLibraryService userLibraryService;
 
-    // 라이브러리 저장 API
+    // 라이브러리 등록
     @PostMapping
-    public ResponseEntity<ApiResponse<UserLibraryResponseDTO>> saveLibrary(@RequestBody UserLibraryRequestDTO request) {
-        UserLibraryResponseDTO saved = userLibraryService.saveLibrary(request);
-        ApiResponse<UserLibraryResponseDTO> response = new ApiResponse<>(201, "라이브러리 등록 완료", saved);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<?> saveLibrary(@RequestBody UserLibraryRequestDTO request) {
+        try {
+            var response = userLibraryService.saveLibrary(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "code", 201,
+                    "message", "라이브러리 등록 완료",
+                    "data", response
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "code", 404,
+                    "message", "error: " + e.getMessage(),
+                    "data", Map.of()
+            ));
+        }
     }
 
-    // 라이브러리 조회 API
+    // 라이브러리 조회
     @GetMapping
-    public ResponseEntity<ApiResponse<List<UserLibraryResponseDTO>>> getLibraries(@RequestParam("user_id") int userId) {
-        List<UserLibraryResponseDTO> libraryList = userLibraryService.getLibrariesByUserId(userId);
-        return ResponseEntity.ok(ApiResponse.success(200, "라이브러리 조회 성공", libraryList));
+    public ResponseEntity<?> getLibraries(@RequestParam("user_id") Long userId) {
+        try {
+            var response = userLibraryService.getLibrariesByUserId(userId);
+            return ResponseEntity.ok(Map.of(
+                    "code", 200,
+                    "message", "라이브러리 조회 완료",
+                    "data", response
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "code", 404,
+                    "message", "error: " + e.getMessage(),
+                    "data", Map.of()
+            ));
+        }
     }
 
-    // 라이브러리 삭제 API
-    @DeleteMapping("/{libraryId}")
-    public ResponseEntity<Void> deleteLibrary(@PathVariable Long libraryId) {
-        userLibraryService.deleteLibraryById(libraryId);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/{libraryId}")
+    public ResponseEntity<?> getLibraryDetail(@PathVariable Long libraryId) {
+        try {
+            UserLibraryResponseDTO detail = userLibraryService.getLibraryDetail(libraryId);
+            return ResponseEntity.ok().body(Map.of(
+                    "code", 200,
+                    "message", "라이브러리 상세 조회 완료",
+                    "data", detail
+            ));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "code", 404,
+                    "message", "해당 라이브러리를 찾을 수 없습니다.",
+                    "data", Map.of()
+            ));
+        }
     }
 
-    // 라이브러리 검색 API (제목 또는 태그로 검색)
-    // 검색 조건은 선택적이며, 둘 중 하나 또는 둘 다 제공될 수 있음
-    // 검색 조건 없으면 빈 리스트
+    // 라이브러리 삭제
+    @DeleteMapping("/{library_id}")
+    public ResponseEntity<?> deleteLibrary(@PathVariable("library_id") Long libraryId) {
+        try {
+            userLibraryService.deleteLibrary(libraryId);
+            return ResponseEntity.ok().body(
+                    Map.of("code", 200, "message", "라이브러리 삭제 완료")
+            );
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(404).body(
+                    Map.of("code", 404, "message", "해당 라이브러리를 찾을 수 없습니다.")
+            );
+        }
+    }
+
+    // 라이브러리 검색
     @GetMapping("/search")
-    public ResponseEntity<?> searchLibrary(
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) String tags
-    ) {
-        List<UserLibraryResponseDTO> result = userLibraryService.search(title, tags);
-        return ResponseEntity.ok(
-                Map.of(
-                        "code", 200,
-                        "data", result,
-                        "msg", "ok"
-                )
-        );
+    public ResponseEntity<?> searchLibrary(@RequestParam("user_id") Long userId,
+                                           @RequestParam(required = false) String title,
+                                           @RequestParam(required = false) String tags) {
+        var result = userLibraryService.search(userId, title, tags);
+        if (result.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "code", 404,
+                    "message", "error: 해당 조건에 맞는 라이브러리가 없습니다.",
+                    "data", List.of()
+            ));
+        }
+        return ResponseEntity.ok(Map.of(
+                "code", 200,
+                "message", "검색 성공",
+                "data", result
+        ));
     }
 }
