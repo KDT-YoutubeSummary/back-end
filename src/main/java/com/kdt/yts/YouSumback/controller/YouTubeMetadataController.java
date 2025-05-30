@@ -22,9 +22,9 @@ public class YouTubeMetadataController {
     private final VideoRepository videoRepository;
 
 
-    // POST /api/youtube/save?videoId=abcd1234
+    // POST /api/youtube/save?url=http://youtube.com/...
     @PostMapping("/save")
-    public ResponseEntity<?> saveVideo(@RequestParam("youtubeId") String youtubeVideoId) {
+    public ResponseEntity<?> saveVideo(@RequestParam("url") String youtubeVideoId) {
         try {
             youTubeMetadataService.saveVideoMetadata(youtubeVideoId);
             return ResponseEntity.ok("영상 메타데이터 저장 완료: " + youtubeVideoId);
@@ -33,12 +33,17 @@ public class YouTubeMetadataController {
         }
     }
 
-    // GET /api/youtube/title?youtubeId=abcd1234
+    // GET /api/youtube/title?url=https://youtube.com/...
     // YouTube 영상 ID로 제목을 가져오는 API
     @GetMapping("/title")
-    public ResponseEntity<String> getVideoTitle(@RequestParam("youtubeId") String youtubeVideoId) {
-        return videoRepository.findByYoutubeId(youtubeVideoId)
-                .map(video -> ResponseEntity.ok(video.getTitle()))
-                .orElseGet(() -> ResponseEntity.status(404).body("해당 영상이 존재하지 않음"));
+    public ResponseEntity<String> getVideoTitle(@RequestParam("url") String url) {
+        try {
+            String youtubeId = youTubeMetadataService.extractYoutubeId(url);
+            return videoRepository.findByYoutubeId(youtubeId)
+                    .map(video -> ResponseEntity.ok(video.getTitle()))
+                    .orElseGet(() -> ResponseEntity.status(404).body("해당 영상이 존재하지 않음"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("잘못된 유튜브 URL입니다.");
+        }
     }
 }
