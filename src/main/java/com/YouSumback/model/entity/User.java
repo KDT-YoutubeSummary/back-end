@@ -3,15 +3,18 @@ package com.YouSumback.model.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 public class User {
-
     @Id
-    @Column(name = "user_id", nullable = false)
-    private int userId; // 사용자 식별자
+    @Column(name = "id", nullable = false)
+    private int id; // 사용자 식별자
 
     @Column(name = "username", length = 100, nullable = false)
     private String username; // 사용자명

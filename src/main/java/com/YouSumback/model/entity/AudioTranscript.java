@@ -1,17 +1,21 @@
 package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 public class AudioTranscript {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "transcript_id", nullable = false)
-    private long transcriptId; // 음성텍스트 식별자
+    @Column(name = "id", nullable = false)
+    private long id; // 음성텍스트 식별자
 
-    @Column(name = "transcript_text", columnDefinition = "TEXT", nullable = false)
+    @Column(name = "transcript_text", columnDefinition = "LONGTEXT", nullable = false)
     private String transcriptText; // 추출된 음성 텍스트
 
     @Column(name = "create_at", nullable = false)

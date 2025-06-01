@@ -1,9 +1,13 @@
 package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "UserLibraryTag")
+@Getter
+@Setter
 public class UserLibraryTag {
 
     @EmbeddedId
