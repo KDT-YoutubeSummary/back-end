@@ -1,28 +1,32 @@
 package com.YouSumback.model.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "user")
+@Getter
+@Setter
 public class User {
 
     @Id
-    @Column(name = "user_id", nullable = false)
-    private int userId; // 사용자 식별자
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
+    private int id;
 
-    @Column(name = "userName", length = 100, nullable = false)
-    private String userName; // 사용자명
+    @Column(name = "username", nullable = false, unique = true, length = 100)
+    private String username;
 
-    @Column(name = "email", length = 255, nullable = false)
-    private String email; // 이메일
+    @Column(name = "email", nullable = false, unique = true, length = 255)
+    private String email;
 
-    @Column(name = "password_hash", length = 255, nullable = false)
-    private String passwordHash; // 해시된 비밀번호
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt; // 가입 일시
-
+    private LocalDateTime createdAt = LocalDateTime.now();
 }
+

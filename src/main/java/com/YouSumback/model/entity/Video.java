@@ -1,77 +1,34 @@
 package com.YouSumback.model.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "video")
+@Getter
+@Setter
 public class Video {
+
     @Id
-    @Column(name = "video_id", length = 30, nullable = false)
-    private String videoId; // 비디오 식별자
+    @Column(name = "video_id", length = 255)
+    private String id; // YouTube video ID
 
-    @Column(name = "title", length = 255, nullable = false)
-    private String title; // 비디오 제목
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(name = "original_url", length = 2048, nullable = false)
-    private String originalUrl; // 원본 URL
 
-    @Column(name = "uploader_name", length = 100, nullable = true)
-    private String uploaderName; // 업로드명
+    @Column(name = "title", nullable = false)
+    private String title;
 
-    @Column(name = "original_language_code", length = 255, nullable = false)
-    private String originalLanguageCode; // 원본 언어 코드
+    @Column(name = "video_url", nullable = false, length = 500)
+    private String videoUrl;
 
-    @Column(name = "duration_seconds", nullable = false)
-    private int durationSeconds; // 영상 길이 (초)
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    // === Getter & Setter ===
-
-    public String getVideoId() {
-        return videoId;
-    }
-
-    public void setVideoId(String videoId) {
-        this.videoId = videoId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getOriginalUrl() {
-        return originalUrl;
-    }
-
-    public void setOriginalUrl(String originalUrl) {
-        this.originalUrl = originalUrl;
-    }
-
-    public String getUploaderName() {
-        return uploaderName;
-    }
-
-    public void setUploaderName(String uploaderName) {
-        this.uploaderName = uploaderName;
-    }
-
-    public String getOriginalLanguageCode() {
-        return originalLanguageCode;
-    }
-
-    public void setOriginalLanguageCode(String originalLanguageCode) {
-        this.originalLanguageCode = originalLanguageCode;
-    }
-
-    public int getDurationSeconds() {
-        return durationSeconds;
-    }
-
-    public void setDurationSeconds(int durationSeconds) {
-        this.durationSeconds = durationSeconds;
-    }
 }
+
