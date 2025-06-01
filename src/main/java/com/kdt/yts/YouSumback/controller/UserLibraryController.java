@@ -1,6 +1,7 @@
 package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.dto.request.UserLibraryRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.response.TagStatResponseDTO;
 import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseDTO;
 import com.kdt.yts.YouSumback.service.UserLibraryService;
 import lombok.Getter;
@@ -109,6 +110,18 @@ public class UserLibraryController {
                 "code", 200,
                 "message", "검색 성공",
                 "data", result
+        ));
+    }
+
+    // 태그 통계 조회
+    @GetMapping("/stat/tags")
+    public ResponseEntity<?> getTagStatistics(@RequestParam("user_id") Long userId) {
+        List<TagStatResponseDTO> tagStats = userLibraryService.getTagStatsByUser(userId);
+
+        return ResponseEntity.ok(Map.of(
+                "code", 200,
+                "message", "태그 통계 조회 성공",
+                "data", tagStats
         ));
     }
 }
