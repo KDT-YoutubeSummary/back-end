@@ -149,4 +149,12 @@ public class UserLibraryService {
                 .collect(Collectors.toList());
     }
 
+    // 유저별 태그 통계 조회
+    public List<TagStatResponseDTO> getTagStatsByUser(Long userId) {
+        List<Object[]> result = userLibraryRepository.countTagsByUser_UserId(userId);
+
+        return result.stream()
+                .map(row -> new TagStatResponseDTO((String) row[0], (Long) row[1]))
+                .toList();
+    }
 }
