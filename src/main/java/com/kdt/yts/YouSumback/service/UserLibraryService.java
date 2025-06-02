@@ -1,6 +1,7 @@
 package com.kdt.yts.YouSumback.service;
 
 import com.kdt.yts.YouSumback.model.dto.request.UserLibraryRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.request.UserNoteUpdateRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.TagStatResponseDTO;
 import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseDTO;
 import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseListDTO;
@@ -157,4 +158,13 @@ public class UserLibraryService {
                 .map(row -> new TagStatResponseDTO((String) row[0], (Long) row[1]))
                 .toList();
     }
+
+    // 유저 라이브러리 메모 업데이트
+    @Transactional
+    public void updateUserNotes(UserNoteUpdateRequestDTO requestDTO) {
+        UserLibrary library = userLibraryRepository.findById(requestDTO.getUserLibraryId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 라이브러리를 찾을 수 없습니다."));
+        library.setUserNotes(requestDTO.getUserNotes());
+    }
+
 }

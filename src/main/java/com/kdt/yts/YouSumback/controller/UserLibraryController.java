@@ -1,6 +1,7 @@
 package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.dto.request.UserLibraryRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.request.UserNoteUpdateRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.TagStatResponseDTO;
 import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseDTO;
 import com.kdt.yts.YouSumback.service.UserLibraryService;
@@ -123,5 +124,12 @@ public class UserLibraryController {
                 "message", "태그 통계 조회 성공",
                 "data", tagStats
         ));
+    }
+
+    // 사용자 메모 업데이트
+    @PatchMapping("/note")
+    public ResponseEntity<String> updateUserNote(@RequestBody UserNoteUpdateRequestDTO requestDTO) {
+        userLibraryService.updateUserNotes(requestDTO);
+        return ResponseEntity.ok("메모가 성공적으로 업데이트되었습니다.");
     }
 }
