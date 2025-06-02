@@ -1,16 +1,13 @@
 package com.YouSumback.model.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import org.springframework.data.annotation.Id;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 public class VideoRecommendation {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "recommendation_id", nullable = false)
     private long recommendationId; // 영상 추천 식별자
 
@@ -26,13 +23,10 @@ public class VideoRecommendation {
     @JoinColumn(name = "recommended_video_id", nullable = true)
     private Video video2; // 추천의 계기가 된 영상
 
-    @Column(name = "recommendation_ai_version", length = 50, nullable = true)
-    private String recommendationAiVersion; // 추천을 생성한 AI 모델/버전
-
     @Column(name = "recommendation_reason", columnDefinition = "TEXT", nullable = true)
     private String recommendationReason; // 추천 이유
 
-    @Column(name = "create_at", nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createAt; // 추천 생성 시간
 
     @Column(name = "is_clicked", nullable = false)
