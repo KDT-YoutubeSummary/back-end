@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/reminders") // 기본 URL 경로를 설정
+@RequestMapping("/api/reminder") // 기본 URL 경로를 설정
 @RequiredArgsConstructor
 public class ReminderController {
 
