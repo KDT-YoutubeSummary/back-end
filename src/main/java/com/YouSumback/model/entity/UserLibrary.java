@@ -6,6 +6,8 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "userlibrary")
+@Getter
 public class UserLibrary {
     @Getter
     @Id

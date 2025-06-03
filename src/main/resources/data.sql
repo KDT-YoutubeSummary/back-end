@@ -84,3 +84,59 @@ INSERT INTO VideoRecommendation (recommendation_id, user_id, source_video_id, re
 -- ('video_id_xyz', 'AI 미래 전망', 'https://www.youtube.com/watch?v=xyz', 'AI연구소', 'ko', 1500);
 
 select * from user;
+
+SELECT @@global.time_zone, @@session.time_zone;
+
+SELECT user_id, username, email FROM `User` WHERE user_id = 1;
+SELECT reminder_id, user_id, next_notification_datetime, is_active FROM Reminder WHERE reminder_id = 401;
+UPDATE Reminder
+SET next_notification_datetime = DATE_ADD(NOW(), INTERVAL 2 MINUTE), -- 현재 시간 (2025-06-03 20:07 KST)보다 넉넉하게 미래로 설정
+    is_active = TRUE,
+    last_sent_at = NULL
+WHERE reminder_id = 401;
+
+-- 1. 새로운 일회성 리마인더 삽입
+-- (reminder_id는 AUTO_INCREMENT이므로 명시하지 않거나, 적절히 큰 값을 지정하여 기존 더미와 충돌하지 않게 합니다.)
+INSERT INTO Reminder (
+    user_id,
+    user_library_id,
+    reminder_type,
+    frequency_interval,
+    day_of_week,
+    day_of_month,
+    base_datetime_for_recurrence,
+    next_notification_datetime,
+    reminder_note,
+    is_active,
+    created_at,
+    last_sent_at
+) VALUES (
+             1,                                   -- 사용자 ID (기존 더미 데이터 1번 사용자)
+             301,                                 -- 사용자 라이브러리 ID (기존 더미 데이터 301번 라이브러리 항목)
+             'ONE_TIME',                          -- 알림 타입: 일회성
+             1,                                   -- 반복 간격: 일회성이므로 의미 없음 (기본값 1)
+             NULL,                                -- 주간 반복 아님
+             NULL,                                -- 월간 반복 아님
+             '2025-06-03 22:30:00',               -- 기준 날짜/시간 (오늘 밤 10시 30분)
+             '2025-06-03 22:30:00',               -- 다음 알림 예정 시간 (오늘 밤 10시 30분)
+             '오늘 밤 10시 30분 일회성 테스트 알림', -- 리마인더 메모
+             TRUE,                                -- 활성화 상태
+             '2025-06-03 22:20:00',               -- 생성 일시 (현재 시간보다 이전)
+             NULL                                 -- 마지막 알림 발송 시간 (아직 발송 안됨)
+         );
+
+SELECT * FROM Reminder ORDER BY reminder_id;
+
+UPDATE Reminder
+SET next_notification_datetime = '2025-06-03 22:37:59',
+    is_active = TRUE,
+    last_sent_at = NULL
+WHERE reminder_id = 401;
+
+UPDATE Reminder
+SET next_notification_datetime = DATE_ADD(NOW(), INTERVAL 2 MINUTE), -- NOW() 함수 사용 + 1분 추가
+    is_active = TRUE,
+    last_sent_at = NULL
+WHERE reminder_id = 401;
+
+SELECT reminder_id, next_notification_datetime, is_active, last_sent_at FROM Reminder WHERE reminder_id = 401;

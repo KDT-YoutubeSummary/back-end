@@ -1,9 +1,12 @@
 package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
+@Getter
+@Table(name = "audiotranscript")
 @Entity
 public class AudioTranscript {
     @Id

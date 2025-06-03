@@ -1,15 +1,17 @@
 package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
 public class Summary {
 
     @Id
     @Column(name = "summary_id", nullable = false)
-    private int summary_id; // 요약 식별자
+    private Long summary_id; // 요약 식별자
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

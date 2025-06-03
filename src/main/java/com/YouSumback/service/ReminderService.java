@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek; // 요일 정보
 import java.time.LocalDateTime; // 날짜와 시간 정보
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters; // 날짜 조정을 위한 유틸리티
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ public class ReminderService {
     private final ReminderRepository reminderRepository; // 의존성 주입
     private final UserRepository userRepository;
     private final UserLibraryRepository userLibraryRepository;
+    private final EmailService emailService;
 
     // ---------------------- 리마인더 (C)생성, (R)조회, (U)수정, (D)삭제 ----------------------
 
@@ -129,36 +131,46 @@ public class ReminderService {
 
     // ---------------------- 리마인더 알림 처리 스케줄링 ----------------------
 
-    /**
-     * 주기적으로 활성화된 리마인더들을 확인하고, 알림 시간이 도래한 리마인더를 처리합니다.
-     * 매 분마다 실행되도록 스케줄링되어 있습니다. (Cron 표현식: "0 * * * * *")
-     */
     @Scheduled(cron = "0 * * * * *") // 매 분 0초에 이 메서드를 실행합니다. (예: 00:00:00, 00:01:00 등)
     @Transactional
     public void processScheduledReminders() {
         LocalDateTime now = LocalDateTime.now(); // 현재 시간
-        log.info("Reminder processing started at: {}", now);
+        log.info("리마인더 알림 검색중 。 。 。『 {} 』", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))); // 시간 형식 포맷팅
 
         // 현재 시간보다 다음 알림 시간이 이전이거나 같은 활성화된 리마인더들을 조회합니다.
         List<Reminder> remindersToNotify = reminderRepository.findByIsActiveTrueAndNextNotificationDatetimeLessThanEqual(now);
 
+        if (remindersToNotify.isEmpty()) {
+            log.info("발송할 알림이 없습니다。『 {} 』", now.format(DateTimeFormatter.ofPattern("HH:mm")));
+            return;
+        }
+
         for (Reminder reminder : remindersToNotify) {
-            log.info("Processing reminder ID: {} for User ID: {}", reminder.getReminderId(), reminder.getUser().getId());
-            // TODO: 여기에 실제 알림 발송 로직을 구현합니다.
-            // 예: 이메일 발송, 푸시 알림, Redis Pub/Sub을 통한 실시간 알림 등.
-            // 현재는 콘솔 로그로 대체합니다.
-            log.info("[NOTIFICATION] User: {}, Library Item: {}, Note: {}",
-                    reminder.getUser().getUsername(),
-                    reminder.getUserLibrary().getUserLibraryId(),
-                    reminder.getReminderNote());
+            String recipientEmail = reminder.getUser().getEmail(); // 사용자 이메일 주소 가져오기
+            String summaryTitle = reminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle(); // 요약 영상 제목 가져오기
+            String reminderNote = reminder.getReminderNote(); // 리마인더 메모 가져오기
+
+            String subject = "[YouSum] 리마인더 알림: " + summaryTitle; // 이메일 제목 구성
+            String emailContent = buildEmailContent(reminder); // 이메일 내용 구성
+
+
+            log.info("Processing reminder ID: {} for User ID: {} (Email: {})",
+                    reminder.getReminderId(), reminder.getUser().getId(), recipientEmail);
+
+            try {
+                // EmailService를 통해 이메일 발송 시도
+                emailService.sendNotificationEmail(recipientEmail, subject, emailContent);
+                log.info("Reminder ID {} notification email sent to {}.", reminder.getReminderId(), recipientEmail);
+            } catch (Exception e) {
+                log.error("Failed to send reminder email for ID {} to {}: {}", reminder.getReminderId(), recipientEmail, e.getMessage());
+                // 이메일 발송 실패 시에도 스케줄러가 멈추지 않도록 예외 처리
+            }
 
             // 알림 발송 후, 다음 알림 시간을 계산하고 업데이트합니다.
             if (reminder.getReminderType() == ReminderType.ONE_TIME) {
-                // ONE_TIME 리마인더는 한 번 발송 후 비활성화합니다.
-                reminder.setIsActive(false);
+                reminder.setIsActive(false); // ONE_TIME 리마인더는 한 번 발송 후 비활성화
                 log.info("One-time reminder ID {} deactivated.", reminder.getReminderId());
             } else {
-                // 반복 리마인더의 다음 알림 시간을 재계산합니다.
                 reminder.setNextNotificationDatetime(
                         calculateNextNotificationTime(reminder.getBaseDatetimeForRecurrence(), reminder.getReminderType(),
                                 reminder.getFrequencyInterval(), reminder.getDayOfWeek(), reminder.getDayOfMonth(), now));
@@ -168,6 +180,22 @@ public class ReminderService {
             reminderRepository.save(reminder); // 변경사항 저장
         }
         log.info("Reminder processing finished.");
+    }
+
+    // ---------------------- 이메일 내용 구성 유틸리티 메서드 (신규 추가) ----------------------
+    private String buildEmailContent(Reminder reminder) {
+        StringBuilder content = new StringBuilder();
+        content.append("안녕하세요, ").append(reminder.getUser().getUsername()).append("님!\n\n");
+        content.append("설정하신 리마인더 알림이 도착했습니다.\n\n");
+        content.append("영상 제목: ").append(reminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle()).append("\n");
+        content.append("리마인더 메모: ").append(reminder.getReminderNote()).append("\n");
+        content.append("알림 시간: ").append(reminder.getNextNotificationDatetime().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH시 mm분"))).append("\n\n");
+        content.append("지금 바로 YouSum에서 요약 내용을 확인해보세요!\n");
+        // 실제 요약 페이지 URL 추가 (예: front-end URL)
+        String summaryPageUrl = emailService.createSummaryPageUrl(reminder);
+        content.append("요약 바로가기: ").append(summaryPageUrl).append("\n\n"); // 예시로 비디오 원본 URL 사용
+        content.append("감사합니다.\n***YouSum***\n");
+        return content.toString();
     }
 
     // ---------------------- 다음 알림 시간 계산 유틸리티 ----------------------
