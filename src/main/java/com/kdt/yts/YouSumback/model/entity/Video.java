@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Video")
+@Table(name = "video") // ✅ 소문자 권장
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,8 +15,9 @@ import java.time.LocalDateTime;
 public class Video {
 
     @Id
-    @Column(name = "video_id", length = 255)
-    private String videoId; // UUID로 생성
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "video_id")
+    private Long id; // Auto Increment ID
 
     @Column(name = "youtube_id", nullable = false, unique = true, length = 255)
     private String youtubeId; // YouTube 영상 ID

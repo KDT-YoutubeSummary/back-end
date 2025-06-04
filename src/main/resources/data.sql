@@ -9,12 +9,14 @@ CREATE TABLE `user` (
 
 -- 비디오 (Video) 테이블
 CREATE TABLE Video (
-                       video_id VARCHAR(255) PRIMARY KEY,
-                       title VARCHAR(255) NOT NULL,
-                       original_url VARCHAR(2048) UNIQUE NOT NULL,
-                       uploader_name VARCHAR(100),
-                       original_language_code VARCHAR(20),
-                       duration_seconds BIGINT NOT NULL
+                       video_id INT PRIMARY KEY,
+                       youtube_id  VARCHAR(255) UNIQUE NOT NULL,      --  (추가) 유튜브 영상 ID
+                       title VARCHAR(255) NOT NULL,                 -- 영상 제목
+                       original_url VARCHAR(2048) UNIQUE NOT NULL,  -- 영상 원본 링크
+                       uploader_name VARCHAR(100),              -- 채널명 (업로더)
+                       thumbnail_url TEXT,                          --  (추가)  썸네일 이미지 URL
+                       view_count BIGINT,                           --  (추가)  조회수
+                       published_at DATETIME                       -- (추가)  업로드 날짜
 );
 
 -- 태그 (Tag) 테이블
@@ -26,7 +28,7 @@ CREATE TABLE Tag (
 -- 오디오 트랜스크립트 (AudioTranscript) 테이블
 CREATE TABLE AudioTranscript (
                                  transcript_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
-                                 video_id VARCHAR(255) NOT NULL UNIQUE, -- 단일 트랜스크립트 가정 유지
+                                 youtube_id VARCHAR(255) NOT NULL UNIQUE, -- 단일 트랜스크립트 가정 유지
                                  transcript_text TEXT NOT NULL,
                                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, -- create_at -> created_at
                                  CONSTRAINT fk_audiotranscript_video FOREIGN KEY (video_id) REFERENCES Video(video_id) ON DELETE CASCADE
@@ -38,6 +40,7 @@ CREATE TABLE Summary (
                          user_id INT NOT NULL, -- BIGINT -> INT (User.user_id와 일관성)
                          transcript_id INT NOT NULL, -- BIGINT -> INT (AudioTranscript.transcript_id와 일관성)
                          summary_text TEXT NOT NULL,
+                         user_prompt TEXT, -- (추가) 사용자 프롬프트 (사용 목적, 요청 문장 등 전체 포함 가능)
                          language_code VARCHAR(10) NOT NULL,
                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, -- create_at -> created_at
                          summary_type VARCHAR(50),
@@ -55,7 +58,7 @@ CREATE TABLE UserLibrary (
                              last_viewed_at TIMESTAMP,
                              CONSTRAINT fk_userlibrary_user FOREIGN KEY (user_id) REFERENCES `User`(user_id) ON DELETE CASCADE,
                              CONSTRAINT fk_userlibrary_summary FOREIGN KEY (summary_id) REFERENCES Summary(summary_id) ON DELETE CASCADE,
-                             CONSTRAINT uq_userlibrary_user_summary UNIQUE (user_id, summary_id)
+                             CONSTRAINT uq_userlibrary_user_summary UNIQUE (user_id, summary_id),
 );
 
 -- 리마인더 (Reminder) 테이블
