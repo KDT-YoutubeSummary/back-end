@@ -13,6 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+// UserLibraryResponseListDTO는 사용자의 라이브러리 정보 목록을 응답하기 위한 DTO 클래스입니다.
 public class UserLibraryResponseListDTO {
 
     @JsonProperty("library_id")

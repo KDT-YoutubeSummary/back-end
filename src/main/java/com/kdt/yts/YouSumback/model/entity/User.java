@@ -31,11 +31,8 @@ public class User {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt; // 가입 일시
 
-
-    public User(String userName, String email, String passwordHash, LocalDateTime createdAt) {
-        this.userName = userName;
-        this.email = email;
-        this.passwordHash = passwordHash;
-        this.createdAt = createdAt;
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
     }
 }

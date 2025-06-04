@@ -12,6 +12,7 @@ import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
+// 애플리케이션 시작 시 더미 데이터를 초기화하는 역할
 public class DummyDataInitializer {
 
     private final UserRepository userRepository;
@@ -90,6 +91,14 @@ public class DummyDataInitializer {
                     new UserLibraryTag(library, tag3)
             ));
             System.out.println("[✅ UserLibraryTag 저장됨] -> 라이브러리 ID: " + library.getUserLibraryId());
+        };
+    }
+
+    @Bean
+    public CommandLineRunner testJwt(JwtProvider jwtProvider) {
+        return args -> {
+            String token = jwtProvider.generateToken(1L, "dummyuser1@example.com");
+            System.out.println("🧪 Test JWT Token for user_id=1:\nBearer " + token);
         };
     }
 }

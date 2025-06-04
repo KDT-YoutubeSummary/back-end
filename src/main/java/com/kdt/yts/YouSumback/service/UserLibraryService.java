@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Getter
 @Transactional
+// UserLibraryService는 유저의 라이브러리 관련 기능을 처리하는 서비스입니다.
 public class UserLibraryService {
 
     private final UserRepository userRepository;
