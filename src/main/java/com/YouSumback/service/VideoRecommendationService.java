@@ -64,6 +64,7 @@ public class VideoRecommendationService {
         // 프롬프트 생성 - 구조화된 응답을 요청
         String prompt = "다음 해시태그와 관련된 유튜브 영상을 5개 추천해주세요: " + String.join(", ", tagNames) + "\n\n" +
                 "다음 JSON 형식으로 응답해주세요. 각 영상에는 제목(title), 추천 이유(reason), 예상 URL(url)을 포함해주세요:\n" +
+                "추천 이유(reason)는 각 해시태그와 영상의 연관성을 구체적으로 설명하고, 단순히 '관련 영상입니다'와 같은 모호한 답변은 피해주세요.\n" +
                 "[\n" +
                 "  {\n" +
                 "    \"title\": \"영상 제목\",\n" +
