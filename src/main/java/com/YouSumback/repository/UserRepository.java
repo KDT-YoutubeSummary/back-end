@@ -3,6 +3,13 @@ package com.YouSumback.repository;
 import com.YouSumback.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 public interface UserRepository extends JpaRepository<User, Long> {
-    // 필요 시 커스텀 쿼리 메서드 추가 가능
+    // 로그인 시 사용
+    Optional<User> findByUsername(String username);
+
+    // 회원가입 중복 체크용
+    boolean existsByUsername(String username);
+    boolean existsByEmail(String email);
 }
