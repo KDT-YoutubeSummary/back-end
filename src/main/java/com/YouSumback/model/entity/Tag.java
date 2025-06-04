@@ -1,21 +1,16 @@
 package com.YouSumback.model.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Entity
 public class Tag {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "tag_id", nullable = false)
-    private Long tagId;  // ✅ 카멜케이스 + Long 타입 변경
+    private int tag_id;
 
-    @Column(name = "tag_name", length = 100, nullable = false, unique = true)
-    private String tagName; // ✅ 카멜케이스로 수정
+    @Column(name = "tag_name", length = 100, nullable = true)
+    private String tag_name;
 }

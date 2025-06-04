@@ -1,30 +1,21 @@
 package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Entity
 public class UserLibrary {
-
+    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_library_id", nullable = false)
+    @Column(name = "user_library_id")
     private Long userLibraryId; // 리마인더에서 참조하는 user_library_id
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // UserLibrary가 참조하는 User
+    private User user; // UserLibrary가 참조하는 User@
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "summary_id", nullable = false)
@@ -38,5 +29,6 @@ public class UserLibrary {
 
     @Column(name = "user_notes", columnDefinition = "TEXT", nullable = true)
     private String userNotes; // 사용자 메모
+
 
 }
