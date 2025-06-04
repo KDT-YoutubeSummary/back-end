@@ -1,7 +1,13 @@
 package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "UserLibraryTag")
 public class UserLibraryTag {

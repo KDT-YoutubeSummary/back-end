@@ -4,21 +4,22 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "`user`") // 테이블 이름이 'user'이므로 백틱(``)으로 감싸줍니다. (SQL 키워드와 겹칠 수 있으므로)
-@Getter // 모든 필드에 대한 getter를 자동으로 생성합니다.
-@NoArgsConstructor // 기본 생성자
+@Getter
+@Setter
+@NoArgsConstructor  // 기본 생성자
 @AllArgsConstructor // 모든 필드를 인자로 받는 생성자
-
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
-    private Long Id; // 리마인더에서 참조하는 user_id
+    @Column(name = "user_id") // 이 필드명이 핵심입니다! 리마인더에서 참조합니다.
+    private Long userId;
 
     @Column(name = "username", length = 100, nullable = false, unique = true)
     private String username; // 사용자명
