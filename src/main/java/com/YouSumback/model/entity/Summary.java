@@ -33,6 +33,9 @@ public class Summary {
     @Column(nullable = false)
     private String languageCode;
 
-    private String summaryType;
-    private LocalDateTime createdAt;
+    @Column(name = "summary_type", length = 50)
+    private String summaryType;  // 요약 유형
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;  // 생성 일자
 }
