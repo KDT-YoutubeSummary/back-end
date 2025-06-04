@@ -1,14 +1,22 @@
 package com.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 public class UserLibrary {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_library_id", nullable = false)
-    private int userLibraryId; // 라이브러리 식별자
+    private Long userLibraryId; // ✅ int → Long, 네이밍 유지
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

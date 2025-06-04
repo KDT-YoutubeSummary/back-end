@@ -7,6 +7,7 @@ import com.YouSumback.model.entity.Quiz;
 
 import java.util.List;
 
+
 public interface SummaryService {
     SummaryResponse summarize(SummaryRequest request);
 

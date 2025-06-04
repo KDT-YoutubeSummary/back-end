@@ -3,7 +3,14 @@ package com.YouSumback.model.entity;
 import jakarta.persistence.*;
 import java.util.List;
 
+import lombok.*;
+
+@Getter
+@Setter
 @Entity
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Question {
 
     @Id

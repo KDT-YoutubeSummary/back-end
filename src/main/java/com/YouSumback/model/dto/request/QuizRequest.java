@@ -9,4 +9,5 @@ public class QuizRequest {
     private String summaryText;
     private int numberOfQuestions;
     private Long transcriptId;
+    private Long summaryId;
 }

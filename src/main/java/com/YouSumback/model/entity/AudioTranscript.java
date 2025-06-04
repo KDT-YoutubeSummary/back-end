@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public class AudioTranscript {
     @Id
     @Column(name = "transcript_id", nullable = false)
-    private long transcript_id; // 음성텍스트 식별자
+    private long transcriptId; // ✅ camelCase로 변경
 
     @Column(name = "transcript_text", columnDefinition = "TEXT", nullable = false)
     private String transcript_text; // 추출된 음성 텍스트
