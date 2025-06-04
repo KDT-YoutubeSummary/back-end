@@ -20,11 +20,11 @@ public class AudioTranscript {
     private Long id;
 
     @OneToOne
-    @JoinColumn(name = "youtube_id", referencedColumnName = "youtube_id", nullable = false, unique = true)
+    @JoinColumn(name = "video_id", referencedColumnName = "video_id", nullable = false, unique = true)
     private Video video;
 
     @Lob
-    @Column(name = "transcript_text", nullable = false)
+    @Column(name = "transcript_text", nullable = false, columnDefinition = "LONGTEXT")
     private String transcriptText;
 
     @Column(name = "created_at", nullable = false)

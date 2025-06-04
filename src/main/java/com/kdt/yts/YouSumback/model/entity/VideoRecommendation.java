@@ -1,4 +1,4 @@
-package com.YouSumback.model.entity;
+package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "video_recommendation")
-public class VideoRecommendation{
+@Table(name = "videorecommendation")
+public class VideoRecommendation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
