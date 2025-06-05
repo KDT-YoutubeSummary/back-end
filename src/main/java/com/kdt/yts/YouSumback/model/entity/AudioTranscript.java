@@ -17,8 +17,7 @@ public class AudioTranscript {
     @Column(name = "transcript_id")
     private Long id;
 
-//    @OneToOne
-    @ManyToMany
+    @OneToOne
     @JoinColumn(name = "video_id", referencedColumnName = "video_id", nullable = false, unique = true)
     private Video video;
 

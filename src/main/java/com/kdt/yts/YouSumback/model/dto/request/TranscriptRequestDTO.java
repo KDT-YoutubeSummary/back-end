@@ -5,6 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class TranscriptRequestDto {
+public class TranscriptRequestDTO {
     private Long videoId;
 }

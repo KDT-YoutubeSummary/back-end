@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @Builder
-public class TranscriptSaveResponseDto {
+public class TranscriptSaveResponseDTO {
     private Long transcriptId;
     private String createAt;
 }

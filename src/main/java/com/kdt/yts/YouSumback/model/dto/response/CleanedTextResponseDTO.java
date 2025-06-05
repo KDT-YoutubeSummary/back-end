@@ -7,9 +7,6 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class VideoRegisterResponseDto {
-    private Long videoId;
-    private String username;
-    private String title;
-    private String videoUrl;
+public class CleanedTextResponseDTO {
+    private String cleanedText;
 }

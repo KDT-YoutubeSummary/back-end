@@ -5,6 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class TranscriptDeleteRequestDto {
+public class TranscriptDeleteRequestDTO {
     private Long transcriptId;
 }

@@ -1,6 +1,7 @@
 import sys
 import os
 import subprocess
+os.environ["PATH"] += os.pathsep + r"C:\ffmpeg\bin"
 
 # ✅ 유튜브 ID 추출 함수
 def extract_youtube_id(link):
@@ -32,8 +33,15 @@ output_wav_path = os.path.join(audio_dir, f"{youtube_id}.wav")
 
 # ✅ 3. yt-dlp로 .wav 다운로드
 print(f"[INFO] YouTube 오디오 다운로드 중: {youtube_url}")
+# download_cmd = [
+#     "yt-dlp",
+#     "-x", "--audio-format", "wav",
+#     "-o", os.path.join(audio_dir, f"{youtube_id}.%(ext)s"),
+#     youtube_url
+# ]
 download_cmd = [
     "yt-dlp",
+    "--ffmpeg-location", "C:\\ffmpeg\\bin",  # ✅ 여기에 직접 경로 설정
     "-x", "--audio-format", "wav",
     "-o", os.path.join(audio_dir, f"{youtube_id}.%(ext)s"),
     youtube_url

@@ -20,7 +20,7 @@ public class TranscriptService {
     private final AudioTranscriptRepository transcriptRepository;
     private final TextCleaner textCleaner;
 
-    public void extractYoutubeIdAndRunWhisper(String originalUrl) throws Exception {
+    public void extractYoutubeIdAndRunWhisper(String originalUrl, String purpose) throws Exception {
         // 1. 유튜브 ID 추출
         String youtubeId = extractYoutubeId(originalUrl);
         if (youtubeId == null || youtubeId.isEmpty()) {

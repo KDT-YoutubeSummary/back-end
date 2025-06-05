@@ -12,7 +12,7 @@ CREATE TABLE `user` (
 
 -- 비디오 (Video) 테이블
 CREATE TABLE `video` (
-                       video_id INT PRIMARY KEY,
+                       video_id INT AUTO_INCREMENT PRIMARY KEY,
                        youtube_id  VARCHAR(255) UNIQUE NOT NULL,      --  (추가) 유튜브 영상 ID
                        title VARCHAR(255) NOT NULL,                 -- 영상 제목
                        original_url VARCHAR(512) UNIQUE NOT NULL,  -- 영상 원본 링크
@@ -21,7 +21,7 @@ CREATE TABLE `video` (
                        view_count BIGINT,                           --  (추가)  조회수
                        published_at DATETIME,                       -- (추가)  업로드 날짜
                        duration_seconds INT NOT NULL,               -- 영상 길이 (초 단위)
-                       original_language_code VARCHAR(20) NOT NULL  -- 영상의 원본 언어 코드
+                       original_language_code VARCHAR(20) NULL  -- 영상의 원본 언어 코드
 );
 
 -- 태그 (Tag) 테이블
@@ -167,15 +167,15 @@ CREATE TABLE `user_activity_log` (
 INSERT INTO user (user_id, username, email, password_hash) VALUES
     (1, 'test_user', 'test@example.com', 'hashedpassword');
 
--- ✅ 2. 비디오 (원본 + 추천용)
+-- ✅ 2. 비디오
 INSERT INTO video (video_id, youtube_id, title, original_url, uploader_name, thumbnail_url, view_count, published_at, duration_seconds, original_language_code) VALUES
                                                                                                                                                                     (1, 'yt001', 'Test Video', 'https://youtu.be/yt001', 'Uploader A', 'https://img.url', 1000, '2025-06-05 06:33:59', 600, 'en'),
                                                                                                                                                                     (2, 'yt002', '추천 영상 A', 'https://youtu.be/yt002', 'Uploader B', 'https://img.url/yt002', 2500, '2025-06-05 06:34:23', 300, 'en'),
                                                                                                                                                                     (3, 'yt999', '강력 추천 영상', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'Uploader X', NULL, 9999, '2025-06-05 06:35:00', 200, 'ko');
 
 -- ✅ 3. 트랜스크립트
-INSERT INTO audio_transcript (transcript_id, video_id, transcript_text) VALUES
-    (1, 1, 'This is a sample transcript.');
+INSERT INTO audio_transcript (transcript_id, video_id, youtube_id, transcript_text) VALUES
+    (1, 1, 'yt001', 'This is a sample transcript.');
 
 -- ✅ 4. 요약
 INSERT INTO summary (summary_id, user_id, transcript_id, summary_text, user_prompt, language_code, summary_type) VALUES
@@ -218,12 +218,12 @@ INSERT INTO answer_option (
     answer_option_id, question_id, option_text, is_correct,
     transcript_id, summary_text, summary_type, created_at
 ) VALUES
-      (801, 701, '블록체인', FALSE, 1001, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
-      (802, 701, '인공지능', TRUE, 1001, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
-      (803, 701, '클라우드 컴퓨팅', FALSE, 1001, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
-      (804, 702, '기계 학습', TRUE, 1002, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW()),
-      (805, 702, '로봇 공학', FALSE, 1002, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW()),
-      (806, 702, '양자 컴퓨팅', FALSE, 1002, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW());
+      (801, 701, '블록체인', FALSE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
+      (802, 701, '인공지능', TRUE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
+      (803, 701, '클라우드 컴퓨팅', FALSE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
+      (804, 702, '기계 학습', TRUE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW()),
+      (805, 702, '로봇 공학', FALSE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW()),
+      (806, 702, '양자 컴퓨팅', FALSE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW());
 
 -- ✅ 12. 사용자 활동 로그
 INSERT INTO user_activity_log (log_id, user_id, activity_type, target_entity_type, target_entity_id_str, target_entity_id_int, activity_detail, details) VALUES
@@ -234,7 +234,6 @@ INSERT INTO user_activity_log (log_id, user_id, activity_type, target_entity_typ
 INSERT INTO video_recommendation (recommendation_id, user_id, source_video_id, recommended_video_id, recommendation_reason, created_at, is_clicked, clicked_at) VALUES
                                                                                                                                                                     (1, 1, 1, 2, '관련 주제 기반 추천', '2025-06-05 06:34:23', FALSE, NULL),
                                                                                                                                                                     (2, 1, NULL, 3, '핵심 주제 기반 추천', '2025-06-05 06:35:00', FALSE, NULL);
-
 
 # -- 1. 새로운 일회성 리마인더 삽입
 # -- (reminder_id는 AUTO_INCREMENT이므로 명시하지 않거나, 적절히 큰 값을 지정하여 기존 더미와 충돌하지 않게 합니다.)

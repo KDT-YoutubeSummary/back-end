@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @AllArgsConstructor
-public class TranscriptResponseDto {
+public class TranscriptResponseDTO {
     private Long transcriptId;
     private LocalDateTime createdAt;
 }
