@@ -18,16 +18,24 @@ public class UserService {
 
     // 로그인 또는 회원가입 처리
     public User loginOrRegister(String email, String name) {
-        String generatedUsername = "google_" + UUID.randomUUID().toString().substring(0, 8);
-
         return userRepository.findByEmail(email)
-                .orElseGet(() -> userRepository.save(
-                        User.builder()
-                                .userName(generatedUsername)
-                                .email(email)
-                                .passwordHash("GOOGLE") // 👉 소셜 로그인은 비번 없음, 의미 있는 더미 값 지정
-                                .build()
-                ));
+                .orElseGet(() -> {
+                    String generatedUsername = "google_" + UUID.randomUUID().toString().substring(0, 8);
+
+                    // 중복된 userName 피하기 위한 반복 처리
+                    while (userRepository.existsByUserName(generatedUsername)) {
+                        generatedUsername = "google_" + UUID.randomUUID().toString().substring(0, 8);
+                    }
+
+                    return userRepository.save(
+                            User.builder()
+                                    .userName(generatedUsername)
+                                    .email(email)
+                                    .passwordHash("GOOGLE") // 소셜 로그인용 더미
+                                    .createdAt(LocalDateTime.now())
+                                    .build()
+                    );
+                });
     }
 
     // 회원가입 처리

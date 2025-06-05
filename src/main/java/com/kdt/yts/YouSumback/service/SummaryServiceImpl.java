@@ -72,10 +72,18 @@ public class SummaryServiceImpl implements SummaryService {
                 .build();
         Summary saved = summaryRepository.save(summary);
 
-        // 3. 라이브러리 찾기
-        UserLibrary library = userLibraryRepository
-                .findBySummaryUserIdAndSummaryAudioTranscriptId(userId, transcriptId)
-                .orElseThrow(() -> new RuntimeException("라이브러리 항목 없음"));
+//        // 3. 라이브러리 찾기
+//        UserLibrary library = userLibraryRepository
+//                .findBySummaryUserIdAndSummaryAudioTranscriptId(userId, transcriptId)
+//                .orElseThrow(() -> new RuntimeException("라이브러리 항목 없음"));
+
+        // 3. 라이브러리 새로 생성 및 저장
+        UserLibrary library = UserLibrary.builder()
+                .user(saved.getUser())
+                .summary(saved)
+                .lastViewedAt(LocalDateTime.now())
+                .build();
+        userLibraryRepository.save(library);
 
         // 4. 해시태그 추출 및 저장
         List<String> hashtags = extractHashtags(finalSummary, 3);

@@ -20,16 +20,49 @@ public class CustomUserDetailService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
+    // Spring Security 기본 로그인 흐름에 사용
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUserName(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
 
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getUserName())
-                .password(user.getPasswordHash())
-                .authorities(Collections.singleton(authority))
-                .build();
+        return new CustomUserDetails(
+                user.getId(),
+                user.getUserName(),
+                user.getEmail(),
+                user.getPasswordHash(),
+                Collections.singleton(authority)
+        );
+    }
+
+    // JWT 토큰에서 userId로 사용자 조회할 때 사용 (직접 호출)
+    public UserDetails loadUserByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found by ID"));
+
+        GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
+
+        return new CustomUserDetails(
+                user.getId(),
+                user.getUserName(),
+                user.getEmail(),
+                user.getPasswordHash(),
+                Collections.singleton(authority)
+        );
     }
 }
+        //    @Override
+//    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+//        User user = userRepository.findByUserName(username)
+//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+//        GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
+//
+//        return org.springframework.security.core.userdetails.User.builder()
+//                .username(user.getUserName())
+//                .password(user.getPasswordHash())
+//                .authorities(Collections.singleton(authority))
+//                .build();
+//    }
+

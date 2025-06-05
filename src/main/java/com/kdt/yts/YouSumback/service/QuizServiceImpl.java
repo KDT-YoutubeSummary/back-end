@@ -1,6 +1,9 @@
 package com.kdt.yts.YouSumback.service;
 
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.response.AnswerOptionDTO;
+import com.kdt.yts.YouSumback.model.dto.response.QuestionDTO;
+import com.kdt.yts.YouSumback.model.dto.response.QuizResponseDTO;
 import com.kdt.yts.YouSumback.model.entity.AnswerOption;
 import com.kdt.yts.YouSumback.model.entity.Question;
 import com.kdt.yts.YouSumback.model.entity.Quiz;
@@ -25,7 +28,7 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
-    public List<Quiz> generateFromSummary(QuizRequestDTO request) {
+    public List<QuizResponseDTO> generateFromSummary(QuizRequestDTO request) {
         // 1. AI 요약으로부터 퀴즈 생성
         String aiResponse = summaryService.callOpenAISummary(request.getSummaryText());
 
@@ -63,7 +66,21 @@ public class QuizServiceImpl implements QuizService {
         quiz.setQuestions(questionList);
 
         quizRepository.save(quiz);
-        return List.of(quiz);
+        // DTO로 변환
+        List<QuestionDTO> questionDTOs = quiz.getQuestions().stream()
+                .map(q -> new QuestionDTO(
+                        q.getQuestionText(),
+                        q.getOptions().stream()
+                                .map(opt -> new AnswerOptionDTO(opt.getOptionText(), opt.getIsCorrect()))
+                                .toList()
+                ))
+                .toList();
+
+        return List.of(new QuizResponseDTO(
+                quiz.getTitle(),
+                quiz.getCreatedAt(),
+                questionDTOs
+        ));
     }
 
     private List<QuizParsedResult> parseQuizFromAiResponse(String aiResponse) {

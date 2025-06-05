@@ -13,12 +13,16 @@ public class CustomUserDetails implements UserDetails {
 
     private final Long userId;
     private final String userName;
+    private final String email;
     private final String passwordHash;
+    private Collection<? extends GrantedAuthority> authorities;
 
-    public CustomUserDetails(User user) {
-        this.userId = user.getId();                  // 🔐 userId 보존
-        this.userName = user.getUserName();
-        this.passwordHash = user.getPasswordHash();
+    public CustomUserDetails(Long userId, String userName, String email, String passwordHash, Collection<? extends GrantedAuthority> authorities) {
+        this.userId = userId;
+        this.userName = userName;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.authorities = authorities;
     }
 
     @Override

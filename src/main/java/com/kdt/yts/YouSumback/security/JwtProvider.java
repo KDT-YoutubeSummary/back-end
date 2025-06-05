@@ -27,6 +27,15 @@ public class JwtProvider {
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
+//    public String generateToken(Long userId) {
+//        return Jwts.builder()
+//                .setSubject(userId.toString()) // userId를 subject로
+//                .setIssuedAt(new Date())
+//                .setExpiration(new Date(System.currentTimeMillis() + expirationMs)) // ← 여기 수정
+//                .signWith(secretKey, SignatureAlgorithm.HS256)
+//                .compact();
+//    }
+
     // Jwt 토큰을 생성하는 메서드
     public String generateToken(Long userId, String username) {
         Date now = new Date();

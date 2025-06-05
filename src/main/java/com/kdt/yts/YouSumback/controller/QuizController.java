@@ -1,14 +1,11 @@
 package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
-import com.kdt.yts.YouSumback.model.entity.Quiz;
+import com.kdt.yts.YouSumback.model.dto.response.QuizResponseDTO;
 import com.kdt.yts.YouSumback.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -21,7 +18,8 @@ public class QuizController {
 
     // 퀴즈 생성 API 엔드포인트
     @PostMapping("/generate")
-    public ResponseEntity<List<Quiz>> generateQuiz(@RequestBody QuizRequestDTO request) {
-        return ResponseEntity.ok(quizService.generateFromSummary(request));
+    public ResponseEntity<List<QuizResponseDTO>> generateQuiz(@RequestBody QuizRequestDTO request) {
+        List<QuizResponseDTO> quizList = quizService.generateFromSummary(request);
+        return ResponseEntity.ok(quizList);
     }
 }

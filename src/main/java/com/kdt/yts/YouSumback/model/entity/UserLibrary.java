@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter @Setter
@@ -35,5 +36,8 @@ public class UserLibrary {
     @Column(name = "user_notes", columnDefinition = "TEXT", nullable = true)
     private String userNotes; // 사용자 메모
 
-
+    @PrePersist
+    protected void onCreate() {
+        this.savedAt = LocalDateTime.now();
+    }
 }

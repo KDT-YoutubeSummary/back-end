@@ -166,7 +166,10 @@ public class UserLibraryService {
         List<Object[]> result = userLibraryRepository.countTagsById(userId);
 
         return result.stream()
-                .map(row -> new TagStatResponseDTO((String) row[0], (Long) row[1]))
+                .map(row -> new TagStatResponseDTO(
+                        String.valueOf(row[0]),
+                        ((Number) row[1]).longValue()
+                ))
                 .toList();
     }
 

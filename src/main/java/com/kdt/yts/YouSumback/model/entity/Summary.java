@@ -1,5 +1,6 @@
 package com.kdt.yts.YouSumback.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,6 +23,7 @@ public class Summary {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_summary_user"))
+    @JsonIgnore
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)

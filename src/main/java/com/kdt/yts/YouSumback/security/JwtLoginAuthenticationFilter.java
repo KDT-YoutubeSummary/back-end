@@ -32,7 +32,7 @@ public class JwtLoginAuthenticationFilter extends UsernamePasswordAuthentication
     public JwtLoginAuthenticationFilter(AuthenticationManager authenticationManager,
                                         JwtProvider jwtProvider,
                                         UserRepository userRepository) {
-        super();
+        super(); // 반드시 필요!
         this.authenticationManager = authenticationManager;
         this.jwtProvider = jwtProvider;
         this.userRepository = userRepository;
@@ -65,8 +65,7 @@ public class JwtLoginAuthenticationFilter extends UsernamePasswordAuthentication
                                             FilterChain chain,
                                             Authentication authResult) throws IOException, ServletException {
 
-        org.springframework.security.core.userdetails.User principal =
-                (org.springframework.security.core.userdetails.User) authResult.getPrincipal();
+        CustomUserDetails principal = (CustomUserDetails) authResult.getPrincipal();
 
         // ✅ 실제 사용자 엔티티 조회
         User user = userRepository.findByUserName(principal.getUsername())
