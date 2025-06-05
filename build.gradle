@@ -21,15 +21,47 @@ configurations {
 
 repositories {
 	mavenCentral()
+	// Spring AI 라이브러리 저장소 추가
+	maven {
+		url = uri("https://repo.spring.io/milestone")
+	}
+}
+
+// Spring AI BOM 추가
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.ai:spring-ai-bom:1.0.0-M6"
+	}
 }
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'com.mysql:mysql-connector-j:8.0.32'
+
+	// Spring AI 의존성 (버전 제거 - BOM에서 관리)
+	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+
+	// 나머지 그대로 유지
+	implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
+	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+	implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final'
+
 	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
+
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// ✅ Spring Security (기본 웹 보안 + 인가 설정용)
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	// JWT 토큰 기반 인증 처리 시 필요
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
 }
 
 tasks.named('test') {
