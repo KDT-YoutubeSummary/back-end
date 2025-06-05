@@ -61,4 +61,9 @@ public class VideoRecommendationService {
                             });
                 });
     }
+
+    // AI 추천 결과를 video_recommendation 테이블에 저장 (구현 X)
+    public void saveAiRecommendation(Long userLibraryId, VideoAiRecommendationResponse response) {
+        // TODO: 구현 예정
+    }
 }

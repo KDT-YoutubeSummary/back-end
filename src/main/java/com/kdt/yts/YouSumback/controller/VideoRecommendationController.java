@@ -47,6 +47,16 @@ public class VideoRecommendationController {
         return videoRecommendationService.getAiRecommendationByUserLibraryId(userLibraryId);
     }
 
+    // AI 추천 결과 저장 API (구현 X)
+    @PostMapping("/ai/test/{userLibraryId}")
+    public ResponseEntity<Void> saveAiRecommendation(
+            @PathVariable Long userLibraryId,
+            @RequestBody VideoAiRecommendationResponse response
+    ) {
+        videoRecommendationService.saveAiRecommendation(userLibraryId, response);
+        return ResponseEntity.ok().build();
+    }
+
 
 
 }
