@@ -48,6 +48,14 @@ dependencies {
 
 	// OpenAI
 	implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
+
+	// 이메일 발송 기능을 위한 Spring Boot Starter Mail
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	// 유효성 검사 (jakarta.validation 어노테이션 사용 시 필요)
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+
 }
 
 tasks.named('test') {

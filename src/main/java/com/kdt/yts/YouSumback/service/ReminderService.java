@@ -145,6 +145,7 @@ public class ReminderService {
             return;
         }
 
+        // 이메일 발송
         for (Reminder reminder : remindersToNotify) {
             String recipientEmail = reminder.getUser().getEmail(); // 사용자 이메일 주소 가져오기
             String summaryTitle = reminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle(); // 요약 영상 제목 가져오기
