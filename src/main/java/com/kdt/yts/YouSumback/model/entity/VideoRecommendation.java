@@ -13,7 +13,7 @@ public class VideoRecommendation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "recommendation_id", nullable = false)
-    private long recommendationId; // 영상 추천 식별자
+    private Integer recommendationId; // 영상 추천 식별자
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

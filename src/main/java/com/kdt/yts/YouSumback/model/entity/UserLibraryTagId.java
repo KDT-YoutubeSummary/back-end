@@ -11,7 +11,7 @@ public class UserLibraryTagId implements Serializable {
 
     // 필드
     @Column(name = "user_library_id")
-    private long userLibraryId;
+    private Integer userLibraryId;
     @Column(name = "tag_id")
     private Integer tagId;
 
@@ -19,7 +19,7 @@ public class UserLibraryTagId implements Serializable {
     public UserLibraryTagId() {
     }
 
-    public UserLibraryTagId(long userLibraryId, Integer tagId) {
+    public UserLibraryTagId(Integer userLibraryId, Integer tagId) {
         this.userLibraryId = userLibraryId;
         this.tagId = tagId;
     }

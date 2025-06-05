@@ -43,22 +43,19 @@ public class VideoRecommendationController {
 
     // userLibraryId 기반 AI 영상 추천 및 저장 (POST)
     @PostMapping("/ai/{userLibraryId}")
-    public ResponseEntity<Void> aiRecommendAndSave(
+    public ResponseEntity<List<VideoRecommendation>> aiRecommendAndSave(
             @PathVariable Long userLibraryId
     ) {
         try {
-            // OpenAI 응답을 기다리는 동안 202 Accepted 반환
+            List<VideoRecommendation> savedList = new java.util.ArrayList<>();
             videoRecommendationService.getAiRecommendationByUserLibraryId(userLibraryId)
-                .doOnSuccess(response -> videoRecommendationService.saveAiRecommendation(userLibraryId, response))
-                .subscribe(
-                    null,
-                    error -> {
-                        // 예외 발생 시 로깅
-                        System.err.println("AI 추천 생성 중 오류 발생: " + error.getMessage());
-                        error.printStackTrace();
-                    }
-                );
-            return ResponseEntity.accepted().build();
+                .doOnSuccess(responseList -> {
+                    List<VideoRecommendation> result = videoRecommendationService.saveAiRecommendation(userLibraryId, responseList);
+                    savedList.addAll(result);
+                    result.forEach(r -> System.out.println("저장된 추천: " + r));
+                })
+                .block(); // 비동기 -> 동기 처리
+            return ResponseEntity.ok(savedList);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
