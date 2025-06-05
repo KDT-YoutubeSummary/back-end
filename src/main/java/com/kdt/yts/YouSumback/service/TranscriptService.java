@@ -1,8 +1,6 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.model.dto.request.TranscriptSaveRequestDto;
-import com.kdt.yts.YouSumback.model.dto.response.TranscriptSaveResponseDto;
-import com.kdt.yts.YouSumback.model.dto.response.TranscriptLookupResponseDto;
+import com.kdt.yts.YouSumback.Util.TextCleaner;
 import com.kdt.yts.YouSumback.model.entity.AudioTranscript;
 import com.kdt.yts.YouSumback.model.entity.Video;
 import com.kdt.yts.YouSumback.repository.AudioTranscriptRepository;
@@ -13,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,98 +18,71 @@ public class TranscriptService {
 
     private final VideoRepository videoRepository;
     private final AudioTranscriptRepository transcriptRepository;
-    private final YouTubeMetadataService youTubeMetadataService;
+    private final TextCleaner textCleaner;
 
-    // ✅ STT 저장 (url 기반 요청 → youtubeId 추출 → 메타데이터 저장 → whisper)
-    public TranscriptSaveResponseDto saveTranscript(TranscriptSaveRequestDto requestDto) throws Exception {
-        String url = requestDto.getUrl();
-        String youtubeId = youTubeMetadataService.extractYoutubeId(url);
-
-        // 1. 메타데이터 저장 (이미 저장된 경우 무시)
-        youTubeMetadataService.saveVideoMetadata(youtubeId);
-
-        // 2. 영상 정보 조회
-        Video video = videoRepository.findByYoutubeId(youtubeId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 영상 정보가 존재하지 않습니다."));
-
-        String youtubeUrl = video.getOriginalUrl();
-
-        // 3. STT 처리
-        runCommand("yt-dlp -x --audio-format wav -o \"" + youtubeId + ".%(ext)s\" " + youtubeUrl);
-        runCommand("whisper " + youtubeId + ".wav --model medium --output_format txt");
-
-        String transcriptText = readAndCleanTextFile(youtubeId + ".txt");
-
-        // 4. DB 저장
-        AudioTranscript transcript = AudioTranscript.builder()
-                .video(video)
-                .transcriptText(transcriptText)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        AudioTranscript saved = transcriptRepository.save(transcript);
-
-        return TranscriptSaveResponseDto.builder()
-                .transcriptId(saved.getId())
-                .createAt(saved.getCreatedAt().toString())
-                .build();
-    }
-
-    public List<TranscriptLookupResponseDto> getTranscriptListByYoutubeId(String youtubeId) {
-        Video video = videoRepository.findByYoutubeId(youtubeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 영상입니다."));
-
-        return transcriptRepository.findByYoutubeId(youtubeId).stream()
-                .map(t -> new TranscriptLookupResponseDto(
-                        t.getId(),
-                        video.getId(),
-                        t.getCreatedAt().toString(),
-                        t.getTranscriptText()
-                ))
-                .collect(Collectors.toList());
-    }
-
-    public void deleteTranscript(Long transcriptId) {
-        if (!transcriptRepository.existsById(transcriptId)) {
-            throw new IllegalArgumentException("존재하지 않는 텍스트입니다.");
+    public void extractYoutubeIdAndRunWhisper(String originalUrl) throws Exception {
+        // 1. 유튜브 ID 추출
+        String youtubeId = extractYoutubeId(originalUrl);
+        if (youtubeId == null || youtubeId.isEmpty()) {
+            throw new IllegalArgumentException("유효한 YouTube URL이 아닙니다.");
         }
-        transcriptRepository.deleteById(transcriptId);
-    }
 
-    private String readAndCleanTextFile(String filePath) {
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String cleaned = line.trim();
-                if (!cleaned.isEmpty()) {
-                    sb.append(cleaned).append(" ");
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("텍스트 파일 읽기 실패: " + filePath, e);
-        }
-        return sb.toString().trim();
-    }
+        // ✅ Video 엔티티 없으면 자동 등록
+        videoRepository.findByYoutubeId(youtubeId).orElseGet(() -> {
+            Video newVideo = new Video();
+            newVideo.setYoutubeId(youtubeId);
+            newVideo.setOriginalUrl(originalUrl);
+            newVideo.setTitle("제목 없음");
+            newVideo.setUploaderName("unknown");
+            newVideo.setPublishedAt(LocalDateTime.now());
+            return videoRepository.save(newVideo);
+        });
 
-    private void runCommand(String command) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
+        // 2. Whisper Python 스크립트 실행
+        List<String> command = List.of(
+                "python",
+                "yt/yt_whisper.py",
+                originalUrl  // ← 전체 URL
+        );
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.directory(new File(".")); // 현재 디렉토리 기준
+        pb.redirectErrorStream(false); // stderr 분리
+
+        Process process = pb.start();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                System.out.println("[CMD] " + line);
+                System.out.println("[WHISPER STDOUT] " + line);
             }
+        }
 
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                throw new RuntimeException("명령어 실패: " + command);
+        try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+            String line;
+            while ((line = errorReader.readLine()) != null) {
+                System.err.println("[WHISPER STDERR] " + line);
+            }
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException("❌ Whisper 실행 실패 (exit code: " + exitCode + ")");
+        }
+    }
+
+    private String extractYoutubeId(String url) {
+        try {
+            if (url.contains("v=")) {
+                String[] parts = url.split("v=");
+                String afterV = parts[1];
+                return afterV.contains("&") ? afterV.split("&")[0] : afterV;
+            } else if (url.contains("youtu.be/")) {
+                return url.substring(url.lastIndexOf("/") + 1);
             }
         } catch (Exception e) {
-            throw new RuntimeException("명령어 실행 중 오류 발생: " + command, e);
+            throw new RuntimeException("YouTube ID 추출 실패", e);
         }
+        return null;
     }
 }

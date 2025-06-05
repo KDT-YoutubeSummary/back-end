@@ -23,6 +23,9 @@ public class AudioTranscript {
     @JoinColumn(name = "video_id", referencedColumnName = "video_id", nullable = false, unique = true)
     private Video video;
 
+    @Column(name = "youtube_id", nullable = false, length = 100)
+    private String youtubeId;
+
     @Lob
     @Column(name = "transcript_text", nullable = false, columnDefinition = "LONGTEXT")
     private String transcriptText;
