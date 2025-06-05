@@ -32,7 +32,7 @@ public interface UserLibraryRepository extends JpaRepository<UserLibrary, Long> 
         FROM UserLibraryTag ult
         JOIN ult.userLibrary ul
         JOIN ult.tag t
-        WHERE ul.user.userId = :userId
+        WHERE ul.user.id = :userId
         GROUP BY t.tagName
 """)
     List<Object[]> countTagsByUser_UserId(@Param("userId") Long userId);

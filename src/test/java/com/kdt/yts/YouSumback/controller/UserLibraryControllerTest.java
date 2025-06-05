@@ -46,8 +46,8 @@ public class UserLibraryControllerTest {
     @Autowired
     UserLibraryRepository userLibraryRepository;
 
-    private Integer savedUserId;
-    private Integer savedSummaryId;
+    private Long savedUserId;
+    private Long savedSummaryId;
     private Long savedLibraryId;
 
     // 테스트 실행 전: 테스트용 User와 Summary 데이터를 DB에 저장
@@ -65,7 +65,7 @@ public class UserLibraryControllerTest {
         //  2. 테스트용 비디오 저장
         Video testVideo = videoRepository.save(
                 Video.builder()
-                        .videoId("test-video-id")
+                        .id(Long.valueOf("test-video-id"))
                         .title("Test Video")
                         .originalUrl("http://test.video")
                         .uploaderName("Uploader")
@@ -87,14 +87,14 @@ public class UserLibraryControllerTest {
         //  4. Summary 저장
         Summary summary = summaryRepository.save(Summary.builder()
                 .summaryText("테스트 요약")
-                .audioTranscript(dummyTranscript)
+                .transcript(dummyTranscript)
                 .user(testUser)
                 .languageCode("ko")
                 .createdAt(LocalDateTime.now())
                 .build());
 
-        savedUserId = testUser.getUserId();
-        savedSummaryId = summary.getSummaryId();
+        savedUserId = testUser.getId();
+        savedSummaryId = summary.getId();
 
         //  5. UserLibrary 저장
         UserLibrary savedLibrary = userLibraryRepository.save(UserLibrary.builder()
@@ -105,7 +105,7 @@ public class UserLibraryControllerTest {
                 .lastViewedAt(LocalDateTime.now())
                 .build());
 
-        savedLibraryId = savedLibrary.getUserLibraryId();
+        savedLibraryId = savedLibrary.getId();
     }
 
     @Test

@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @Entity
-@Table(name = "UserLibraryTag")
+@Table(name = "userLibrary_tag")
 public class UserLibraryTag {
 
     @EmbeddedId
@@ -34,7 +34,7 @@ public class UserLibraryTag {
 
     // UserLibrary와 Tag를 이용한 생성자
     public UserLibraryTag(UserLibrary library, Tag tag1) {
-        this.id = new UserLibraryTagId(library.getUserLibraryId(), tag1.getTagId());
+        this.id = new UserLibraryTagId(library.getId(), tag1.getId());
         this.userLibrary = library;
         this.tag = tag1;
     }

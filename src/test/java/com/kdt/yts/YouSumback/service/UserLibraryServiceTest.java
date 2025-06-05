@@ -48,7 +48,7 @@ public class UserLibraryServiceTest {
 
         // 비디오와 오디오 트랜스크립트 생성
         Video video = videoRepository.save(Video.builder()
-                .videoId("vid123")
+                .id(Long.valueOf("vid123"))
                 .title("테스트 비디오")
                 .originalUrl("http://test.com")
                 .uploaderName("Uploader")
@@ -75,9 +75,9 @@ public class UserLibraryServiceTest {
     void saveLibrary_successfullySavesLibraryAndTags() {
         // given
         UserLibraryRequestDTO dto = new UserLibraryRequestDTO();
-        dto.setUser_id(testUser.getUserId());
-        dto.setSummary_id(Long.valueOf((testSummary.getSummaryId())));
-        dto.setUser_notes("좋은 요약이네요!");
+        dto.setUserId(testUser.getId());
+        dto.setSummaryId(Long.valueOf((testSummary.getId())));
+        dto.setUserNotes("좋은 요약이네요!");
 
         // when
         userLibraryService.saveLibrary(dto);
@@ -120,7 +120,7 @@ public class UserLibraryServiceTest {
                 .savedAt(LocalDateTime.now())
                 .build());
 
-        Long id = (long) library.getUserLibraryId();
+        Long id = (long) library.getId();
 
         // when
         userLibraryService.deleteLibrary(id);
@@ -144,15 +144,15 @@ public class UserLibraryServiceTest {
         Tag tag2 = tagRepository.save(Tag.builder().tagName("추천").build());
 
         userLibraryTagRepository.save(new UserLibraryTag(
-                new UserLibraryTagId(library.getUserLibraryId(), tag1.getTagId()), library, tag1));
+                new UserLibraryTagId(library.getId(), tag1.getId()), library, tag1));
         userLibraryTagRepository.save(new UserLibraryTag(
-                new UserLibraryTagId(library.getUserLibraryId(), tag2.getTagId()), library, tag2));
+                new UserLibraryTagId(library.getId(), tag2.getId()), library, tag2));
 
         // when
         List<UserLibraryResponseListDTO> result = userLibraryService.search(1, "AI", "AI,추천");
 
         // then
         assertEquals(1, result.size());
-        assertEquals(testSummary.getSummaryId(), result.get(0).getSummaryId());
+        assertEquals(testSummary.getId(), result.get(0).getSummaryId());
     }
 }

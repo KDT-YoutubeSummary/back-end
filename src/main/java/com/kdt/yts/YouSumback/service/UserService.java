@@ -29,7 +29,7 @@ public class UserService {
 
     // 회원가입 처리
     public String issueJwtToken(User user) {
-        return jwtProvider.generateToken(user.getUserId(), user.getEmail());
+        return jwtProvider.generateToken(user.getId(), user.getEmail());
     }
 }
 

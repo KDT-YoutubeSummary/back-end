@@ -38,18 +38,18 @@ public class UserLibraryService {
     @Transactional
     public UserLibraryResponseListDTO saveLibrary(UserLibraryRequestDTO request) {
         // 1. User 조회 (예외 처리 포함)
-        User user = userRepository.findById(request.getUser_id())
+        User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
 
         // 2. Summary 조회 (예외 처리 포함)
-        Summary summary = (Summary) summaryRepository.findBySummaryId(request.getSummary_id())
+        Summary summary = (Summary) summaryRepository.findBySummaryId(request.getSummaryId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 요약이 존재하지 않습니다."));
 
         // 3. UserLibrary 엔티티 생성 및 저장
         UserLibrary userLibrary = UserLibrary.builder()
                 .user(user)
                 .summary(summary)
-                .userNotes(request.getUser_notes())
+                .userNotes(request.getUserNotes())
                 .savedAt(LocalDateTime.now())
                 .lastViewedAt(LocalDateTime.now())
                 .build();
@@ -62,7 +62,7 @@ public class UserLibraryService {
             for (String tagName : request.getTags()) {
                 Tag tag = tagRepository.findByTagName(tagName)
                         .orElseGet(() -> tagRepository.save(Tag.builder().tagName(tagName).build()));
-                UserLibraryTagId tagId = new UserLibraryTagId(userLibrary.getUserLibraryId(), tag.getTagId());
+                UserLibraryTagId tagId = new UserLibraryTagId(userLibrary.getId(), tag.getId());
                 UserLibraryTag userLibraryTag = new UserLibraryTag(tagId, userLibrary, tag);
                 userLibraryTagRepository.save(userLibraryTag);
             }

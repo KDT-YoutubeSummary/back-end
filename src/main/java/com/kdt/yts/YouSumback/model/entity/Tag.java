@@ -4,16 +4,15 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "Tag")
+@Table(name = "tag")
 @Getter @Setter
 @Builder
 @NoArgsConstructor @AllArgsConstructor
 public class Tag {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // tag_id가 DB에서 자동 증가하도록 설정
     @Column(name = "tag_id", nullable = false)
-    private Long tagId;
+    private Long id;
 
     @Column(name = "tag_name", length = 100, nullable = false, unique = true)
     // tag_name은 고유하고 무조건 존재

@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Video")
+@Table(name = "video")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,7 +16,7 @@ public class Video {
 
     @Id
     @Column(name = "video_id", length = 255)
-    private String videoId;
+    private Long id;
 
     @Column(name = "youtube_id", length = 255, nullable = false, unique = true)
     private String youtubeId;

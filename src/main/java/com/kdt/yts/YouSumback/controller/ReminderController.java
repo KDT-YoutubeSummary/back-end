@@ -1,8 +1,8 @@
 package com.kdt.yts.YouSumback.controller;
 
-import com.kdt.yts.YouSumback.model.dto.request.ReminderCreateRequest;
+import com.kdt.yts.YouSumback.model.dto.request.ReminderCreateRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.ReminderResponse;
-import com.kdt.yts.YouSumback.model.dto.request.ReminderUpdateRequest;
+import com.kdt.yts.YouSumback.model.dto.request.ReminderUpdateRequestDTO;
 import com.kdt.yts.YouSumback.service.ReminderService;
 import jakarta.validation.Valid; // 유효성 검사 어노테이션
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class ReminderController {
 
     // 새 리마인더를 생성하는 API 엔드포인트
     @PostMapping // HTTP POST 요청을 처리
-    public ResponseEntity<ReminderResponse> createReminder(@Valid @RequestBody ReminderCreateRequest request) {
+    public ResponseEntity<ReminderResponse> createReminder(@Valid @RequestBody ReminderCreateRequestDTO request) {
         ReminderResponse newReminder = reminderService.createReminder(request);
         return new ResponseEntity<>(newReminder, HttpStatus.CREATED);
     }
@@ -43,7 +43,7 @@ public class ReminderController {
     // 리마인더 정보를 업데이트하는 API 엔드포인트
     @PutMapping("/{reminderId}")
     public ResponseEntity<ReminderResponse> updateReminder(@PathVariable Long reminderId,
-                                                           @Valid @RequestBody ReminderUpdateRequest request) {
+                                                           @Valid @RequestBody ReminderUpdateRequestDTO request) {
         ReminderResponse updatedReminder = reminderService.updateReminder(reminderId, request);
         return ResponseEntity.ok(updatedReminder);
     }

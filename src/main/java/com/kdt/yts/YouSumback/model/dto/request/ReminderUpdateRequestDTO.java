@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReminderUpdateRequest {
+public class ReminderUpdateRequestDTO {
     private ReminderType reminderType;
     private Integer frequencyInterval;
     private Integer dayOfWeek;

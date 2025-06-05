@@ -13,8 +13,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReminderCreateRequest {
-
+public class ReminderCreateRequestDTO {
     private Long userId; // 리마인더를 생성할 사용자의 ID
     private Long userLibraryId; // 리마인더를 연결할 사용자 라이브러리 항목의 ID
     private ReminderType reminderType; // 리마인더의 반복 타입 (Enum: ONE_TIME, DAILY, WEEKLY 등)

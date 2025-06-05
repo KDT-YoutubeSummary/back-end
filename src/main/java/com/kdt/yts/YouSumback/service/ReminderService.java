@@ -1,8 +1,8 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.model.dto.request.ReminderCreateRequest;
+import com.kdt.yts.YouSumback.model.dto.request.ReminderCreateRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.ReminderResponse;
-import com.kdt.yts.YouSumback.model.dto.request.ReminderUpdateRequest;
+import com.kdt.yts.YouSumback.model.dto.request.ReminderUpdateRequestDTO;
 import com.kdt.yts.YouSumback.model.entity.Reminder;
 import com.kdt.yts.YouSumback.model.entity.ReminderType;
 import com.kdt.yts.YouSumback.model.entity.User;
@@ -37,7 +37,7 @@ public class ReminderService {
     // ---------------------- 리마인더 (C)생성, (R)조회, (U)수정, (D)삭제 ----------------------
 
     @Transactional
-    public ReminderResponse createReminder(ReminderCreateRequest request) {
+    public ReminderResponse createReminder(ReminderCreateRequestDTO request) {
         // 사용자 및 사용자 라이브러리 존재 여부 확인
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + request.getUserId()));
@@ -60,7 +60,7 @@ public class ReminderService {
                 reminder.getFrequencyInterval(), request.getDayOfWeek(), request.getDayOfMonth(), LocalDateTime.now()));
 
         Reminder savedReminder = reminderRepository.save(reminder); // 데이터베이스에 리마인더 저장
-        log.info("Created reminder with ID: {}", savedReminder.getReminderId());
+        log.info("Created reminder with ID: {}", savedReminder.getId());
         return new ReminderResponse(savedReminder); // 저장된 리마인더를 DTO로 변환하여 반환
     }
 
@@ -80,7 +80,7 @@ public class ReminderService {
     }
 
     @Transactional // 수정 작업은 트랜잭션으로 묶습니다.
-    public ReminderResponse updateReminder(Long reminderId, ReminderUpdateRequest request) {
+    public ReminderResponse updateReminder(Long reminderId, ReminderUpdateRequestDTO request) {
         Reminder reminder = reminderRepository.findById(reminderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reminder not found with ID: " + reminderId));
 
@@ -116,7 +116,7 @@ public class ReminderService {
         }
 
         Reminder updatedReminder = reminderRepository.save(reminder); // 데이터베이스에 변경사항 저장
-        log.info("Updated reminder with ID: {}", updatedReminder.getReminderId());
+        log.info("Updated reminder with ID: {}", updatedReminder.getId());
         return new ReminderResponse(updatedReminder);
     }
 
@@ -156,26 +156,26 @@ public class ReminderService {
 
 
             log.info("Processing reminder ID: {} for User ID: {} (Email: {})",
-                    reminder.getReminderId(), reminder.getUser().getUserId(), recipientEmail);
+                    reminder.getId(), reminder.getUser().getId(), recipientEmail);
 
             try {
                 // EmailService를 통해 이메일 발송 시도
                 emailService.sendNotificationEmail(recipientEmail, subject, emailContent);
-                log.info("Reminder ID {} notification email sent to {}.", reminder.getReminderId(), recipientEmail);
+                log.info("Reminder ID {} notification email sent to {}.", reminder.getId(), recipientEmail);
             } catch (Exception e) {
-                log.error("Failed to send reminder email for ID {} to {}: {}", reminder.getReminderId(), recipientEmail, e.getMessage());
+                log.error("Failed to send reminder email for ID {} to {}: {}", reminder.getId(), recipientEmail, e.getMessage());
                 // 이메일 발송 실패 시에도 스케줄러가 멈추지 않도록 예외 처리
             }
 
             // 알림 발송 후, 다음 알림 시간을 계산하고 업데이트합니다.
             if (reminder.getReminderType() == ReminderType.ONE_TIME) {
                 reminder.setIsActive(false); // ONE_TIME 리마인더는 한 번 발송 후 비활성화
-                log.info("One-time reminder ID {} deactivated.", reminder.getReminderId());
+                log.info("One-time reminder ID {} deactivated.", reminder.getId());
             } else {
                 reminder.setNextNotificationDatetime(
                         calculateNextNotificationTime(reminder.getBaseDatetimeForRecurrence(), reminder.getReminderType(),
                                 reminder.getFrequencyInterval(), reminder.getDayOfWeek(), reminder.getDayOfMonth(), now));
-                log.info("Reminder ID {} next notification set to: {}", reminder.getReminderId(), reminder.getNextNotificationDatetime());
+                log.info("Reminder ID {} next notification set to: {}", reminder.getId(), reminder.getNextNotificationDatetime());
             }
             reminder.setLastSentAt(now); // 마지막 알림 발송 시간 업데이트
             reminderRepository.save(reminder); // 변경사항 저장

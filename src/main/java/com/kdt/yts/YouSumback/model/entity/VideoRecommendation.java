@@ -5,11 +5,12 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "video_recommendation")
 public class VideoRecommendation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "recommendation_id", nullable = false)
-    private long recommendationId; // 영상 추천 식별자
+    private Long id; // 영상 추천 식별자
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

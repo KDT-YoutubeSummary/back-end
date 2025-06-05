@@ -5,12 +5,12 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "useractivitylog")
+@Table(name = "useractivity_log")
 public class UserActivityLog {
 
     @Id
     @Column(name = "log_id", nullable = false)
-    private Long log_id; // 로그 식별자
+    private Long id; // 로그 식별자
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

@@ -31,7 +31,7 @@ public class ReminderResponse {
 
     public ReminderResponse(Reminder reminder) {
         this.reminderId = reminder.getReminderId();
-        this.user_id = reminder.getUser() != null ? reminder.getUser().getId() : null;
+        this.user_id = reminder.getUser() != null ? reminder.getUser().getUserId() : null;
         this.userLibraryId = reminder.getUserLibrary() != null ? reminder.getUserLibrary().getUserLibraryId() : null;
         this.reminderType = reminder.getReminderType();
         this.frequencyInterval = reminder.getFrequencyInterval();
