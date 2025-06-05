@@ -1,5 +1,6 @@
 package com.kdt.yts.YouSumback.config;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -24,18 +25,20 @@ public class JwtProvider {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
+    // 🔥 완전히 이걸 기준으로 통일할 것
     public String generateToken(Long userId, String email) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + 1000 * 60 * 60); // 1시간
 
         return Jwts.builder()
-                .setSubject(email)
-                .claim("userId", userId)
+                .setSubject(String.valueOf(userId))       // ✅ 핵심: subject = userId
+                .claim("email", email)                    // ✅ 선택: email은 claim으로
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     public boolean validateToken(String token) {
         try {
@@ -53,7 +56,7 @@ public class JwtProvider {
                         .build()
                         .parseClaimsJws(token)
                         .getBody()
-                        .get("userId").toString()
+                        .getSubject()
         );
     }
 }

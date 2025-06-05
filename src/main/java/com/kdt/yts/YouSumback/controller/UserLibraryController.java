@@ -19,7 +19,7 @@ import java.util.NoSuchElementException;
 @RestController
 @RequestMapping("/api/library")
 @RequiredArgsConstructor
-@Getter
+//@Getter
 // UserLibraryController는 사용자 라이브러리 관련 API를 처리하는 컨트롤러입니다.
 public class UserLibraryController {
 
@@ -30,8 +30,8 @@ public class UserLibraryController {
     public ResponseEntity<?> saveLibrary(@RequestBody UserLibraryRequestDTO request, Authentication auth) {
         try {
             Long userId = getUserIdFromAuth(auth);
-            request.setUserId(userId);  // DTO에 userId 주입
-            var response = userLibraryService.saveLibrary(request);
+//            request.setUserId(userId);  // DTO에 userId 주입
+            var response = userLibraryService.saveLibrary(userId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                     "code", 201,
                     "message", "라이브러리 등록 완료",
@@ -131,7 +131,7 @@ public class UserLibraryController {
     public ResponseEntity<String> updateUserNote(@RequestBody UserNoteUpdateRequestDTO requestDTO, Authentication auth) {
         Long userId = getUserIdFromAuth(auth);
         requestDTO.setUserId(userId);  // DTO에 사용자 정보 주입
-        userLibraryService.updateUserNotes(requestDTO);
+        userLibraryService.updateUserNotes(userId, requestDTO);
         return ResponseEntity.ok("메모가 성공적으로 업데이트되었습니다.");
     }
 

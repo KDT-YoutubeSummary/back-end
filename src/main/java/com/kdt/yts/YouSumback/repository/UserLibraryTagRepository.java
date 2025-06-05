@@ -1,5 +1,6 @@
 package com.kdt.yts.YouSumback.repository;
 
+import com.kdt.yts.YouSumback.model.entity.Tag;
 import com.kdt.yts.YouSumback.model.entity.UserLibrary;
 import com.kdt.yts.YouSumback.model.entity.UserLibraryTag;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,4 +13,6 @@ public interface UserLibraryTagRepository extends JpaRepository<UserLibraryTag, 
     List<UserLibraryTag> findByUserLibrary(UserLibrary userLibrary);
 
     void deleteAllByUserLibrary(UserLibrary library);
+
+    boolean existsByUserLibraryAndTag(UserLibrary userLibrary, Tag tag);
 }

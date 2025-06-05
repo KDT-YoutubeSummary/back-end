@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Getter
+//@Getter
 @Transactional
 // UserLibraryService는 유저의 라이브러리 관련 기능을 처리하는 서비스입니다.
 public class UserLibraryService {
@@ -36,10 +36,11 @@ public class UserLibraryService {
 
     // 유저 라이브러리 저장
     @Transactional
-    public UserLibraryResponseListDTO saveLibrary(UserLibraryRequestDTO request) {
+    public UserLibraryResponseListDTO saveLibrary(Long userId, UserLibraryRequestDTO request) {
         // 1. User 조회 (예외 처리 포함)
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
+// User는 현재 JWT로 인증된 상태이므로, request에서 userId를 가져와서 처리
 
         // 2. Summary 조회 (예외 처리 포함)
         Summary summary = summaryRepository.findById(request.getSummaryId())
@@ -62,9 +63,14 @@ public class UserLibraryService {
             for (String tagName : request.getTags()) {
                 Tag tag = tagRepository.findByTagName(tagName)
                         .orElseGet(() -> tagRepository.save(Tag.builder().tagName(tagName).build()));
-                UserLibraryTagId tagId = new UserLibraryTagId(userLibrary.getId(), tag.getId());
-                UserLibraryTag userLibraryTag = new UserLibraryTag(tagId, userLibrary, tag);
-                userLibraryTagRepository.save(userLibraryTag);
+
+                //  중복 저장 방지
+                boolean exists = userLibraryTagRepository.existsByUserLibraryAndTag(userLibrary, tag);
+                if (!exists) {
+                    UserLibraryTagId tagId = new UserLibraryTagId(userLibrary.getId(), tag.getId());
+                    UserLibraryTag userLibraryTag = new UserLibraryTag(tagId, userLibrary, tag);
+                    userLibraryTagRepository.save(userLibraryTag);
+                }
             }
         }
 
@@ -162,9 +168,14 @@ public class UserLibraryService {
 
     // 유저 라이브러리 메모 업데이트
     @Transactional
-    public void updateUserNotes(UserNoteUpdateRequestDTO requestDTO) {
+    public void updateUserNotes(Long userId,UserNoteUpdateRequestDTO requestDTO) {
         UserLibrary library = userLibraryRepository.findById(requestDTO.getUserLibraryId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 라이브러리를 찾을 수 없습니다."));
+
+        if (!library.getUser().getId().equals(userId)) {
+            throw new SecurityException("해당 라이브러리에 대한 권한이 없습니다.");
+        }
+
         library.setUserNotes(requestDTO.getUserNotes());
     }
 
