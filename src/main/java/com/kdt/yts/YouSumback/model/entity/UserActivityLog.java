@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "useractivitylog")
 public class UserActivityLog {
 
     @Id
@@ -27,7 +28,7 @@ public class UserActivityLog {
     @Column(name = "target_entity_id_int", nullable = true)
     private Long targetEntityIdInt; // 활동 대상 정수형 ID
 
-    @Column(name = "create_at", nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createAt; // 활동 발생 일자
 
     @Column(name = "activity_detail", columnDefinition = "TEXT", nullable = true)

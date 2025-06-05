@@ -39,4 +39,9 @@ public class Video {
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
 
+    @Column(name = "original_language_code", length = 255, nullable = false)
+    private String originalLanguageCode; // 원본 언어 코드
+
+    @Column(name = "duration_seconds", nullable = false)
+    private int durationSeconds; // 영상 길이 (초)
 }

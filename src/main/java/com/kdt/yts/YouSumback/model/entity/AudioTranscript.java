@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "AudioTranscript")
+@Table(name = "audio_transcript")
 public class AudioTranscript {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,5 +26,4 @@ public class AudioTranscript {
     @ManyToOne
     @JoinColumn(name = "video_id", nullable = false)
     private Video video; // 비디오 식별자
-
 }

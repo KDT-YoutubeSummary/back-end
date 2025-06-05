@@ -3,11 +3,11 @@ package com.kdt.yts.YouSumback.model.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "AnswerOption")
+@Table(name = "answer_option")
 public class AnswerOption {
     @Id
     @Column(name = "answer_option_id", nullable = false)
-    private Integer answerOptionId; // 답변 선택지 식별자
+    private Long answerOptionId; // 답변 선택지 식별자
 
     @ManyToOne
     @JoinColumn(name = "question_id", nullable = false)
