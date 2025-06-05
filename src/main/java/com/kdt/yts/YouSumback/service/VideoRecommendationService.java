@@ -103,3 +103,4 @@ public class VideoRecommendationService {
         videoRecommendationRepository.save(recommendation);
     }
 }
+

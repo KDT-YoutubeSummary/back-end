@@ -47,9 +47,18 @@ public class VideoRecommendationController {
             @PathVariable Long userLibraryId
     ) {
         try {
-            VideoAiRecommendationResponse response = videoRecommendationService.getAiRecommendationByUserLibraryId(userLibraryId).block();
-            videoRecommendationService.saveAiRecommendation(userLibraryId, response);
-            return ResponseEntity.ok().build();
+            // OpenAI 응답을 기다리는 동안 202 Accepted 반환
+            videoRecommendationService.getAiRecommendationByUserLibraryId(userLibraryId)
+                .doOnSuccess(response -> videoRecommendationService.saveAiRecommendation(userLibraryId, response))
+                .subscribe(
+                    null,
+                    error -> {
+                        // 예외 발생 시 로깅
+                        System.err.println("AI 추천 생성 중 오류 발생: " + error.getMessage());
+                        error.printStackTrace();
+                    }
+                );
+            return ResponseEntity.accepted().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {

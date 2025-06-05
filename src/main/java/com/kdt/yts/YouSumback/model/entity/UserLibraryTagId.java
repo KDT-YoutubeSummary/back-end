@@ -13,13 +13,13 @@ public class UserLibraryTagId implements Serializable {
     @Column(name = "user_library_id")
     private long userLibraryId;
     @Column(name = "tag_id")
-    private long tagId;
+    private Integer tagId;
 
     // 생성자
     public UserLibraryTagId() {
     }
 
-    public UserLibraryTagId(long userLibraryId, long tagId) {
+    public UserLibraryTagId(long userLibraryId, Integer tagId) {
         this.userLibraryId = userLibraryId;
         this.tagId = tagId;
     }
@@ -29,7 +29,7 @@ public class UserLibraryTagId implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UserLibraryTagId that = (UserLibraryTagId) o;
-        return userLibraryId == that.userLibraryId && tagId == that.tagId;
+        return userLibraryId == that.userLibraryId && tagId.equals(that.tagId);
     }
 
     @Override

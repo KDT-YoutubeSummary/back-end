@@ -11,7 +11,7 @@ public class User {
     @Id
     @Column(name = "user_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId; // 사용자 식별자 (PK)
+    private int userId; // 사용자 식별자 (PK)
 
     @Column(name = "username", length = 100, nullable = false, unique = true)
     private String username; // 사용자명
@@ -26,5 +26,6 @@ public class User {
     private java.sql.Timestamp createdAt; // 가입 일시
 
 }
+
 
 
