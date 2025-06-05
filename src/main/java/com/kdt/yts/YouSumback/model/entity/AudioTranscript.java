@@ -14,17 +14,21 @@ import java.time.LocalDateTime;
 public class AudioTranscript {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "transcript_id", nullable = false)
-    private Long id; // 음성텍스트 식별자
+    @Column(name = "transcript_id")
+    private Long id;
 
-    @Column(name = "transcript_text", columnDefinition = "TEXT", nullable = false)
-    private String transcriptText; // 추출된 음성 텍스트
+//    @OneToOne
+    @ManyToMany
+    @JoinColumn(name = "video_id", referencedColumnName = "video_id", nullable = false, unique = true)
+    private Video video;
+
+    @Column(name = "youtube_id", nullable = false, length = 100)
+    private String youtubeId;
+
+    @Lob
+    @Column(name = "transcript_text", nullable = false, columnDefinition = "LONGTEXT")
+    private String transcriptText;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt; // 생성 일자
-
-    @ManyToOne
-//    @OneToOne
-    @JoinColumn(name = "video_id", nullable = false)
-    private Video video; // 비디오 식별자
+    private LocalDateTime createdAt;
 }

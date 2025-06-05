@@ -101,6 +101,12 @@ dependencies {
 	// 유효성 검사 관련 -> spring-boot-starter-validation에 포함되어 있음
 	//	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
 
+
+	// YouTube API
+	implementation 'com.google.api-client:google-api-client:1.33.0'
+	implementation 'com.google.oauth-client:google-oauth-client-jetty:1.32.1'
+	implementation 'com.google.apis:google-api-services-youtube:v3-rev222-1.25.0' // YouTube 라이브러리
+	implementation 'com.google.http-client:google-http-client-jackson2:1.41.5'
 }
 
 tasks.named('test') {

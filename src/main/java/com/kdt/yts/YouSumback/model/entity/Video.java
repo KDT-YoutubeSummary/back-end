@@ -15,8 +15,9 @@ import java.time.LocalDateTime;
 public class Video {
 
     @Id
-    @Column(name = "video_id", length = 255)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "video_id")
+    private Long id; // Auto Increment ID
 
     @Column(name = "youtube_id", length = 255, nullable = false, unique = true)
     private String youtubeId;

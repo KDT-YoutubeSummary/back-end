@@ -3,7 +3,7 @@ USE yousum;
 
 -- 사용자 (User) 테이블
 CREATE TABLE `user` (
-                        user_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
+                        user_id INT AUTO_INCREMENT PRIMARY KEY,
                         username VARCHAR(100) UNIQUE NOT NULL,
                         email VARCHAR(255) UNIQUE NOT NULL,
                         password_hash VARCHAR(255) NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE `user` (
 );
 
 -- 비디오 (Video) 테이블
-CREATE TABLE video (
+CREATE TABLE `video` (
                        video_id INT PRIMARY KEY,
                        youtube_id  VARCHAR(255) UNIQUE NOT NULL,      --  (추가) 유튜브 영상 ID
                        title VARCHAR(255) NOT NULL,                 -- 영상 제목
@@ -25,22 +25,23 @@ CREATE TABLE video (
 );
 
 -- 태그 (Tag) 테이블
-CREATE TABLE tag (
+CREATE TABLE `tag` (
                      tag_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                      tag_name VARCHAR(100) UNIQUE NOT NULL
 );
 
 -- 오디오 트랜스크립트 (AudioTranscript) 테이블
-CREATE TABLE audio_transcript (
+CREATE TABLE `audio_transcript` (
                      transcript_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                      video_id INT NOT NULL UNIQUE, -- 단일 트랜스크립트 가정 유지
+                     youtube_id VARCHAR(255) NOT NULL UNIQUE,
                      transcript_text TEXT NOT NULL,
                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, -- create_at -> created_at
                      CONSTRAINT fk_audio_transcript_video FOREIGN KEY (video_id) REFERENCES video(video_id) ON DELETE CASCADE
 );
 
 -- 요약 (Summary) 테이블
-CREATE TABLE summary (
+CREATE TABLE `summary`(
                      summary_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                      user_id INT NOT NULL, -- BIGINT -> INT (User.user_id와 일관성)
                      transcript_id INT NOT NULL, -- BIGINT -> INT (AudioTranscript.transcript_id와 일관성)
@@ -54,7 +55,7 @@ CREATE TABLE summary (
 );
 
 -- 사용자 라이브러리 (UserLibrary) 테이블
-CREATE TABLE user_library (
+CREATE TABLE `user_library` (
                      user_library_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                      user_id INT NOT NULL, -- BIGINT -> INT
                      summary_id INT NOT NULL, -- BIGINT -> INT
@@ -67,7 +68,7 @@ CREATE TABLE user_library (
 );
 
 -- 리마인더 (Reminder) 테이블
-CREATE TABLE reminder (
+CREATE TABLE `reminder` (
                           reminder_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                           user_id INT NOT NULL, -- BIGINT -> INT
                           user_library_id INT NOT NULL, -- BIGINT -> INT
@@ -86,7 +87,7 @@ CREATE TABLE reminder (
 );
 
 -- 퀴즈 (Quiz) 테이블
-CREATE TABLE quiz (
+CREATE TABLE `quiz` (
                       quiz_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                       summary_id INT NOT NULL, -- UNIQUE 제약 조건 제거 (하나의 요약에 여러 퀴즈 가능성)
                       title VARCHAR(255),
@@ -95,7 +96,7 @@ CREATE TABLE quiz (
 );
 
 -- 질문 (Question) 테이블
-CREATE TABLE question (
+CREATE TABLE `question` (
                           question_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                           quiz_id INT NOT NULL,
                           question_text TEXT NOT NULL,
@@ -104,7 +105,7 @@ CREATE TABLE question (
 );
 
 -- 답변 선택지 (AnswerOption) 테이블
-CREATE TABLE answer_option (
+CREATE TABLE `answer_option` (
                               answer_option_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                               question_id INT NOT NULL,
                               option_text TEXT NOT NULL,
@@ -117,7 +118,7 @@ CREATE TABLE answer_option (
 );
 
 -- 사용자 라이브러리 태그 (UserLibraryTag) 연결 테이블
-CREATE TABLE user_library_tag (
+CREATE TABLE `user_library_tag` (
                                 user_library_id INT NOT NULL, -- BIGINT -> INT
                                 tag_id INT NOT NULL, -- BIGINT -> INT
                                 PRIMARY KEY (user_library_id, tag_id),
@@ -126,7 +127,7 @@ CREATE TABLE user_library_tag (
 );
 
 -- 영상 추천 (VideoRecommendation) 테이블
-CREATE TABLE video_recommendation (
+CREATE TABLE `video_recommendation` (
                                      recommendation_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                                      user_id INT NOT NULL, -- BIGINT -> INT
                                      source_video_id INT NULL ,
@@ -141,7 +142,7 @@ CREATE TABLE video_recommendation (
 );
 
 -- 사용자 활동 로그 (UserActivityLog) 테이블
-CREATE TABLE user_activity_log (
+CREATE TABLE `user_activity_log` (
                                  log_id BIGINT AUTO_INCREMENT PRIMARY KEY, -- BIGSERIAL -> BIGINT AUTO_INCREMENT
                                  user_id INT NOT NULL, -- BIGINT -> INT
                                  activity_type VARCHAR(50) NOT NULL,

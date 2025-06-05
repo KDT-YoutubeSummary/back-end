@@ -31,7 +31,7 @@ public class Summary {
             foreignKey = @ForeignKey(name = "fk_summary_audiotranscript"))
     private AudioTranscript audioTranscript;
 
-    @Column(name = "summary_text", columnDefinition = "TEXT", nullable = false)
+    @Column(name = "summary_text", nullable = false)
     private String summaryText;
 
     @Column(name = "user_prompt", columnDefinition = "TEXT")
