@@ -1,6 +1,5 @@
 package com.kdt.yts.YouSumback.security;
 
-import com.kdt.yts.YouSumback.controller.CustomUserDetails;
 import com.kdt.yts.YouSumback.model.entity.User;
 import com.kdt.yts.YouSumback.repository.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -35,7 +34,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             Long userId = jwtProvider.extractUserId(token);
-            User user = userRepository.findById(userId).orElse(null);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
             if (user != null) {
                 CustomUserDetails userDetails = new CustomUserDetails(user);

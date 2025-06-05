@@ -68,7 +68,7 @@ public class SecurityConfig {
                 )
                 .addFilter(jwtLoginAuthenticationFilter(authManager)) // 로그인 필터
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class) // JWT 인증 필터
-                .addFilterBefore(new JwtAuthorizationFilter(authManager, jwtProvider), UsernamePasswordAuthenticationFilter.class) // (선택) 권한 필터
+                .addFilterBefore(new JwtAuthorizationFilter(authManager, jwtProvider, userRepository), UsernamePasswordAuthenticationFilter.class) // (선택) 권한 필터
                 .formLogin(form -> form.disable())
                 .build();
     }

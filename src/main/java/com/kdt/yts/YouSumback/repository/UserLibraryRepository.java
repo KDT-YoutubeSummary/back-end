@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface UserLibraryRepository extends JpaRepository<UserLibrary, Long> {
-    Optional<UserLibrary> findBySummaryUserUserIdAndSummaryAudioTranscriptTranscriptId(Long userId, Long transcriptId);
+    Optional<UserLibrary> findBySummaryUserIdAndSummaryAudioTranscriptId(Long userId, Long transcriptId);
 
     List<UserLibrary> findByUser(User user);
 

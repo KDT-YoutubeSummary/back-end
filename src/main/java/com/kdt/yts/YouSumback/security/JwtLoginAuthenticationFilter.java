@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-@RequiredArgsConstructor
 // JwtLoginAuthenticationFilter 클래스는 로그인 요청을 처리하는 필터로,
 // 사용자가 로그인 시 입력한 자격 증명을 검증하고, 성공 시 JWT 토큰을 생성하여 응답합니다.
 // JwtAuthenticationFilter 에서 JwtLoginAuthenticationFilter로 클래스명 수정
@@ -28,6 +27,18 @@ public class JwtLoginAuthenticationFilter extends UsernamePasswordAuthentication
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
+
+    // 생성자 추가
+    public JwtLoginAuthenticationFilter(AuthenticationManager authenticationManager,
+                                        JwtProvider jwtProvider,
+                                        UserRepository userRepository) {
+        super();
+        this.authenticationManager = authenticationManager;
+        this.jwtProvider = jwtProvider;
+        this.userRepository = userRepository;
+
+        setAuthenticationManager(authenticationManager);
+    }
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
@@ -58,7 +69,7 @@ public class JwtLoginAuthenticationFilter extends UsernamePasswordAuthentication
                 (org.springframework.security.core.userdetails.User) authResult.getPrincipal();
 
         // ✅ 실제 사용자 엔티티 조회
-        User user = userRepository.findByUsername(principal.getUsername())
+        User user = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = jwtProvider.generateToken(user.getId(), user.getUserName());

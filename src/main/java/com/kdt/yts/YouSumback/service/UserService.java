@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -17,10 +18,12 @@ public class UserService {
 
     // 로그인 또는 회원가입 처리
     public User loginOrRegister(String email, String name) {
+        String generatedUsername = "google_" + UUID.randomUUID().toString().substring(0, 8);
+
         return userRepository.findByEmail(email)
                 .orElseGet(() -> userRepository.save(
                         User.builder()
-                                .userName(name)
+                                .userName(generatedUsername)
                                 .email(email)
                                 .passwordHash("GOOGLE") // 👉 소셜 로그인은 비번 없음, 의미 있는 더미 값 지정
                                 .build()

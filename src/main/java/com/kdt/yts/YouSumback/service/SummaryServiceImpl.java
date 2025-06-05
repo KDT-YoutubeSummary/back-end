@@ -74,7 +74,7 @@ public class SummaryServiceImpl implements SummaryService {
 
         // 3. 라이브러리 찾기
         UserLibrary library = userLibraryRepository
-                .findBySummaryUserUserIdAndSummaryAudioTranscriptTranscriptId(userId, transcriptId)
+                .findBySummaryUserIdAndSummaryAudioTranscriptId(userId, transcriptId)
                 .orElseThrow(() -> new RuntimeException("라이브러리 항목 없음"));
 
         // 4. 해시태그 추출 및 저장

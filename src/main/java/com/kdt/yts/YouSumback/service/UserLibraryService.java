@@ -37,7 +37,7 @@ public class UserLibraryService {
         // 1. User 조회 (예외 처리 포함)
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
-// User는 현재 JWT로 인증된 상태이므로, request에서 userId를 가져와서 처리
+        // User는 현재 JWT로 인증된 상태이므로, request에서 userId를 가져와서 처리
 
         // 2. Summary 조회 (예외 처리 포함)
         Summary summary = summaryRepository.findById(request.getSummaryId())

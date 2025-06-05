@@ -4,6 +4,7 @@ import com.kdt.yts.YouSumback.model.dto.request.UserLibraryRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.UserNoteUpdateRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.TagStatResponseDTO;
 import com.kdt.yts.YouSumback.model.dto.response.UserLibraryResponseDTO;
+import com.kdt.yts.YouSumback.security.CustomUserDetails;
 import com.kdt.yts.YouSumback.service.UserLibraryService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -136,11 +137,11 @@ public class UserLibraryController {
     }
 
     // 🔐 공통: 인증 객체에서 userId 추출
- Long getUserIdFromAuth(Authentication auth) {
+// 🔐 공통: 인증 객체에서 userId 추출
+    Long getUserIdFromAuth(Authentication auth) {
         CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-        return userDetails.getUserId();
+        return userDetails.getUserId(); // ✅ userId는 변하지 않음 (PK 기반)
     }
-
 }
 
 

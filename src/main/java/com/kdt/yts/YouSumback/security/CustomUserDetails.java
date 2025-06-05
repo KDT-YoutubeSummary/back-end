@@ -1,4 +1,4 @@
-package com.kdt.yts.YouSumback.controller;
+package com.kdt.yts.YouSumback.security;
 
 import com.kdt.yts.YouSumback.model.entity.User;
 import lombok.Getter;
@@ -9,37 +9,31 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Getter
-// CustomUserDetails 클래스는 UserDetails 인터페이스를 구현하여
-// Spring Security에서 사용자 정보를 제공하는 역할을 합니다.
 public class CustomUserDetails implements UserDetails {
 
-    private final User user;
+    private final Long userId;
+    private final String userName;
+    private final String passwordHash;
 
     public CustomUserDetails(User user) {
-        this.user = user;
-    }
-
-    public Long getUserId() {
-        return user.getId();
-    }
-
-    public String getEmail() {
-        return user.getEmail();
+        this.userId = user.getId();                  // 🔐 userId 보존
+        this.userName = user.getUserName();
+        this.passwordHash = user.getPasswordHash();
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList(); // 권한 안 쓸 거면 이렇게 비워도 OK
+        return Collections.emptyList(); // 또는 권한 리스트 설정
     }
 
     @Override
     public String getPassword() {
-        return user.getPasswordHash(); // 비밀번호 해시
+        return passwordHash;
     }
 
     @Override
     public String getUsername() {
-        return user.getEmail(); // 유저 이름 대신 이메일 사용
+        return userName;
     }
 
     @Override
