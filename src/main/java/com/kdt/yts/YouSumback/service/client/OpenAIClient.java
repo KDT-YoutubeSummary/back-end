@@ -41,3 +41,5 @@ public class OpenAIClient {
                 .map(json -> json.get("choices").get(0).get("message").get("content").asText());
     }
 }
+
+

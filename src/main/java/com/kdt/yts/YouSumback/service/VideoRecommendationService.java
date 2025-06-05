@@ -6,13 +6,18 @@ import com.kdt.yts.YouSumback.repository.UserLibraryTagRepository;
 import com.kdt.yts.YouSumback.repository.VideoRecommendationRepository;
 import com.kdt.yts.YouSumback.service.client.OpenAIClient;
 import com.kdt.yts.YouSumback.model.dto.response.VideoAiRecommendationResponse;
-import com.kdt.yts.YouSumback.model.entity.UserLibraryTag;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kdt.yts.YouSumback.model.entity.Video;
+import com.kdt.yts.YouSumback.model.entity.UserLibrary;
+import com.kdt.yts.YouSumback.repository.VideoRepository;
+import com.kdt.yts.YouSumback.repository.UserLibraryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,6 +28,12 @@ public class VideoRecommendationService {
     private UserLibraryTagRepository userLibraryTagRepository;
     @Autowired
     private OpenAIClient openAIClient;
+    @Autowired
+    private VideoRepository videoRepository;
+    @Autowired
+    private UserLibraryRepository userLibraryRepository;
+    @Autowired
+    private YouTubeMetadataService youtubeMetadataService;
 
     // 영상 추천 테이블에 등록
     public VideoRecommendation createRecommendation(VideoRecommendation videoRecommendation) {
@@ -63,7 +74,32 @@ public class VideoRecommendationService {
     }
 
     // AI 추천 결과를 video_recommendation 테이블에 저장 (구현 X)
+    @Transactional
     public void saveAiRecommendation(Long userLibraryId, VideoAiRecommendationResponse response) {
-        // TODO: 구현 예정
+        String url = response.getUrl();
+        String youtubeId = youtubeMetadataService.extractYoutubeId(url);
+        try {
+            youtubeMetadataService.saveVideoMetadataFromUrl(url);
+        } catch (Exception e) {
+            // 이미 저장된 영상이면 무시, 그 외는 예외 throw
+            if (!e.getMessage().contains("이미 저장된 영상")) {
+                throw new RuntimeException(e);
+            }
+        }
+        Optional<Video> videoOpt = videoRepository.findByYoutubeId(youtubeId);
+        if (videoOpt.isEmpty()) {
+            throw new IllegalStateException("추천 영상을 Video 테이블에서 찾을 수 없습니다.");
+        }
+        Video video = videoOpt.get();
+        UserLibrary userLibrary = userLibraryRepository.findById(userLibraryId.intValue())
+                .orElseThrow(() -> new IllegalArgumentException("해당 userLibraryId의 UserLibrary가 없습니다."));
+        // userLibrary → summary → audioTranscript → video
+        Video recommendedVideo = userLibrary.getSummary().getAudioTranscript().getVideo();
+        VideoRecommendation recommendation = new VideoRecommendation();
+        recommendation.setUser(userLibrary.getUser());
+        recommendation.setVideo(video);
+        recommendation.setVideo2(recommendedVideo); // recommended_video_id 설정
+        recommendation.setRecommendationReason(response.getReason());
+        videoRecommendationRepository.save(recommendation);
     }
 }

@@ -2,15 +2,20 @@ package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 public class Video {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "video_id")
     private Integer videoId; // 비디오 식별자 (PK)
 
@@ -31,4 +36,7 @@ public class Video {
 
     @Column(name = "view_count")
     private Long viewCount; // 조회수
+
+    @Column(name = "published_at")
+    private java.time.LocalDateTime publishedAt; // 영상 업로드 시각
 }

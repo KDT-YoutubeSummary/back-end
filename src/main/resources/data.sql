@@ -9,16 +9,14 @@ CREATE TABLE `user` (
 
 -- 비디오 (Video) 테이블
 CREATE TABLE video (
-                       video_id INT PRIMARY KEY,
-                       youtube_id  VARCHAR(255) UNIQUE NOT NULL,      --  (추가) 유튜브 영상 ID
+                       video_id INT AUTO_INCREMENT PRIMARY KEY,
+                       youtube_id  VARCHAR(255) NOT NULL UNIQUE,      --  (추가) 유튜브 영상 ID
                        title VARCHAR(255) NOT NULL,                 -- 영상 제목
-                       original_url VARCHAR(512) UNIQUE NOT NULL,  -- 영상 원본 링크
+                       original_url VARCHAR(512) NOT NULL UNIQUE,  -- 영상 원본 링크
                        uploader_name VARCHAR(100)             ,      -- 채널명 (업로더)
                        thumbnail_url TEXT,                          --  (추가)  썸네일 이미지 URL
                        view_count BIGINT,                           --  (추가)  조회수
-                       published_at DATETIME,                       -- (추가)  업로드 날짜
-                       duration_seconds INT NOT NULL,               -- 영상 길이 (초 단위)
-                       original_language_code VARCHAR(20) NOT NULL  -- 영상의 원본 언어 코드
+                       published_at DATETIME                        -- (추가)  업로드 날짜
 );
 
 -- 태그 (Tag) 테이블
@@ -154,10 +152,10 @@ INSERT INTO user (user_id, username, email, password_hash) VALUES
     (1, 'test_user', 'test@example.com', 'hashedpassword');
 
 -- ✅ 2. 비디오 (원본 + 추천용)
-INSERT INTO video (video_id, youtube_id, title, original_url, uploader_name, thumbnail_url, view_count, published_at, duration_seconds, original_language_code) VALUES
-                                                                                                                                                                    (1, 'yt001', 'Test Video', 'https://youtu.be/yt001', 'Uploader A', 'https://img.url', 1000, '2025-06-05 06:33:59', 600, 'en'),
-                                                                                                                                                                    (2, 'yt002', '추천 영상 A', 'https://youtu.be/yt002', 'Uploader B', 'https://img.url/yt002', 2500, '2025-06-05 06:34:23', 300, 'en'),
-                                                                                                                                                                    (3, 'yt999', '강력 추천 영상', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'Uploader X', NULL, 9999, '2025-06-05 06:35:00', 200, 'ko');
+INSERT INTO video (video_id, youtube_id, title, original_url, uploader_name, thumbnail_url, view_count, published_at) VALUES
+                                                                                                                                                                    (1, 'yt001', 'Test Video', 'https://youtu.be/yt001', 'Uploader A', 'https://img.url', 1000, '2025-06-05 06:33:59'),
+                                                                                                                                                                    (2, 'yt002', '추천 영상 A', 'https://youtu.be/yt002', 'Uploader B', 'https://img.url/yt002', 2500, '2025-06-05 06:34:23'),
+                                                                                                                                                                    (3, 'yt999', '강력 추천 영상', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'Uploader X', NULL, 9999, '2025-06-05 06:35:00');
 
 -- ✅ 3. 트랜스크립트
 INSERT INTO audio_transcript (transcript_id, video_id, transcript_text) VALUES

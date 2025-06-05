@@ -41,22 +41,20 @@ public class VideoRecommendationController {
         return ResponseEntity.ok().build();
     }
 
-    // userLibraryId 기반 AI 영상 추천
-    @GetMapping("/ai/{userLibraryId}")
-    public Mono<VideoAiRecommendationResponse> getAiRecommendationByUserLibraryId(@PathVariable Long userLibraryId) {
-        return videoRecommendationService.getAiRecommendationByUserLibraryId(userLibraryId);
-    }
-
-    // AI 추천 결과 저장 API (구현 X)
-    @PostMapping("/ai/test/{userLibraryId}")
-    public ResponseEntity<Void> saveAiRecommendation(
-            @PathVariable Long userLibraryId,
-            @RequestBody VideoAiRecommendationResponse response
+    // userLibraryId 기반 AI 영상 추천 및 저장 (POST)
+    @PostMapping("/ai/{userLibraryId}")
+    public ResponseEntity<Void> aiRecommendAndSave(
+            @PathVariable Long userLibraryId
     ) {
-        videoRecommendationService.saveAiRecommendation(userLibraryId, response);
-        return ResponseEntity.ok().build();
+        try {
+            VideoAiRecommendationResponse response = videoRecommendationService.getAiRecommendationByUserLibraryId(userLibraryId).block();
+            videoRecommendationService.saveAiRecommendation(userLibraryId, response);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
-
-
 
 }
