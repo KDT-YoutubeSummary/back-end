@@ -27,7 +27,7 @@ public class Summary {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transcript_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_summary_audiotranscript"))
-    private AudioTranscript transcript;
+    private AudioTranscript audioTranscript;
 
     @Column(name = "summary_text", columnDefinition = "TEXT", nullable = false)
     private String summaryText;

@@ -2,12 +2,19 @@ package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Objects;
 
 @Embeddable
 //@Table(name = "user_library_tag_id")
+@Getter
+@Setter
+@NoArgsConstructor
 public class UserLibraryTagId implements Serializable {
 
     // 필드
@@ -16,9 +23,6 @@ public class UserLibraryTagId implements Serializable {
     @Column(name = "tag_id")
     private Long tagId;
 
-    // 생성자
-    public UserLibraryTagId() {
-    }
 
     public UserLibraryTagId(Long userLibraryId, Long tagId) {
         this.userLibraryId = userLibraryId;

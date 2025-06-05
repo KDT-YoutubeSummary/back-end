@@ -9,6 +9,6 @@ import java.util.Optional;
 @Repository
 public interface SummaryRepository extends JpaRepository<Summary, Long> {
     Optional<Summary> findById(Long Id);
+    Optional<Summary> findByUserUserIdAndAudioTranscriptTranscriptId(Long userId, Long transcriptId);
+
 }
-
-

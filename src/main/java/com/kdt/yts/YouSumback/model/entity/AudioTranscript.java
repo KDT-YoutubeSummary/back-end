@@ -24,6 +24,7 @@ public class AudioTranscript {
     private LocalDateTime createdAt; // 생성 일자
 
     @ManyToOne
+//    @OneToOne
     @JoinColumn(name = "video_id", nullable = false)
     private Video video; // 비디오 식별자
 }

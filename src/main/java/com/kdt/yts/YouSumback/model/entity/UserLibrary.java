@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 @Table(name = "user_library")
 public class UserLibrary {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_library_id", nullable = false)
@@ -33,5 +34,6 @@ public class UserLibrary {
 
     @Column(name = "user_notes", columnDefinition = "TEXT", nullable = true)
     private String userNotes; // 사용자 메모
+
 
 }

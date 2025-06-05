@@ -9,6 +9,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor @AllArgsConstructor
 public class Tag {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // tag_id가 DB에서 자동 증가하도록 설정
     @Column(name = "tag_id", nullable = false)

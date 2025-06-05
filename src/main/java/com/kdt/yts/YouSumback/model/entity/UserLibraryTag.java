@@ -1,11 +1,13 @@
 package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
+import lombok.*;
 
 @Getter
+@Setter
+@Builder
 @Entity
-@Table(name = "userLibrary_tag")
+@Table(name = "user_library_tag")
 public class UserLibraryTag {
 
     @EmbeddedId
