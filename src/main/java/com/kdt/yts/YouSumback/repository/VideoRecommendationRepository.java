@@ -1,0 +1,14 @@
+package com.kdt.yts.YouSumback.repository;
+
+import com.kdt.yts.YouSumback.model.entity.VideoRecommendation;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface VideoRecommendationRepository extends JpaRepository<VideoRecommendation, Long> {
+    // 사용자 ID로 영상 추천 목록 찾기
+    List<VideoRecommendation> findByUser_UserId(Long userId);
+
+    // 추천 영상 삭제
+    void deleteById(Long id);
+}
