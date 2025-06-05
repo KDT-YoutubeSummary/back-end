@@ -1,8 +1,8 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.config.JwtProvider;
 import com.kdt.yts.YouSumback.model.entity.User;
 import com.kdt.yts.YouSumback.repository.UserRepository;
+import com.kdt.yts.YouSumback.security.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

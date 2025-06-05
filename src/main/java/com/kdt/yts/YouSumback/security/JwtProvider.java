@@ -27,6 +27,7 @@ public class JwtProvider {
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
+    // Jwt 토큰을 생성하는 메서드
     public String generateToken(Long userId, String username) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
@@ -40,11 +41,31 @@ public class JwtProvider {
                 .compact();
     }
 
+    // Claim을 추출하는 메서드
     public Claims validateAndGetClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    // 토큰 유효성 검사 메서드
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    // 유저 ID만 추출
+    public Long extractUserId(String token) {
+        Claims claims = validateAndGetClaims(token);
+        return claims.get("userId", Long.class);
     }
 }

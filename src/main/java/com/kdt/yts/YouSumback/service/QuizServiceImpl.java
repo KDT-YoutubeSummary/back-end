@@ -1,6 +1,6 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
+import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
 import com.kdt.yts.YouSumback.model.entity.AnswerOption;
 import com.kdt.yts.YouSumback.model.entity.Question;
 import com.kdt.yts.YouSumback.model.entity.Quiz;
@@ -25,7 +25,7 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
-    public List<Quiz> generateFromSummary(QuizRequest request) {
+    public List<Quiz> generateFromSummary(QuizRequestDTO request) {
         // 1. AI 요약으로부터 퀴즈 생성
         String aiResponse = summaryService.callOpenAISummary(request.getSummaryText());
 
@@ -33,7 +33,7 @@ public class QuizServiceImpl implements QuizService {
         List<QuizParsedResult> parsedList = parseQuizFromAiResponse(aiResponse);
 
         // 3. summary 가져오기
-        Summary summary = summaryRepository.findById(request.getTranscriptId().intValue())
+        Summary summary = summaryRepository.findById(request.getTranscriptId())
                 .orElseThrow(() -> new RuntimeException("Summary not found"));
 
         // 4. Quiz 엔티티 구성

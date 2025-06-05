@@ -14,6 +14,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 
+// JwtAuthorizationFilter 클래스는 JWT 토큰을 검증하고,
+// 유효한 경우 인증 정보를 SecurityContext에 설정하는 필터입니다.
+// JwtAuthenticationFilter 하나로 인증과 인가를 모두 처리할 수 있긴 함
 public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 
     private final JwtProvider jwtProvider;

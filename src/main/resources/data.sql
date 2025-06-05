@@ -1,3 +1,6 @@
+CREATE DATABASE IF NOT EXISTS yousum;
+USE yousum;
+
 -- 사용자 (User) 테이블
 CREATE TABLE `user` (
                         user_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
@@ -106,6 +109,10 @@ CREATE TABLE answer_option (
                               question_id INT NOT NULL,
                               option_text TEXT NOT NULL,
                               is_correct BOOLEAN NOT NULL,
+                              transcript_id BIGINT NOT NULL,
+                              summary_text TEXT NOT NULL,
+                              summary_type VARCHAR(50),
+                              created_at DATETIME NOT NULL,
                               CONSTRAINT fk_answer_question FOREIGN KEY (question_id) REFERENCES question(question_id) ON DELETE CASCADE
 );
 
@@ -206,13 +213,16 @@ INSERT INTO question (question_id, quiz_id, question_text, language_code) VALUES
                                                                               (702, 601, 'AI의 어떤 하위 분야에 대한 언급이 있었나요?', 'ko');
 
 -- ✅ 11. 선택지
-INSERT INTO answer_option (answer_option_id, question_id, option_text, is_correct) VALUES
-                                                                                       (801, 701, '블록체인', FALSE),
-                                                                                       (802, 701, '인공지능', TRUE),
-                                                                                       (803, 701, '클라우드 컴퓨팅', FALSE),
-                                                                                       (804, 702, '기계 학습', TRUE),
-                                                                                       (805, 702, '로봇 공학', FALSE),
-                                                                                       (806, 702, '양자 컴퓨팅', FALSE);
+INSERT INTO answer_option (
+    answer_option_id, question_id, option_text, is_correct,
+    transcript_id, summary_text, summary_type, created_at
+) VALUES
+      (801, 701, '블록체인', FALSE, 1001, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
+      (802, 701, '인공지능', TRUE, 1001, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
+      (803, 701, '클라우드 컴퓨팅', FALSE, 1001, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
+      (804, 702, '기계 학습', TRUE, 1002, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW()),
+      (805, 702, '로봇 공학', FALSE, 1002, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW()),
+      (806, 702, '양자 컴퓨팅', FALSE, 1002, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW());
 
 -- ✅ 12. 사용자 활동 로그
 INSERT INTO user_activity_log (log_id, user_id, activity_type, target_entity_type, target_entity_id_str, target_entity_id_int, activity_detail, details) VALUES

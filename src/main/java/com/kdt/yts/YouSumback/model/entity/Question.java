@@ -32,20 +32,20 @@ public class Question {
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
     private List<AnswerOption> options;
 
-    // ✅ Setter
-    public void setQuiz(Quiz quiz) {
-        this.quiz = quiz;
-    }
-
-    public void setQuestionText(String questionText) {
-        this.questionText = questionText;
-    }
-
-    public void setLanguageCode(String languageCode) {
-        this.languageCode = languageCode;
-    }
-
-    public void setOptions(List<AnswerOption> options) {
-        this.options = options;
-    }
+    // 생성자, 게터, 세터 등은 Lombok 어노테이션으로 자동 생성됨
+//    public void setQuiz(Quiz quiz) {
+//        this.quiz = quiz;
+//    }
+//
+//    public void setQuestionText(String questionText) {
+//        this.questionText = questionText;
+//    }
+//
+//    public void setLanguageCode(String languageCode) {
+//        this.languageCode = languageCode;
+//    }
+//
+//    public void setOptions(List<AnswerOption> options) {
+//        this.options = options;
+//    }
 }

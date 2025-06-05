@@ -1,6 +1,6 @@
 package com.kdt.yts.YouSumback.controller;
 
-import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
+import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
 import com.kdt.yts.YouSumback.model.entity.Quiz;
 import com.kdt.yts.YouSumback.service.QuizService;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +19,9 @@ public class QuizController {
 
     private final QuizService quizService;
 
+    // 퀴즈 생성 API 엔드포인트
     @PostMapping("/generate")
-    public ResponseEntity<List<Quiz>> generateQuiz(@RequestBody QuizRequest request) {
+    public ResponseEntity<List<Quiz>> generateQuiz(@RequestBody QuizRequestDTO request) {
         return ResponseEntity.ok(quizService.generateFromSummary(request));
     }
 }

@@ -41,16 +41,17 @@ public class AnswerOption {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public void setQuestion(Question question) {
-        this.question = question;
-    }
-
-    public void setOptionText(String optionText) {
-        this.optionText = optionText;
-    }
-
-    public void setIsCorrect(boolean isCorrect) {
-        this.isCorrect = isCorrect;
-    }
+    // 생성자, 게터, 세터 등은 Lombok 어노테이션으로 자동 생성됨
+//    public void setQuestion(Question question) {
+//        this.question = question;
+//    }
+//
+//    public void setOptionText(String optionText) {
+//        this.optionText = optionText;
+//    }
+//
+//    public void setIsCorrect(boolean isCorrect) {
+//        this.isCorrect = isCorrect;
+//    }
 }
 

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+// YouSumback 서비스에서 AI 요약 기능을 제공하는 서비스 클래스입니다.
 public class AiSummaryService {
 
     private final ChatClient chatClient;

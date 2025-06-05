@@ -43,7 +43,7 @@ public class UserLibraryResponseListDTO {
         return UserLibraryResponseListDTO.builder()
                 .userLibraryId(entity.getId())
                 .summaryId(entity.getSummary().getId())
-                .videoTitle(entity.getSummary().getTranscript().getVideo().getTitle())
+                .videoTitle(entity.getSummary().getAudioTranscript().getVideo().getTitle())
                 .tags(tags)
                 .savedAt(entity.getSavedAt())
                 .lastViewedAt(entity.getLastViewedAt())

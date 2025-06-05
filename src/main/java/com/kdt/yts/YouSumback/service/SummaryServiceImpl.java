@@ -1,13 +1,12 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
-import com.kdt.yts.YouSumback.model.dto.request.SummaryRequest;
-import com.kdt.yts.YouSumback.model.dto.response.SummaryResponse;
+import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.request.SummaryRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.response.SummaryResponseDTO;
 import com.kdt.yts.YouSumback.model.entity.*;
 import com.kdt.yts.YouSumback.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -49,7 +48,7 @@ public class SummaryServiceImpl implements SummaryService {
     }
 
     @Override
-    public SummaryResponse summarize(SummaryRequest request) {
+    public SummaryResponseDTO summarize(SummaryRequestDTO request) {
         String text = request.getText();
         Long transcriptId = request.getTranscriptId();
         Long userId = request.getUserId();
@@ -90,7 +89,7 @@ public class SummaryServiceImpl implements SummaryService {
 
             if (!exists) {
                 UserLibraryTag userLibraryTag = UserLibraryTag.builder()
-                        .id(new UserLibraryTagId(library.getUserLibraryId(), tag.getTagId()))
+                        .id(new UserLibraryTagId(library.getUser().getId(), tag.getId()))
                         .userLibrary(library)
                         .tag(tag)
                         .build();
@@ -98,11 +97,11 @@ public class SummaryServiceImpl implements SummaryService {
             }
         }
 
-        return new SummaryResponse(saved.getSummaryId(), finalSummary);
+        return new SummaryResponseDTO(saved.getId(), finalSummary);
     }
 
     @Override
-    public List<Quiz> generateFromSummary(QuizRequest request) {
+    public List<Quiz> generateFromSummary(QuizRequestDTO request) {
         String prompt = "다음 내용을 바탕으로 객관식 퀴즈를 " + request.getNumberOfQuestions() + "개 만들어줘.\n"
                 + "문제 형식은 다음과 같아:\n"
                 + "Q: ...\n1. ...\n2. ...\n3. ...\n4. ...\n정답: ...\n\n"
@@ -135,7 +134,7 @@ public class SummaryServiceImpl implements SummaryService {
                         .build();
 
                 Quiz quiz = Quiz.builder()
-                        .summary(Summary.builder().summaryId(request.getSummaryId()).build())
+                        .summary(Summary.builder().id(request.getSummaryId()).build())
                         .questions(List.of(question))
                         .createdAt(LocalDateTime.now())
                         .build();

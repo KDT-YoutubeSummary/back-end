@@ -148,7 +148,7 @@ public class ReminderService {
         // 이메일 발송
         for (Reminder reminder : remindersToNotify) {
             String recipientEmail = reminder.getUser().getEmail(); // 사용자 이메일 주소 가져오기
-            String summaryTitle = reminder.getUserLibrary().getSummary().getTranscript().getVideo().getTitle(); // 요약 영상 제목 가져오기
+            String summaryTitle = reminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle(); // 요약 영상 제목 가져오기
             String reminderNote = reminder.getReminderNote(); // 리마인더 메모 가져오기
 
             String subject = "[YouSum] 리마인더 알림: " + summaryTitle; // 이메일 제목 구성
@@ -188,7 +188,7 @@ public class ReminderService {
         StringBuilder content = new StringBuilder();
         content.append("안녕하세요, ").append(reminder.getUser().getUserName()).append("님!\n\n");
         content.append("설정하신 리마인더 알림이 도착했습니다.\n\n");
-        content.append("영상 제목: ").append(reminder.getUserLibrary().getSummary().getTranscript().getVideo().getTitle()).append("\n");
+        content.append("영상 제목: ").append(reminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle()).append("\n");
         content.append("리마인더 메모: ").append(reminder.getReminderNote()).append("\n");
         content.append("알림 시간: ").append(reminder.getNextNotificationDatetime().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH시 mm분"))).append("\n\n");
         content.append("지금 바로 YouSum에서 요약 내용을 확인해보세요!\n");

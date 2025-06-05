@@ -15,6 +15,7 @@ import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
+// UserDetailsService 인터페이스를 구현하여 사용자 인증 정보를 로드
 public class CustomUserDetailService implements UserDetailsService {
 
     private final UserRepository userRepository;
@@ -26,7 +27,7 @@ public class CustomUserDetailService implements UserDetailsService {
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
 
         return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getUsername())
+                .username(user.getUserName())
                 .password(user.getPasswordHash())
                 .authorities(Collections.singleton(authority))
                 .build();

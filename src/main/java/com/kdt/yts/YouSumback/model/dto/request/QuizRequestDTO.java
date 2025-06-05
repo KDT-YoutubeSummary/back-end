@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class QuizRequest {
+public class QuizRequestDTO {
     private String summaryText;
     private int numberOfQuestions;
     private Long transcriptId;

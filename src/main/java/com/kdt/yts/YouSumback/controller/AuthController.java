@@ -2,12 +2,12 @@ package com.kdt.yts.YouSumback.controller;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.kdt.yts.YouSumback.model.dto.request.GoogleLoginRequestDTO;
-import com.kdt.yts.YouSumback.model.dto.request.LoginRequest;
-import com.kdt.yts.YouSumback.model.dto.request.RegisterRequest;
-import com.kdt.yts.YouSumback.model.dto.request.UpdateUserRequest;
-import com.kdt.yts.YouSumback.model.dto.response.LoginResponse;
-import com.kdt.yts.YouSumback.model.dto.response.RegisterResponse;
-import com.kdt.yts.YouSumback.model.dto.response.UpdateUserResponse;
+import com.kdt.yts.YouSumback.model.dto.request.LoginRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.request.RegisterRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.request.UpdateUserRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.response.LoginResponseDTO;
+import com.kdt.yts.YouSumback.model.dto.response.RegisterResponseDTO;
+import com.kdt.yts.YouSumback.model.dto.response.UpdateUserResponseDTO;
 import com.kdt.yts.YouSumback.model.entity.User;
 import com.kdt.yts.YouSumback.service.GoogleOAuthService;
 import com.kdt.yts.YouSumback.service.UserService;
@@ -22,81 +22,75 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
-// AuthController는 구글 OAuth 인증을 처리하는 컨트롤러입니다.
+// AuthController는 사용자 인증과 관련된 API 엔드포인트를 처리하는 컨트롤러입니다.
 public class AuthController {
 
     private final AuthService authService;
     private final GoogleOAuthService googleOAuthService;
     private final UserService userService;
 
-    /**
-     * 1) 로그인 엔드포인트 (기존)
-     */
+    // 기본 로그인 엔드포인트
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
         String token = authService.authenticate(request);
-        return ResponseEntity.ok(new LoginResponse(token));
+        return ResponseEntity.ok(new LoginResponseDTO(token));
     }
+
+    // Google 로그인 엔드포인트
     @PostMapping("/google")
     public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequestDTO request) {
         String idToken = request.getId_token();
-        System.out.println("👉 받은 id_token: " + idToken); // 디버깅용
+        GoogleIdToken.Payload payload = googleOAuthService.verifyToken(idToken);
 
-    /**
-     * 2) 회원가입 엔드포인트 (새로 추가)
-     */
+        String email = payload.getEmail();
+        String name = (String) payload.get("name");
+
+        // fallback 처리
+        if (name == null || name.isBlank()) {
+            name = (String) payload.get("given_name");
+            if (name == null || name.isBlank()) {
+                name = "GoogleUser";
+            }
+        }
+
+        User user = userService.loginOrRegister(email, name);
+        String jwt = userService.issueJwtToken(user);
+
+        return ResponseEntity.ok(Map.of("token", jwt));
+    }
+
+    // 회원가입 엔드포인트
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<RegisterResponseDTO> register(@RequestBody RegisterRequestDTO request) {
         // AuthService.register()가 User 엔티티를 반환
         // 생성된 User의 정보를 클라이언트에 돌려주기 위해 RegisterResponse를 생성
         var savedUser = authService.register(request);
-        RegisterResponse response = new RegisterResponse(
-                savedUser.getUserId(),
-                savedUser.getUsername(),
+        RegisterResponseDTO response = new RegisterResponseDTO(
+                savedUser.getId(),
+                savedUser.getUserName(),
                 savedUser.getEmail(),
                 "회원가입이 성공적으로 완료되었습니다."
         );
         return ResponseEntity.ok(response);
     }
-        GoogleIdToken.Payload payload = googleOAuthService.verifyToken(idToken);
 
-    /**
-     * 회원정보 수정 엔드포인트
-     */
+    // 회원정보 수정 엔드포인트
     @PutMapping("/update")
-    public ResponseEntity<UpdateUserResponse> updateUser(@RequestBody UpdateUserRequest request) {
+    public ResponseEntity<UpdateUserResponseDTO> updateUser(@RequestBody UpdateUserRequestDTO request) {
         User updated = authService.updateUser(request);
-        String email = payload.getEmail();
-        String name = (String) payload.get("name");
-
-        UpdateUserResponse response = new UpdateUserResponse(
-                updated.getUserId(),
-                updated.getUsername(),
+        UpdateUserResponseDTO response = new UpdateUserResponseDTO(
+                updated.getId(),
+                updated.getUserName(),
                 updated.getEmail(),
                 "회원정보가 성공적으로 변경되었습니다."
         );
         return ResponseEntity.ok(response);
     }
-        // fallback 처리 추가
-        if (name == null || name.isBlank()) {
-            name = (String) payload.get("given_name");  // Google 계정 이름 일부
-            if (name == null || name.isBlank()) {
-                name = "GoogleUser"; // 완전 없을 경우 기본값
-            }
-        }
 
-    /**
-     * 회원 탈퇴(Delete Account)
-     */
+    // 회원 탈퇴 엔드포인트
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteAccount() {
         authService.deleteUser();
-        return ResponseEntity.ok()
-                .body(Collections.singletonMap("message", "회원 탈퇴가 완료되었습니다."));
-        User user = userService.loginOrRegister(email, name);
-        String jwt = userService.issueJwtToken(user);
-
-        return ResponseEntity.ok(Map.of("token", jwt));
+        return ResponseEntity.ok(Collections.singletonMap("message", "회원 탈퇴가 완료되었습니다."));
     }
 }

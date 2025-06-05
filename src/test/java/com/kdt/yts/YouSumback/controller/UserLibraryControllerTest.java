@@ -87,7 +87,7 @@ public class UserLibraryControllerTest {
         //  4. Summary 저장
         Summary summary = summaryRepository.save(Summary.builder()
                 .summaryText("테스트 요약")
-                .transcript(dummyTranscript)
+                .audioTranscript(dummyTranscript)
                 .user(testUser)
                 .languageCode("ko")
                 .createdAt(LocalDateTime.now())

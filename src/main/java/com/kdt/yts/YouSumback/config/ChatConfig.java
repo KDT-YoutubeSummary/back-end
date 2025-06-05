@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.ai.chat.client.ChatClient;
 
 @Configuration
+// Spring AI ChatClient를 설정하는 구성 클래스
 public class ChatConfig {
     @Bean
     public ChatClient chatClient(ChatClient.Builder builder) {

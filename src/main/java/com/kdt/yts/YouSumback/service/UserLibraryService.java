@@ -13,15 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
+import java.util.*;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-//@Getter
 @Transactional
 // UserLibraryService는 유저의 라이브러리 관련 기능을 처리하는 서비스입니다.
 public class UserLibraryService {
@@ -32,7 +29,7 @@ public class UserLibraryService {
     private final UserLibraryTagRepository userLibraryTagRepository;
     private final TagRepository tagRepository;
 
-    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+//    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // 유저 라이브러리 저장
     @Transactional
@@ -87,7 +84,7 @@ public class UserLibraryService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        List<UserLibrary> libraries = userLibraryRepository.findByUserId(userId);
+        List<UserLibrary> libraries = userLibraryRepository.findByUser(user);
 
         return libraries.stream()
                 .map(library -> {
@@ -120,6 +117,10 @@ public class UserLibraryService {
         UserLibrary library = userLibraryRepository.findById(libraryId)
                 .orElseThrow(() -> new NoSuchElementException("해당 라이브러리를 찾을 수 없습니다."));
 
+        if (!library.getUser().getId().equals(library.getUser().getId())) {
+            throw new SecurityException("해당 라이브러리에 대한 권한이 없습니다.");
+        }
+
         // 관련 태그 연결 먼저 삭제
         userLibraryTagRepository.deleteAllByUserLibrary(library);
 
@@ -137,14 +138,17 @@ public class UserLibraryService {
 
         return userLibraries.stream().filter(userLibrary ->  {
             boolean titleMatches = (title == null ||
-                    userLibrary.getSummary().getTranscript().getVideo().getTitle().contains(title));
+                    userLibrary.getSummary().getAudioTranscript().getVideo().getTitle().contains(title));
 
                     boolean tagMatches = true;
                     if (tags != null) {
-                        List<String> filterTags = Arrays.asList(tags.split(","));
+                        List<String> filterTags = Arrays.stream(tags.split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isBlank())
+                                .toList();
                         List<String> actualTags = userLibraryTagRepository.findByUserLibrary(userLibrary).stream()
-                                .map(t -> t.getTag().getTagName()).collect(Collectors.toList());
-                        tagMatches = filterTags.stream().allMatch(actualTags::contains);
+                                .map(t -> t.getTag().getTagName()).toList();
+                        tagMatches = new HashSet<>(actualTags).containsAll(filterTags);
                     }
                     return titleMatches && tagMatches;
         }).map(library -> {
@@ -159,7 +163,7 @@ public class UserLibraryService {
 
     // 유저별 태그 통계 조회
     public List<TagStatResponseDTO> getTagStatsByUser(Long userId) {
-        List<Object[]> result = userLibraryRepository.countTagsByUser_UserId(userId);
+        List<Object[]> result = userLibraryRepository.countTagsById(userId);
 
         return result.stream()
                 .map(row -> new TagStatResponseDTO((String) row[0], (Long) row[1]))
@@ -175,8 +179,6 @@ public class UserLibraryService {
         if (!library.getUser().getId().equals(userId)) {
             throw new SecurityException("해당 라이브러리에 대한 권한이 없습니다.");
         }
-
         library.setUserNotes(requestDTO.getUserNotes());
     }
-
 }

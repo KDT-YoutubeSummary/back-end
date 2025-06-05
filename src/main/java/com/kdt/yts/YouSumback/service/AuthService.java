@@ -1,8 +1,8 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.model.dto.request.LoginRequest;
-import com.kdt.yts.YouSumback.model.dto.request.RegisterRequest;
-import com.kdt.yts.YouSumback.model.dto.request.UpdateUserRequest;
+import com.kdt.yts.YouSumback.model.dto.request.LoginRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.request.RegisterRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.request.UpdateUserRequestDTO;
 import com.kdt.yts.YouSumback.model.entity.User;
 import com.kdt.yts.YouSumback.repository.UserRepository;
 import com.kdt.yts.YouSumback.security.JwtProvider;
@@ -17,32 +17,29 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+// 사용자 인증, 회원가입, 회원정보 수정 및 삭제 기능을 제공하는 서비스 클래스입니다.
 public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
 
-    /**
-     * 기존 로그인 메서드
-     */
-    public String authenticate(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
+    // 사용자 인증 메서드
+    public String authenticate(LoginRequestDTO request) {
+        User user = userRepository.findByUsername(request.getUserName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new RuntimeException("Invalid password");
         }
 
-        return jwtProvider.generateToken(user.getUserId(), user.getUsername());
+        return jwtProvider.generateToken(user.getId(), user.getUserName());
     }
 
-    /**
-     * 회원가입 메서드
-     */
-    public User register(RegisterRequest request) {
+    // 회원가입 메서드
+    public User register(RegisterRequestDTO request) {
         // 1) username/email 중복 체크: UserRepository에 findByUsername, findByEmail 메서드를 구현해야 합니다.
-        if (userRepository.existsByUsername(request.getUsername())) {
+        if (userRepository.existsByUsername(request.getUserName())) {
             throw new RuntimeException("이미 사용 중인 사용자명입니다.");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -54,10 +51,10 @@ public class AuthService {
 
         // 3) User 엔티티 생성 및 저장
         User newUser = new User();
-        newUser.setUsername(request.getUsername());
+        newUser.setUserName(request.getUserName());
         newUser.setEmail(request.getEmail());
         newUser.setPasswordHash(encodedPassword);
-        newUser.setCreateAt(LocalDateTime.now());
+        newUser.setCreatedAt(LocalDateTime.now());
 
         try {
             return userRepository.save(newUser);
@@ -67,10 +64,8 @@ public class AuthService {
         }
     }
 
-    /**
-     * 회원정보 수정 메서드
-     */
-    public User updateUser(UpdateUserRequest request) {
+    // 사용자 정보 수정 메서드
+    public User updateUser(UpdateUserRequestDTO request) {
         // 1) 현재 인증된 사용자(username) 가져오기
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
@@ -80,11 +75,11 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // 3) 변경하려는 username/email이 다른 사용자와 중복되는지 체크
-        if (request.getUsername() != null && !request.getUsername().equals(existingUser.getUsername())) {
-            if (userRepository.existsByUsername(request.getUsername())) {
+        if (request.getUserName() != null && !request.getUserName().equals(existingUser.getUserName())) {
+            if (userRepository.existsByUsername(request.getUserName())) {
                 throw new RuntimeException("이미 사용 중인 사용자명입니다.");
             }
-            existingUser.setUsername(request.getUsername());
+            existingUser.setUserName(request.getUserName());
         }
 
         if (request.getEmail() != null && !request.getEmail().equals(existingUser.getEmail())) {
@@ -113,9 +108,7 @@ public class AuthService {
         }
     }
 
-    /**
-     * 회원정보 삭제 메서드
-     */
+    // 사용자 탈퇴 메서드
     public void deleteUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();

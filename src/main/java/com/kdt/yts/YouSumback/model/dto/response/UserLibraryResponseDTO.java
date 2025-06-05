@@ -67,7 +67,7 @@ public class UserLibraryResponseDTO {
 
     public static UserLibraryResponseDTO fromEntity(UserLibrary entity, List<String> tags) {
         var summary = entity.getSummary();
-        var transcript = summary.getTranscript();
+        var transcript = summary.getAudioTranscript();
         var video = transcript.getVideo();
 
         return UserLibraryResponseDTO.builder()

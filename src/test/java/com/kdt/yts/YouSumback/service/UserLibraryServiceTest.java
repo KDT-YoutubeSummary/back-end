@@ -63,7 +63,7 @@ public class UserLibraryServiceTest {
         // 요약 데이터 생성
         testSummary = summaryRepository.save(Summary.builder()
                 .summaryText("AI에 관한 요약입니다.")
-                .transcript(transcript)
+                .audioTranscript(transcript)
                 .user(testUser)
                 .languageCode("ko")
                 .createdAt(LocalDateTime.now())
