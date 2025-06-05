@@ -30,7 +30,7 @@ public class UserLibraryController {
     public ResponseEntity<?> saveLibrary(@RequestBody UserLibraryRequestDTO request, Authentication auth) {
         try {
             Long userId = getUserIdFromAuth(auth);
-            request.setUser_id(userId);  // DTO에 userId 주입
+            request.setUserId(userId);  // DTO에 userId 주입
             var response = userLibraryService.saveLibrary(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                     "code", 201,
@@ -136,9 +136,11 @@ public class UserLibraryController {
     }
 
     // 🔐 공통: 인증 객체에서 userId 추출
-    private Long getUserIdFromAuth(Authentication auth) {
-        return (Long) auth.getPrincipal();
+ Long getUserIdFromAuth(Authentication auth) {
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        return userDetails.getUserId();
     }
+
 }
 
 

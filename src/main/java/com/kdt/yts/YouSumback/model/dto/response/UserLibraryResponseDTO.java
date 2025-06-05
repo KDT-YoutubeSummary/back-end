@@ -71,9 +71,9 @@ public class UserLibraryResponseDTO {
         var video = transcript.getVideo();
 
         return UserLibraryResponseDTO.builder()
-                .userLibraryId(entity.getUserLibraryId())
-                .userId(entity.getUser().getUserId())
-                .summaryId(summary.getSummaryId())
+                .userLibraryId(entity.getId())
+                .userId(entity.getUser().getId())
+                .summaryId(summary.getId())
                 .videoTitle(video.getTitle())
                 .summaryText(summary.getSummaryText())
                 .tags(tags)

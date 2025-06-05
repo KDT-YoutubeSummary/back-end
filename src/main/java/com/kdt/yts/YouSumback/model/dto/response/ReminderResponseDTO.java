@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReminderResponse {
+public class ReminderResponseDTO {
 
     private Long reminderId; // 리마인더 고유 ID
     private Long user_id; // 리마인더를 소유한 사용자 ID
@@ -29,10 +29,10 @@ public class ReminderResponse {
     private LocalDateTime createdAt; // 생성 시간
     private LocalDateTime lastSentAt; // 마지막 알림 발송 시간
 
-    public ReminderResponse(Reminder reminder) {
-        this.reminderId = reminder.getReminderId();
-        this.user_id = reminder.getUser() != null ? reminder.getUser().getUserId() : null;
-        this.userLibraryId = reminder.getUserLibrary() != null ? reminder.getUserLibrary().getUserLibraryId() : null;
+    public ReminderResponseDTO(Reminder reminder) {
+        this.reminderId = reminder.getId();
+        this.user_id = reminder.getUser() != null ? reminder.getUser().getId() : null;
+        this.userLibraryId = reminder.getUserLibrary() != null ? reminder.getUserLibrary().getId() : null;
         this.reminderType = reminder.getReminderType();
         this.frequencyInterval = reminder.getFrequencyInterval();
         this.dayOfWeek = reminder.getDayOfWeek();

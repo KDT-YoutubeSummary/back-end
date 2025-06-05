@@ -164,7 +164,9 @@ CREATE TABLE Video (
                        uploader_name VARCHAR(100),
                        thumbnail_url TEXT,
                        view_count BIGINT,
-                       published_at DATETIME
+                       published_at DATETIME,
+                      duration_seconds INT NOT NULL,
+                      original_language_code VARCHAR(10) NOT NULL
 );
 
 -- 태그 (Tag) 테이블

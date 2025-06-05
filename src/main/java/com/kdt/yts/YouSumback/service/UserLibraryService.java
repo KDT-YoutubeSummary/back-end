@@ -42,7 +42,7 @@ public class UserLibraryService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
 
         // 2. Summary 조회 (예외 처리 포함)
-        Summary summary = (Summary) summaryRepository.findBySummaryId(request.getSummaryId())
+        Summary summary = summaryRepository.findById(request.getSummaryId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 요약이 존재하지 않습니다."));
 
         // 3. UserLibrary 엔티티 생성 및 저장
@@ -78,10 +78,10 @@ public class UserLibraryService {
     // 특정 유저의 라이브러리 목록 전체 조회
     @Transactional
     public List<UserLibraryResponseListDTO> getLibrariesByUserId(long userId) {
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        List<UserLibrary> libraries = userLibraryRepository.findByUserUserId(userId);
+        List<UserLibrary> libraries = userLibraryRepository.findByUserId(userId);
 
         return libraries.stream()
                 .map(library -> {
@@ -123,7 +123,7 @@ public class UserLibraryService {
 
     // 제목과 태그로 라이브러리 검색
     public List<UserLibraryResponseListDTO> search(long userId, String title, String tags) {
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
         // 해당 사용자의 라이브러리 조회 (필요시 사용)

@@ -1,7 +1,7 @@
 package com.kdt.yts.YouSumback.service;
 
 import com.kdt.yts.YouSumback.model.dto.request.ReminderCreateRequestDTO;
-import com.kdt.yts.YouSumback.model.dto.response.ReminderResponse;
+import com.kdt.yts.YouSumback.model.dto.response.ReminderResponseDTO;
 import com.kdt.yts.YouSumback.model.dto.request.ReminderUpdateRequestDTO;
 import com.kdt.yts.YouSumback.model.entity.Reminder;
 import com.kdt.yts.YouSumback.model.entity.ReminderType;
@@ -37,7 +37,7 @@ public class ReminderService {
     // ---------------------- 리마인더 (C)생성, (R)조회, (U)수정, (D)삭제 ----------------------
 
     @Transactional
-    public ReminderResponse createReminder(ReminderCreateRequestDTO request) {
+    public ReminderResponseDTO createReminder(ReminderCreateRequestDTO request) {
         // 사용자 및 사용자 라이브러리 존재 여부 확인
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + request.getUserId()));
@@ -61,26 +61,26 @@ public class ReminderService {
 
         Reminder savedReminder = reminderRepository.save(reminder); // 데이터베이스에 리마인더 저장
         log.info("Created reminder with ID: {}", savedReminder.getId());
-        return new ReminderResponse(savedReminder); // 저장된 리마인더를 DTO로 변환하여 반환
+        return new ReminderResponseDTO(savedReminder); // 저장된 리마인더를 DTO로 변환하여 반환
     }
 
     @Transactional(readOnly = true) // 읽기 전용 트랜잭션으로 설정하여 성능을 최적화합니다.
-    public ReminderResponse getReminderById(Long reminderId) {
+    public ReminderResponseDTO getReminderById(Long reminderId) {
         Reminder reminder = reminderRepository.findById(reminderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reminder not found with ID: " + reminderId));
-        return new ReminderResponse(reminder);
+        return new ReminderResponseDTO(reminder);
     }
 
     @Transactional(readOnly = true) // 읽기 전용 트랜잭션
-    public List<ReminderResponse> getRemindersByUserId(Long userId) {
-        List<Reminder> reminders = reminderRepository.findByUser_Id(userId);
+    public List<ReminderResponseDTO> getRemindersByUserId(Long userId) {
+        List<Reminder> reminders = reminderRepository.findByUserId(userId);
         return reminders.stream()
-                .map(ReminderResponse::new) // 각 Reminder 엔티티를 ReminderResponse DTO로 매핑
+                .map(ReminderResponseDTO::new) // 각 Reminder 엔티티를 ReminderResponse DTO로 매핑
                 .collect(Collectors.toList());
     }
 
     @Transactional // 수정 작업은 트랜잭션으로 묶습니다.
-    public ReminderResponse updateReminder(Long reminderId, ReminderUpdateRequestDTO request) {
+    public ReminderResponseDTO updateReminder(Long reminderId, ReminderUpdateRequestDTO request) {
         Reminder reminder = reminderRepository.findById(reminderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reminder not found with ID: " + reminderId));
 
@@ -117,7 +117,7 @@ public class ReminderService {
 
         Reminder updatedReminder = reminderRepository.save(reminder); // 데이터베이스에 변경사항 저장
         log.info("Updated reminder with ID: {}", updatedReminder.getId());
-        return new ReminderResponse(updatedReminder);
+        return new ReminderResponseDTO(updatedReminder);
     }
 
     @Transactional

@@ -1,7 +1,7 @@
 package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.dto.request.ReminderCreateRequestDTO;
-import com.kdt.yts.YouSumback.model.dto.response.ReminderResponse;
+import com.kdt.yts.YouSumback.model.dto.response.ReminderResponseDTO;
 import com.kdt.yts.YouSumback.model.dto.request.ReminderUpdateRequestDTO;
 import com.kdt.yts.YouSumback.service.ReminderService;
 import jakarta.validation.Valid; // 유효성 검사 어노테이션
@@ -21,30 +21,30 @@ public class ReminderController {
 
     // 새 리마인더를 생성하는 API 엔드포인트
     @PostMapping // HTTP POST 요청을 처리
-    public ResponseEntity<ReminderResponse> createReminder(@Valid @RequestBody ReminderCreateRequestDTO request) {
-        ReminderResponse newReminder = reminderService.createReminder(request);
+    public ResponseEntity<ReminderResponseDTO> createReminder(@Valid @RequestBody ReminderCreateRequestDTO request) {
+        ReminderResponseDTO newReminder = reminderService.createReminder(request);
         return new ResponseEntity<>(newReminder, HttpStatus.CREATED);
     }
 
     // 리마인더 ID로 단일 리마인더 정보를 조회하는 API 엔드포인트
     @GetMapping("/{reminderId}")
-    public ResponseEntity<ReminderResponse> getReminderById(@PathVariable Long reminderId) {
-        ReminderResponse reminder = reminderService.getReminderById(reminderId);
+    public ResponseEntity<ReminderResponseDTO> getReminderById(@PathVariable Long reminderId) {
+        ReminderResponseDTO reminder = reminderService.getReminderById(reminderId);
         return ResponseEntity.ok(reminder);
     }
 
     // 특정 사용자의 모든 리마인더를 조회하는 API 엔드포인트
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<ReminderResponse>> getRemindersByUserId(@PathVariable Long userId) {
-        List<ReminderResponse> reminders = reminderService.getRemindersByUserId(userId);
+    public ResponseEntity<List<ReminderResponseDTO>> getRemindersByUserId(@PathVariable Long userId) {
+        List<ReminderResponseDTO> reminders = reminderService.getRemindersByUserId(userId);
         return ResponseEntity.ok(reminders);
     }
 
     // 리마인더 정보를 업데이트하는 API 엔드포인트
     @PutMapping("/{reminderId}")
-    public ResponseEntity<ReminderResponse> updateReminder(@PathVariable Long reminderId,
-                                                           @Valid @RequestBody ReminderUpdateRequestDTO request) {
-        ReminderResponse updatedReminder = reminderService.updateReminder(reminderId, request);
+    public ResponseEntity<ReminderResponseDTO> updateReminder(@PathVariable Long reminderId,
+                                                              @Valid @RequestBody ReminderUpdateRequestDTO request) {
+        ReminderResponseDTO updatedReminder = reminderService.updateReminder(reminderId, request);
         return ResponseEntity.ok(updatedReminder);
     }
 

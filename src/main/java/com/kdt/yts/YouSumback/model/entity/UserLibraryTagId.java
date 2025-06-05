@@ -12,7 +12,7 @@ public class UserLibraryTagId implements Serializable {
 
     // 필드
     @Column(name = "user_library_id")
-    private Long id;
+    private Long userLibraryId;
     @Column(name = "tag_id")
     private Long tagId;
 
@@ -21,7 +21,7 @@ public class UserLibraryTagId implements Serializable {
     }
 
     public UserLibraryTagId(Long userLibraryId, Long tagId) {
-        this.id = userLibraryId;
+        this.userLibraryId = userLibraryId;
         this.tagId = tagId;
     }
 
@@ -30,12 +30,12 @@ public class UserLibraryTagId implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UserLibraryTagId that = (UserLibraryTagId) o;
-        return id == that.id && tagId == that.tagId;
+        return userLibraryId == that.userLibraryId && tagId == that.tagId;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, tagId);
+        return Objects.hash(userLibraryId, tagId);
     }
 
 }

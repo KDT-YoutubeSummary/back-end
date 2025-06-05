@@ -33,11 +33,11 @@ public class DummyDataInitializer {
             user.setPasswordHash("hashed1234");
             user.setCreatedAt(LocalDateTime.now());
             user = userRepository.save(user);
-            System.out.println("[✅ User 저장됨] ID: " + user.getUserId());
+            System.out.println("[✅ User 저장됨] ID: " + user.getId());
 
             // 2. Video
             Video video = new Video();
-            video.setVideoId("vid123");
+            video.setId(1L); // ID는 자동 생성되므로 직접 지정하지 않아도 됩니다.
             video.setYoutubeId("abc123test");
             video.setTitle("AI 시대의 시작");
             video.setOriginalUrl("https://youtube.com/watch?v=abc123test");
@@ -45,8 +45,10 @@ public class DummyDataInitializer {
             video.setThumbnailUrl("https://img.youtube.com/vi/abc123test/0.jpg");
             video.setViewCount(987654L);
             video.setPublishedAt(LocalDateTime.of(2024, 1, 1, 0, 0));
+            video.setOriginalLanguageCode("en"); // 영어 또는 적절한 언어 코드
+            video.setDurationSeconds(333); // 5분 33초
             video = videoRepository.save(video);
-            System.out.println("[✅ Video 저장됨] ID: " + video.getVideoId());
+            System.out.println("[✅ Video 저장됨] ID: " + video.getId());
 
             // 3. AudioTranscript
             AudioTranscript transcript = new AudioTranscript();
@@ -54,7 +56,7 @@ public class DummyDataInitializer {
             transcript.setTranscriptText("AI is transforming the world.");
             transcript.setCreatedAt(LocalDateTime.now());
             transcript = transcriptRepository.save(transcript);
-            System.out.println("[✅ Transcript 저장됨] ID: " + transcript.getTranscriptId());
+            System.out.println("[✅ Transcript 저장됨] ID: " + transcript.getId());
 
             // 4. Summary
             Summary summary = new Summary();
@@ -66,13 +68,13 @@ public class DummyDataInitializer {
             summary.setSummaryType("basic");
             summary.setCreatedAt(LocalDateTime.now());
             summary = summaryRepository.save(summary);
-            System.out.println("[✅ Summary 저장됨] ID: " + summary.getSummaryId());
+            System.out.println("[✅ Summary 저장됨] ID: " + summary.getId());
 
             // 5. Tags
             Tag tag1 = tagRepository.save(new Tag("AI"));
             Tag tag2 = tagRepository.save(new Tag("기술"));
             Tag tag3 = tagRepository.save(new Tag("트렌드"));
-            System.out.println("[✅ Tags 저장됨] IDs: " + tag1.getTagId() + ", " + tag2.getTagId() + ", " + tag3.getTagId());
+            System.out.println("[✅ Tags 저장됨] IDs: " + tag1.getId() + ", " + tag2.getId() + ", " + tag3.getId());
 
              // 6. UserLibrary
             UserLibrary library = new UserLibrary();
@@ -82,7 +84,7 @@ public class DummyDataInitializer {
             library.setUserNotes("학습용 영상입니다");
             library.setLastViewedAt(LocalDateTime.now());
             library = userLibraryRepository.save(library);
-            System.out.println("[✅ UserLibrary 저장됨] ID: " + library.getUserLibraryId());
+            System.out.println("[✅ UserLibrary 저장됨] ID: " + library.getId());
 
             // 7. UserLibraryTag
             userLibraryTagRepository.saveAll(List.of(
@@ -90,7 +92,7 @@ public class DummyDataInitializer {
                     new UserLibraryTag(library, tag2),
                     new UserLibraryTag(library, tag3)
             ));
-            System.out.println("[✅ UserLibraryTag 저장됨] -> 라이브러리 ID: " + library.getUserLibraryId());
+            System.out.println("[✅ UserLibraryTag 저장됨] -> 라이브러리 ID: " + library.getId());
         };
     }
 

@@ -41,8 +41,8 @@ public class UserLibraryResponseListDTO {
 
     public static UserLibraryResponseListDTO fromEntity(UserLibrary entity, List<String> tags) {
         return UserLibraryResponseListDTO.builder()
-                .userLibraryId(entity.getUserLibraryId())
-                .summaryId(entity.getSummary().getSummaryId())
+                .userLibraryId(entity.getId())
+                .summaryId(entity.getSummary().getId())
                 .videoTitle(entity.getSummary().getTranscript().getVideo().getTitle())
                 .tags(tags)
                 .savedAt(entity.getSavedAt())
