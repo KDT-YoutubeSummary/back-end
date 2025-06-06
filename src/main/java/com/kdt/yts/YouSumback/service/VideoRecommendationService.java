@@ -1,11 +1,10 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.config.OpenAIConfig;
 import com.kdt.yts.YouSumback.model.entity.VideoRecommendation;
 import com.kdt.yts.YouSumback.repository.UserLibraryTagRepository;
 import com.kdt.yts.YouSumback.repository.VideoRecommendationRepository;
 import com.kdt.yts.YouSumback.service.client.OpenAIClient;
-import com.kdt.yts.YouSumback.model.dto.response.VideoAiRecommendationResponse;
+import com.kdt.yts.YouSumback.model.dto.response.VideoAiRecommendationResponseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kdt.yts.YouSumback.model.entity.Video;
 import com.kdt.yts.YouSumback.model.entity.UserLibrary;
@@ -15,10 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class VideoRecommendationService {
@@ -42,7 +41,7 @@ public class VideoRecommendationService {
 
     // 사용자 ID로 영상 추천 목록 찾기
     public List<VideoRecommendation> getRecommendationsByUserId(Long userId) {
-        return videoRecommendationRepository.findByUser_UserId(userId);
+        return videoRecommendationRepository.findByUser_Id(userId);
     }
 
     // 영상 추천 삭제
@@ -51,8 +50,9 @@ public class VideoRecommendationService {
     }
 
     // userLibraryId 기반 AI 추천 (비동기 처리)
-    public Mono<List<VideoAiRecommendationResponse>> getAiRecommendationByUserLibraryId(Long userLibraryId) {
-        return Mono.fromCallable(() -> userLibraryTagRepository.findByUserLibrary_UserLibraryId(userLibraryId))
+    public Mono<List<VideoAiRecommendationResponseDTO>> getAiRecommendationByUserLibraryId(Long userLibraryId) {
+        return Mono.fromCallable(() -> userLibraryTagRepository.findByUserLibrary_Id(userLibraryId))
+                .subscribeOn(Schedulers.boundedElastic()) // ✅ 블로킹 safe한 스레드로 실행
                 .map(tags -> tags.stream().map(t -> t.getTag().getTagName()).toList())
                 .flatMap(tagNames -> {
                     if (tagNames.isEmpty()) {
@@ -64,7 +64,7 @@ public class VideoRecommendationService {
                                 try {
                                     String cleaned = response.replaceAll("(?s)```json|```|`", "").trim();
                                     ObjectMapper mapper = new ObjectMapper();
-                                    List<VideoAiRecommendationResponse> list = mapper.readValue(cleaned, mapper.getTypeFactory().constructCollectionType(List.class, VideoAiRecommendationResponse.class));
+                                    List<VideoAiRecommendationResponseDTO> list = mapper.readValue(cleaned, mapper.getTypeFactory().constructCollectionType(List.class, VideoAiRecommendationResponseDTO.class));
                                     return Mono.just(list);
                                 } catch (Exception e) {
                                     return Mono.error(new RuntimeException("OpenAI 응답이 올바른 JSON 배열 형식이 아닙니다: " + response));
@@ -75,12 +75,12 @@ public class VideoRecommendationService {
 
     // AI 추천 결과를 video_recommendation 테이블에 저장 (여러 개 저장, 유효하지 않은 영상은 배제)
     @Transactional
-    public List<VideoRecommendation> saveAiRecommendation(Long userLibraryId, List<VideoAiRecommendationResponse> responses) {
-        UserLibrary userLibrary = userLibraryRepository.findById(userLibraryId.intValue())
+    public List<VideoRecommendation> saveAiRecommendation(Long userLibraryId, List<VideoAiRecommendationResponseDTO> responses) {
+        UserLibrary userLibrary = userLibraryRepository.findById(userLibraryId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 userLibraryId의 UserLibrary가 없습니다."));
         Video recommendedVideo = userLibrary.getSummary().getAudioTranscript().getVideo();
         List<VideoRecommendation> savedList = new java.util.ArrayList<>();
-        for (VideoAiRecommendationResponse response : responses) {
+        for (VideoAiRecommendationResponseDTO response : responses) {
             String url = response.getUrl();
             String youtubeId;
             try {
@@ -106,8 +106,8 @@ public class VideoRecommendationService {
             Video video = videoOpt.get();
             VideoRecommendation recommendation = new VideoRecommendation();
             recommendation.setUser(userLibrary.getUser());
-            recommendation.setVideo(video);
-            recommendation.setVideo2(recommendedVideo); // recommended_video_id 설정
+            recommendation.setSourceVideo(video);
+            recommendation.setRecommendedVideo(recommendedVideo); // recommended_video_id 설정
             recommendation.setRecommendationReason(response.getReason());
             VideoRecommendation saved = videoRecommendationRepository.save(recommendation);
             savedList.add(saved);

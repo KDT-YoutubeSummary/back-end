@@ -19,6 +19,4 @@ public class SummaryController {
     public SummaryResponseDTO summarize(@Valid @RequestBody SummaryRequestDTO request) {
         return summaryService.summarize(request);
     }
-
-
 }

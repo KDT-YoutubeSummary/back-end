@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class VideoAiRecommendationResponse {
+public class VideoAiRecommendationResponseDTO {
     private String title;
     private String url;
     private String reason;

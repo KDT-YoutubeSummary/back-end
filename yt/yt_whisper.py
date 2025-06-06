@@ -53,6 +53,26 @@ except subprocess.CalledProcessError as e:
     print(f"❌ yt-dlp 다운로드 실패: {e}")
     sys.exit(10)
 
+# ✅ 3.5 영상 길이 추출
+print(f"[INFO] 영상 길이 추출 중 (yt-dlp 사용): {youtube_url}")
+duration_cmd = [
+    "yt-dlp", "--print", "%duration", youtube_url
+]
+try:
+    result = subprocess.run(duration_cmd, check=True, stdout=subprocess.PIPE, text=True)
+    duration_seconds = int(float(result.stdout.strip()))
+    print(f"[INFO] 추출된 영상 길이: {duration_seconds}초")
+
+    # ✅ duration_seconds 값을 파일로 저장하거나, DB로 넘길 수 있음
+    # 예: duration 저장용 txt 파일
+    with open(os.path.join(text_dir, f"{youtube_id}_duration.txt"), "w", encoding="utf-8") as f:
+        f.write(str(duration_seconds))
+
+except subprocess.CalledProcessError as e:
+    print(f"[WARNING] 영상 길이 추출 실패: {e}")
+    duration_seconds = 0
+
+
 # ✅ 4. Whisper로 텍스트 변환
 print(f"[INFO] Whisper로 텍스트 변환 시작: {output_wav_path}")
 whisper_cmd = [

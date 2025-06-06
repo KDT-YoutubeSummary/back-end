@@ -17,5 +17,8 @@ public interface UserLibraryTagRepository extends JpaRepository<UserLibraryTag, 
 
     void deleteAllByUserLibrary(UserLibrary library);
 
+    List<UserLibraryTag> findByUserLibrary_Id(Long userLibraryId);
+
+
     boolean existsByUserLibraryAndTag(UserLibrary userLibrary, Tag tag);
 }

@@ -27,19 +27,32 @@ public class OpenAIClient {
     }
 
     public Mono<String> chat(String prompt) {
+        // ✅ 방어코딩: null 방지
+        String model = openAIConfig.getModel();
+        if (model == null || prompt == null) {
+            return Mono.error(new IllegalArgumentException("Model 또는 Prompt가 null입니다."));
+        }
+
+        // ✅ 메시지 객체 생성
+        Map<String, Object> message = Map.of(
+                "role", "user",
+                "content", prompt
+        );
+
+        // ✅ 요청 바디 객체 생성
+        Map<String, Object> requestBody = Map.of(
+                "model", model,
+                "messages", List.of(message)
+        );
+
         return webClient.post()
                 .uri("/v1/chat/completions")
-                .bodyValue(Map.of(
-                        "model", openAIConfig.getModel(),
-                        "messages", List.of(Map.of(
-                                "role", "user",
-                                "content", prompt
-                        ))
-                ))
+                .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .map(json -> json.get("choices").get(0).get("message").get("content").asText());
     }
+
 }
 
 

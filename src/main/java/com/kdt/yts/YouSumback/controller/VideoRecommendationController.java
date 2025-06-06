@@ -1,12 +1,10 @@
 package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.entity.VideoRecommendation;
-import com.kdt.yts.YouSumback.model.dto.response.VideoAiRecommendationResponse;
 import com.kdt.yts.YouSumback.service.VideoRecommendationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -57,6 +55,7 @@ public class VideoRecommendationController {
                 .block(); // 비동기 -> 동기 처리
             return ResponseEntity.ok(savedList);
         } catch (IllegalArgumentException e) {
+            e.printStackTrace();
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
