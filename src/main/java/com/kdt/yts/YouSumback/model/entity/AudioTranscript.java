@@ -30,4 +30,5 @@ public class AudioTranscript {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+//    private Timestamp createdAt; // 생성 일자
 }

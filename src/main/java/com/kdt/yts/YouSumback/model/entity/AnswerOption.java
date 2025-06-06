@@ -54,4 +54,3 @@ public class AnswerOption {
 //        this.isCorrect = isCorrect;
 //    }
 }
-
