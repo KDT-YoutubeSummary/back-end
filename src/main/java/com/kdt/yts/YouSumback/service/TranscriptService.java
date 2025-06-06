@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,8 +29,8 @@ public class TranscriptService {
             throw new IllegalArgumentException("유효한 YouTube URL이 아닙니다.");
         }
 
-        // ✅ Video 엔티티 없으면 자동 등록
-        videoRepository.findByYoutubeId(youtubeId).orElseGet(() -> {
+        // 2. Video 엔티티 없으면 자동 등록
+        Video video = videoRepository.findByYoutubeId(youtubeId).orElseGet(() -> {
             Video newVideo = new Video();
             newVideo.setYoutubeId(youtubeId);
             newVideo.setOriginalUrl(originalUrl);
@@ -38,7 +40,7 @@ public class TranscriptService {
             return videoRepository.save(newVideo);
         });
 
-        // 2. Whisper Python 스크립트 실행
+        // 3. Whisper Python 스크립트 실행
         List<String> command = List.of(
                 "python",
                 "yt/yt_whisper.py",
@@ -69,8 +71,22 @@ public class TranscriptService {
         if (exitCode != 0) {
             throw new RuntimeException("❌ Whisper 실행 실패 (exit code: " + exitCode + ")");
         }
+        // 4. Whisper 텍스트 파일 읽고 정제
+        String transcriptPath = "src/main/resources/textfiles/" + youtubeId + ".txt";
+        String rawText = Files.readString(Path.of(transcriptPath));
+        String cleanedText = textCleaner.clean(rawText);
+
+        // 5. AudioTranscript 저장
+        AudioTranscript transcript = AudioTranscript.builder()
+                .video(video)
+                .youtubeId(youtubeId)
+                .transcriptText(cleanedText)
+                .createdAt(LocalDateTime.now())
+                .build();
+        transcriptRepository.save(transcript);
     }
 
+    // 유튜브 URL에서 ID 추출
     private String extractYoutubeId(String url) {
         try {
             if (url.contains("v=")) {

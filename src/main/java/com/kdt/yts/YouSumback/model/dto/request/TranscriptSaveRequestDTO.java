@@ -6,8 +6,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class TranscriptSaveRequestDTO {
-    private String originalUrl; // 또는 videoUrl
-    private String purpose; // 요약 목적
-    // 필요하면 추가 필드 있음 (예: username, videoId 등)
+    private String originalUrl;   // 유튜브 링크
+    private String purpose;       // 요약 목적 (e.g. REVIEW, EXAM, STUDY)
+    private String summaryType;   // 요약 형식 (e.g. BULLET, PARAGRAPH, QA)
+    // ENUM 타입으로 변경할 예정
+
 }
 

@@ -67,7 +67,7 @@ public class SummaryServiceImpl implements SummaryService {
                 .audioTranscript(audioTranscriptRepository.findById(transcriptId).orElseThrow())
                 .summaryText(finalSummary)
                 .languageCode(request.getLanguageCode())
-                .summaryType("default")
+                .summaryType(SummaryType.valueOf("THREE_LINE")) // 예시로 THREE_LINE 사용
                 .createdAt(LocalDateTime.now())
                 .build();
         Summary saved = summaryRepository.save(summary);
@@ -196,5 +196,71 @@ public class SummaryServiceImpl implements SummaryService {
     private boolean isStopword(String word) {
         return List.of("그리고", "하지만", "또한", "이", "그", "저", "있는", "한다", "였다", "하는", "되어", "으로")
                 .contains(word);
+    }
+
+    @Override
+    public void generateSummary(String youtubeId, String purpose, String summaryType) {
+        AudioTranscript transcript = audioTranscriptRepository.findByYoutubeId(youtubeId)
+                .orElseThrow(() -> new RuntimeException("Transcript not found"));
+
+        User user = userRepository.findById(1L)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String prompt = buildPrompt(purpose, summaryType);
+        String input = prompt + "\n\n" + transcript.getTranscriptText();
+        String summaryText = callOpenAISummary(input);
+
+        Summary summary = Summary.builder()
+                .user(user)
+                .audioTranscript(transcript)
+                .summaryText(summaryText)
+                .languageCode("ko")
+                .summaryType(SummaryType.valueOf(summaryType))
+                .userPrompt(prompt)
+                .createdAt(LocalDateTime.now())
+                .build();
+        Summary saved = summaryRepository.save(summary);
+
+        UserLibrary library = UserLibrary.builder()
+                .user(user)
+                .summary(saved)
+                .lastViewedAt(LocalDateTime.now())
+                .build();
+        userLibraryRepository.save(library);
+
+        List<String> hashtags = extractHashtags(summaryText, 3);
+        for (String keyword : hashtags) {
+            Tag tag = tagRepository.findByTagName(keyword)
+                    .orElseGet(() -> tagRepository.save(Tag.builder().tagName(keyword).build()));
+
+            boolean exists = userLibraryTagRepository
+                    .findByUserLibraryAndTag(library, tag)
+                    .isPresent();
+
+            if (!exists) {
+                UserLibraryTag userLibraryTag = UserLibraryTag.builder()
+                        .id(new UserLibraryTagId(user.getId(), tag.getId()))
+                        .userLibrary(library)
+                        .tag(tag)
+                        .build();
+                userLibraryTagRepository.save(userLibraryTag);
+            }
+        }
+    }
+
+    private String buildPrompt(String purpose, String summaryType) {
+        String typeDesc = switch (summaryType.toUpperCase()) {
+            case "BULLET" -> "간결한 bullet point 형태로";
+            case "PARAGRAPH" -> "문장형 요약으로";
+            case "QA" -> "질문-답변 형태로";
+            default -> "간단히";
+        };
+
+        String purposeDesc = switch (purpose.toUpperCase()) {
+            case "REVIEW" -> "복습 목적에 맞춰";
+            case "EXAM" -> "시험 대비를 위해";
+            default -> "학습 목적에 맞게";
+        };
+        return String.format("%s %s 요약해줘.", purposeDesc, typeDesc);
     }
 }

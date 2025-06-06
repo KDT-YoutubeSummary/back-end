@@ -1,5 +1,6 @@
 package com.kdt.yts.YouSumback.model.dto.request;
 
+import com.kdt.yts.YouSumback.model.entity.SummaryType;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,4 +20,6 @@ public class SummaryRequestDTO {
     @NotBlank(message = "언어 코드는 필수입니다.")
     private String languageCode;
 
+    @NotBlank(message = "요약 타입은 필수입니다.")
+    private SummaryType summaryType;
 }

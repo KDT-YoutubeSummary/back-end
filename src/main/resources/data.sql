@@ -49,7 +49,7 @@ CREATE TABLE `summary`(
                      user_prompt TEXT, -- (추가) 사용자 프롬프트 (사용 목적, 요청 문장 등 전체 포함 가능)
                      language_code VARCHAR(10) NOT NULL,
                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, -- create_at -> created_at
-                     summary_type VARCHAR(50),
+                     summary_type ENUM('THREE_LINE', 'KEYWORD', 'TIMELINE'),
                      CONSTRAINT fk_summary_user FOREIGN KEY (user_id) REFERENCES `user`(user_id) ON DELETE CASCADE,
                      CONSTRAINT fk_summary_audio_transcript FOREIGN KEY (transcript_id) REFERENCES audio_transcript(transcript_id) ON DELETE CASCADE
 );
@@ -112,7 +112,7 @@ CREATE TABLE `answer_option` (
                               is_correct BOOLEAN NOT NULL,
                               transcript_id BIGINT NOT NULL,
                               summary_text TEXT NOT NULL,
-                              summary_type VARCHAR(50),
+                              summary_type ENUM('THREE_LINE', 'KEYWORD', 'TIMELINE'),
                               created_at DATETIME NOT NULL,
                               CONSTRAINT fk_answer_question FOREIGN KEY (question_id) REFERENCES question(question_id) ON DELETE CASCADE
 );
@@ -179,8 +179,8 @@ INSERT INTO audio_transcript (transcript_id, video_id, youtube_id, transcript_te
 
 -- ✅ 4. 요약
 INSERT INTO summary (summary_id, user_id, transcript_id, summary_text, user_prompt, language_code, summary_type) VALUES
-                                                                                                                     (1, 1, 1, 'Summary text here.', 'Summarize this', 'en', 'basic'),
-                                                                                                                     (201, 1, 1, 'AI 요약 내용', '간단히 요약해줘', 'ko', 'basic');
+                                                                                                                     (1, 1, 1, 'Summary text here.', 'Summarize this', 'en', 'THREE_LINE'),
+                                                                                                                     (201, 1, 1, 'AI 요약 내용', '간단히 요약해줘', 'ko', 'KEYWORD');
 
 -- ✅ 5. 사용자 라이브러리
 INSERT INTO user_library (user_library_id, user_id, summary_id, user_notes, last_viewed_at) VALUES
@@ -218,12 +218,12 @@ INSERT INTO answer_option (
     answer_option_id, question_id, option_text, is_correct,
     transcript_id, summary_text, summary_type, created_at
 ) VALUES
-      (801, 701, '블록체인', FALSE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
-      (802, 701, '인공지능', TRUE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
-      (803, 701, '클라우드 컴퓨팅', FALSE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'SUMMARY', NOW()),
-      (804, 702, '기계 학습', TRUE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW()),
-      (805, 702, '로봇 공학', FALSE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW()),
-      (806, 702, '양자 컴퓨팅', FALSE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'SUMMARY', NOW());
+      (801, 701, '블록체인', FALSE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'THREE_LINE', NOW()),
+      (802, 701, '인공지능', TRUE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'THREE_LINE', NOW()),
+      (803, 701, '클라우드 컴퓨팅', FALSE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'THREE_LINE', NOW()),
+      (804, 702, '기계 학습', TRUE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'KEYWORD', NOW()),
+      (805, 702, '로봇 공학', FALSE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'KEYWORD', NOW()),
+      (806, 702, '양자 컴퓨팅', FALSE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'KEYWORD', NOW());
 
 -- ✅ 12. 사용자 활동 로그
 INSERT INTO user_activity_log (log_id, user_id, activity_type, target_entity_type, target_entity_id_str, target_entity_id_int, activity_detail, details) VALUES

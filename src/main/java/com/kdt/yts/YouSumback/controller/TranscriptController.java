@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/src")
 @RequiredArgsConstructor
+// Whisper만 별도 테스트하는 컨트롤러
 public class TranscriptController {
 
     private final TranscriptService transcriptService;

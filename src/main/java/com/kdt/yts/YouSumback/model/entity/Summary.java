@@ -43,6 +43,8 @@ public class Summary {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    // 요약 타입을 나타내는 Enum
+    @Enumerated(EnumType.STRING)
     @Column(name = "summary_type", length = 50)
-    private String summaryType;
+    private SummaryType summaryType;
 }

@@ -16,4 +16,6 @@ public interface SummaryService {
 
     String callOpenAISummary(String text);
 
+    // 요약 생성
+    void generateSummary(String youtubeId, String purpose, String summaryType);
 }
