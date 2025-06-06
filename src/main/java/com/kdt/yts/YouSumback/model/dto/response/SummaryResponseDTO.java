@@ -15,7 +15,7 @@ public class SummaryResponseDTO {
     private Long transcriptId;
     private Long videoId;
 
-    private String summary;
+    private String summary; // 요약된 텍스트
     private List<String> tags;
 
     private String title;

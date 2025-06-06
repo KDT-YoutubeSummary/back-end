@@ -16,7 +16,7 @@ public class SummaryRequestDTO {
         @NotBlank(message = "요약할 텍스트는 비어 있을 수 없습니다.")
         private String text;
 
-        private String purpose;
+        private String userPrompt; // 사용자 정의 프롬프트 (선택적)
 
         private SummaryType summaryType;
 }

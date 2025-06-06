@@ -58,7 +58,7 @@ dependencies {
 	implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final'
 
 	// 개발 편의성 도구
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+//	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
 	// 인증/보안 (OAuth2)
 	// Spring Security (기본 웹 보안 + 인가 설정용)

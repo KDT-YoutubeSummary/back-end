@@ -52,11 +52,11 @@ public class SummaryServiceImpl implements SummaryService {
         String text = request.getText();
         Long transcriptId = request.getTranscriptId();
         Long userId = request.getUserId();
-        String purpose = request.getPurpose();
+        String userPrompt= request.getUserPrompt();
         SummaryType summaryType = request.getSummaryType();
 
         // 1. GPT 요약용 프롬프트 생성
-        String prompt = buildPrompt(purpose, summaryType);
+        String prompt = buildPrompt(userPrompt, summaryType);
         List<String> chunks = splitTextIntoChunks(text, 1000);
         List<String> partialSummaries = new ArrayList<>();
 
@@ -133,7 +133,8 @@ public class SummaryServiceImpl implements SummaryService {
 //        Long transcriptId = request.getTranscriptId();
 //        Long userId = request.getUserId();
 //        String text = request.getText();
-//        String purpose = request.getPurpose();
+//        String userPrompt
+//      = request.getUserPrompt();
 //        SummaryType summaryType = request.getSummaryType();
 //
 //        // 1. 요약 생성
@@ -281,14 +282,14 @@ public class SummaryServiceImpl implements SummaryService {
     }
 
     @Override
-    public void generateSummary(String youtubeId, String purpose, SummaryType summaryType) {
+    public void generateSummary(String youtubeId, String userPrompt, SummaryType summaryType) {
         AudioTranscript transcript = audioTranscriptRepository.findByYoutubeId(youtubeId)
                 .orElseThrow(() -> new RuntimeException("Transcript not found"));
 
         User user = userRepository.findById(1L)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String prompt = buildPrompt(purpose, summaryType);
+        String prompt = buildPrompt(userPrompt, summaryType);
         String input = prompt + "\n\n" + transcript.getTranscriptText();
         String summaryText = callOpenAISummary(input);
 
@@ -330,7 +331,7 @@ public class SummaryServiceImpl implements SummaryService {
         }
     }
 
-    private String buildPrompt(String purpose, SummaryType summaryType) {
+    private String buildPrompt(String userPromp, SummaryType summaryType) {
         String typeDesc = switch (summaryType.toString()) {
             case "BULLET" -> "간결한 bullet point 형태로";
             case "PARAGRAPH" -> "문장형 요약으로";
@@ -338,11 +339,11 @@ public class SummaryServiceImpl implements SummaryService {
             default -> "간단히";
         };
 
-        String purposeDesc = switch (purpose.toUpperCase()) {
+        String userPromptDesc = switch (userPromp.toUpperCase()) {
             case "REVIEW" -> "복습 목적에 맞춰";
             case "EXAM" -> "시험 대비를 위해";
             default -> "학습 목적에 맞게";
         };
-        return String.format("%s %s 요약해줘.", purposeDesc, typeDesc);
+        return String.format("%s %s 요약해줘.", userPromptDesc, typeDesc);
     }
 }

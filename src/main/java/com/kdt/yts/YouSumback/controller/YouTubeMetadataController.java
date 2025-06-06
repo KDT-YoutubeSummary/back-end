@@ -1,7 +1,7 @@
 package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.dto.request.TranscriptSaveRequestDTO;
-import com.kdt.yts.YouSumback.model.dto.response.TranscriptSaveResponseDTO;
+import com.kdt.yts.YouSumback.model.dto.response.SummaryResponseDTO;
 import com.kdt.yts.YouSumback.repository.VideoRepository;
 import com.kdt.yts.YouSumback.security.CustomUserDetails;
 import com.kdt.yts.YouSumback.service.YouTubeMetadataService;
@@ -46,19 +46,19 @@ public class YouTubeMetadataController {
     public ResponseEntity<?> uploadFromUrl(@RequestBody TranscriptSaveRequestDTO request,
                                            @AuthenticationPrincipal CustomUserDetails userDetails) {
         try {
-            Long userId = userDetails.getUserId(); // ✅ 현재 로그인된 사용자 ID
+            Long userId = userDetails.getUserId();
 
-            youTubeMetadataService.processVideoFromUrl(
+            SummaryResponseDTO responseDTO = youTubeMetadataService.processVideoFromUrl(
                     request.getOriginalUrl(),
-                    request.getPurpose(),
+                    request.getUserPrompt(),
                     request.getSummaryType(),
-                    userId // ✅ 전달
+                    userId
             );
 
-            return ResponseEntity.ok("✅ 영상 요약까지 모두 처리 완료되었습니다.");
+            return ResponseEntity.ok(responseDTO); // ✅ 결과 DTO 응답
+
         } catch (Exception e) {
             return ResponseEntity.status(500).body("❌ 처리 중 오류: " + e.getMessage());
         }
     }
-
 }

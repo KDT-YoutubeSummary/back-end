@@ -23,6 +23,6 @@ public interface SummaryService {
     Optional<UserLibrary> findUserLibraryByUserAndSummary(Long userId, Summary summary);
 
     // 요약 생성
-    void generateSummary(String youtubeId, String purpose, SummaryType summaryType);
+    void generateSummary(String youtubeId, String userPrompt, SummaryType summaryType);
 
 }

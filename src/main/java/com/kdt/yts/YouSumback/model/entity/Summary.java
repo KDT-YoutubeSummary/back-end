@@ -34,7 +34,7 @@ public class Summary {
     @Column(name = "summary_text", nullable = false)
     private String summaryText;
 
-    @Column(name = "", columnDefinition = "TEXT")
+    @Column(name = "user_prompt", columnDefinition = "TEXT")
     private String userPrompt;
 
     @Column(name = "language_code", length = 10, nullable = false)
@@ -47,4 +47,5 @@ public class Summary {
     @Enumerated(EnumType.STRING)
     @Column(name = "summary_type", length = 50)
     private SummaryType summaryType;
+
 }

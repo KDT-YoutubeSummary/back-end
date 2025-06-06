@@ -17,7 +17,7 @@ public class TranscriptController {
     @PostMapping("/stt")
     public ResponseEntity<String> saveTranscript(@RequestBody TranscriptSaveRequestDTO requestDTO) {
         try {
-            transcriptService.extractYoutubeIdAndRunWhisper(requestDTO.getOriginalUrl(), requestDTO.getPurpose());
+            transcriptService.extractYoutubeIdAndRunWhisper(requestDTO.getOriginalUrl(), requestDTO.getUserPrompt());
             return ResponseEntity.ok("✅ Whisper 실행 완료");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("❌ Whisper 실행 실패: " + e.getMessage());
