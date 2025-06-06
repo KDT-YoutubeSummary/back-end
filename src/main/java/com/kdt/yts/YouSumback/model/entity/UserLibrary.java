@@ -40,4 +40,8 @@ public class UserLibrary {
     protected void onCreate() {
         this.savedAt = LocalDateTime.now();
     }
+
+    // 태그와의 관계 설정
+    @OneToMany(mappedBy = "userLibrary", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<UserLibraryTag> userLibraryTag;
 }

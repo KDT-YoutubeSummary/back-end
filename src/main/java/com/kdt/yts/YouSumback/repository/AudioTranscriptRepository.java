@@ -8,4 +8,6 @@ import java.util.Optional;
 
 public interface AudioTranscriptRepository extends JpaRepository<AudioTranscript, Long> {
     Optional<AudioTranscript> findByYoutubeId(String youtubeId);
+
+    Optional<AudioTranscript> findByVideoId(Long videoId);
 }

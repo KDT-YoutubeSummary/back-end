@@ -1,6 +1,5 @@
 package com.kdt.yts.YouSumback.controller;
 
-import com.kdt.yts.YouSumback.model.dto.request.TranscriptRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.TranscriptSaveRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.TranscriptSaveResponseDTO;
 import com.kdt.yts.YouSumback.repository.VideoRepository;
@@ -56,7 +55,7 @@ public class YouTubeMetadataController {
                     userId // ✅ 전달
             );
 
-            return ResponseEntity.ok("✅ 영상 처리 완료!");
+            return ResponseEntity.ok("✅ 영상 요약까지 모두 처리 완료되었습니다.");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("❌ 처리 중 오류: " + e.getMessage());
         }

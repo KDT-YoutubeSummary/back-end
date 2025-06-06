@@ -34,7 +34,7 @@ public class UserLibraryTagId implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UserLibraryTagId that = (UserLibraryTagId) o;
-        return userLibraryId == that.userLibraryId && tagId == that.tagId;
+        return Objects.equals(userLibraryId, that.userLibraryId) && Objects.equals(tagId, that.tagId);
     }
 
     @Override

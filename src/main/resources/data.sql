@@ -47,7 +47,7 @@ CREATE TABLE `summary`(
                      transcript_id INT NOT NULL, -- BIGINT -> INT (AudioTranscript.transcript_id와 일관성)
                      summary_text TEXT NOT NULL,
                      user_prompt TEXT, -- (추가) 사용자 프롬프트 (사용 목적, 요청 문장 등 전체 포함 가능)
-                     language_code VARCHAR(10) NOT NULL,
+                     language_code VARCHAR(10) NULL,
                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, -- create_at -> created_at
                      summary_type ENUM('THREE_LINE', 'KEYWORD', 'TIMELINE'),
                      CONSTRAINT fk_summary_user FOREIGN KEY (user_id) REFERENCES `user`(user_id) ON DELETE CASCADE,

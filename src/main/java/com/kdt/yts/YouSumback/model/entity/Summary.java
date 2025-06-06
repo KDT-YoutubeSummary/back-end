@@ -34,7 +34,7 @@ public class Summary {
     @Column(name = "summary_text", nullable = false)
     private String summaryText;
 
-    @Column(name = "user_prompt", columnDefinition = "TEXT")
+    @Column(name = "", columnDefinition = "TEXT")
     private String userPrompt;
 
     @Column(name = "language_code", length = 10, nullable = false)

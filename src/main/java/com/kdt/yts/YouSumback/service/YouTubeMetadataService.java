@@ -94,8 +94,7 @@ public class YouTubeMetadataService {
         dto.setTranscriptId(transcript.getId());
         dto.setUserId(userId);
         dto.setText(transcript.getTranscriptText());
-        dto.setLanguageCode("ko");
-        dto.setSummaryType(SummaryType.valueOf(summaryType.toUpperCase()));
+        dto.setPurpose(purpose);
         try {
             dto.setSummaryType(SummaryType.valueOf(summaryType.toUpperCase()));
         } catch (IllegalArgumentException e) {

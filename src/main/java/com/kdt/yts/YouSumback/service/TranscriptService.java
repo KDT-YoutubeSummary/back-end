@@ -76,7 +76,13 @@ public class TranscriptService {
         String rawText = Files.readString(Path.of(transcriptPath));
         String cleanedText = textCleaner.clean(rawText);
 
-        // 5. AudioTranscript 저장
+        // 5. AudioTranscript 저장 전 중복 확인
+        if (transcriptRepository.findByVideoId(video.getId()).isPresent()) {
+            System.out.println("📌 이미 해당 영상에 대한 transcript가 존재합니다. 저장 생략.");
+            return;
+        }
+
+        // 저장
         AudioTranscript transcript = AudioTranscript.builder()
                 .video(video)
                 .youtubeId(youtubeId)

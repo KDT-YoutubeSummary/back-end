@@ -13,6 +13,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+// YoutubeMetadataService에서 처리됨
 public class VideoService {
 
     private final YouTubeClient youTubeClient;

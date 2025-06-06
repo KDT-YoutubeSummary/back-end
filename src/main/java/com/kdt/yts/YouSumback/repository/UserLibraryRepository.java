@@ -1,5 +1,6 @@
 package com.kdt.yts.YouSumback.repository;
 
+import com.kdt.yts.YouSumback.model.entity.Summary;
 import com.kdt.yts.YouSumback.model.entity.User;
 import com.kdt.yts.YouSumback.model.entity.UserLibrary;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,6 +16,8 @@ public interface UserLibraryRepository extends JpaRepository<UserLibrary, Long> 
     Optional<UserLibrary> findBySummaryUserIdAndSummaryAudioTranscriptId(Long userId, Long transcriptId);
 
     List<UserLibrary> findByUser(User user);
+
+    Optional<UserLibrary> findByUser_IdAndSummary(Long userId, Summary summary);
 
     @Query(value = """
     SELECT t.tag_name, COUNT(*) 

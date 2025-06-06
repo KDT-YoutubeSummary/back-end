@@ -4,8 +4,12 @@ import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.SummaryRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.SummaryResponseDTO;
 import com.kdt.yts.YouSumback.model.entity.Quiz;
+import com.kdt.yts.YouSumback.model.entity.Summary;
+import com.kdt.yts.YouSumback.model.entity.SummaryType;
+import com.kdt.yts.YouSumback.model.entity.UserLibrary;
 
 import java.util.List;
+import java.util.Optional;
 
 
 public interface SummaryService {
@@ -16,6 +20,9 @@ public interface SummaryService {
 
     String callOpenAISummary(String text);
 
+    Optional<UserLibrary> findUserLibraryByUserAndSummary(Long userId, Summary summary);
+
     // 요약 생성
-    void generateSummary(String youtubeId, String purpose, String summaryType);
+    void generateSummary(String youtubeId, String purpose, SummaryType summaryType);
+
 }

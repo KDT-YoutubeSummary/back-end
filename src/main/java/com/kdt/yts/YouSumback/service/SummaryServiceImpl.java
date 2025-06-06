@@ -52,34 +52,38 @@ public class SummaryServiceImpl implements SummaryService {
         String text = request.getText();
         Long transcriptId = request.getTranscriptId();
         Long userId = request.getUserId();
+        String purpose = request.getPurpose();
+        SummaryType summaryType = request.getSummaryType();
 
-        // 1. 요약 생성
+        // 1. GPT 요약용 프롬프트 생성
+        String prompt = buildPrompt(purpose, summaryType);
         List<String> chunks = splitTextIntoChunks(text, 1000);
         List<String> partialSummaries = new ArrayList<>();
+
         for (String chunk : chunks) {
-            partialSummaries.add(callOpenAISummary(chunk));
+            partialSummaries.add(callOpenAISummary(prompt + "\n\n" + chunk));
         }
-        String finalSummary = callOpenAISummary(String.join("\n", partialSummaries));
+
+        String finalSummary = callOpenAISummary(prompt + "\n\n" + String.join("\n", partialSummaries));
 
         // 2. Summary 저장
+        User user = userRepository.findById(userId).orElseThrow();
+        AudioTranscript transcript = audioTranscriptRepository.findById(transcriptId).orElseThrow();
+
         Summary summary = Summary.builder()
-                .user(userRepository.findById(userId).orElseThrow())
-                .audioTranscript(audioTranscriptRepository.findById(transcriptId).orElseThrow())
+                .user(user)
+                .audioTranscript(transcript)
                 .summaryText(finalSummary)
-                .languageCode(request.getLanguageCode())
-                .summaryType(SummaryType.valueOf("THREE_LINE")) // 예시로 THREE_LINE 사용
+                .summaryType(summaryType)
+                .userPrompt(prompt)
                 .createdAt(LocalDateTime.now())
+                .languageCode("ko") // 예시로 한국어로 설정
                 .build();
         Summary saved = summaryRepository.save(summary);
 
-//        // 3. 라이브러리 찾기
-//        UserLibrary library = userLibraryRepository
-//                .findBySummaryUserIdAndSummaryAudioTranscriptId(userId, transcriptId)
-//                .orElseThrow(() -> new RuntimeException("라이브러리 항목 없음"));
-
-        // 3. 라이브러리 새로 생성 및 저장
+        // 3. 라이브러리 저장
         UserLibrary library = UserLibrary.builder()
-                .user(saved.getUser())
+                .user(user)
                 .summary(saved)
                 .lastViewedAt(LocalDateTime.now())
                 .build();
@@ -97,7 +101,7 @@ public class SummaryServiceImpl implements SummaryService {
 
             if (!exists) {
                 UserLibraryTag userLibraryTag = UserLibraryTag.builder()
-                        .id(new UserLibraryTagId(library.getUser().getId(), tag.getId()))
+                        .id(new UserLibraryTagId(user.getId(), tag.getId()))
                         .userLibrary(library)
                         .tag(tag)
                         .build();
@@ -105,8 +109,86 @@ public class SummaryServiceImpl implements SummaryService {
             }
         }
 
-        return new SummaryResponseDTO(saved.getId(), finalSummary);
+        return new SummaryResponseDTO(
+                saved.getId(),
+                transcript.getId(),
+                transcript.getVideo().getId(),
+                finalSummary,
+                hashtags,
+                transcript.getVideo().getTitle(),
+                transcript.getVideo().getThumbnailUrl(),
+                transcript.getVideo().getUploaderName(),
+                transcript.getVideo().getViewCount(),
+                summary.getLanguageCode(),
+                summary.getCreatedAt()
+        );
+
     }
+
+    public Optional<UserLibrary> findUserLibraryByUserAndSummary(Long userId, Summary summary) {
+        return userLibraryRepository.findByUser_IdAndSummary(userId, summary);
+    }
+
+//    public SummaryResponseDTO summarize(SummaryRequestDTO request) {
+//        Long transcriptId = request.getTranscriptId();
+//        Long userId = request.getUserId();
+//        String text = request.getText();
+//        String purpose = request.getPurpose();
+//        SummaryType summaryType = request.getSummaryType();
+//
+//        // 1. 요약 생성
+//        List<String> chunks = splitTextIntoChunks(text, 1000);
+//        List<String> partialSummaries = new ArrayList<>();
+//        for (String chunk : chunks) {
+//            partialSummaries.add(callOpenAISummary(chunk));
+//        }
+//        String finalSummary = callOpenAISummary(String.join("\n", partialSummaries));
+//
+//        // 2. Summary 저장
+//        Summary summary = Summary.builder()
+//                .user(userRepository.findById(userId).orElseThrow())
+//                .audioTranscript(audioTranscriptRepository.findById(transcriptId).orElseThrow())
+//                .summaryText(finalSummary)
+//                .summaryType(SummaryType.valueOf("THREE_LINE")) // 예시로 THREE_LINE 사용
+//                .createdAt(LocalDateTime.now())
+//                .build();
+//        Summary saved = summaryRepository.save(summary);
+//
+////        // 3. 라이브러리 찾기
+////        UserLibrary library = userLibraryRepository
+////                .findBySummaryUserIdAndSummaryAudioTranscriptId(userId, transcriptId)
+////                .orElseThrow(() -> new RuntimeException("라이브러리 항목 없음"));
+//
+//        // 3. 라이브러리 새로 생성 및 저장
+//        UserLibrary library = UserLibrary.builder()
+//                .user(saved.getUser())
+//                .summary(saved)
+//                .lastViewedAt(LocalDateTime.now())
+//                .build();
+//        userLibraryRepository.save(library);
+//
+//        // 4. 해시태그 추출 및 저장
+//        List<String> hashtags = extractHashtags(finalSummary, 3);
+//        for (String keyword : hashtags) {
+//            Tag tag = tagRepository.findByTagName(keyword)
+//                    .orElseGet(() -> tagRepository.save(Tag.builder().tagName(keyword).build()));
+//
+//            boolean exists = userLibraryTagRepository
+//                    .findByUserLibraryAndTag(library, tag)
+//                    .isPresent();
+//
+//            if (!exists) {
+//                UserLibraryTag userLibraryTag = UserLibraryTag.builder()
+//                        .id(new UserLibraryTagId(library.getUser().getId(), tag.getId()))
+//                        .userLibrary(library)
+//                        .tag(tag)
+//                        .build();
+//                userLibraryTagRepository.save(userLibraryTag);
+//            }
+//        }
+//
+//        return new SummaryResponseDTO(saved.getId(), finalSummary);
+//    }
 
     @Override
     public List<Quiz> generateFromSummary(QuizRequestDTO request) {
@@ -199,7 +281,7 @@ public class SummaryServiceImpl implements SummaryService {
     }
 
     @Override
-    public void generateSummary(String youtubeId, String purpose, String summaryType) {
+    public void generateSummary(String youtubeId, String purpose, SummaryType summaryType) {
         AudioTranscript transcript = audioTranscriptRepository.findByYoutubeId(youtubeId)
                 .orElseThrow(() -> new RuntimeException("Transcript not found"));
 
@@ -215,7 +297,7 @@ public class SummaryServiceImpl implements SummaryService {
                 .audioTranscript(transcript)
                 .summaryText(summaryText)
                 .languageCode("ko")
-                .summaryType(SummaryType.valueOf(summaryType))
+                .summaryType((summaryType))
                 .userPrompt(prompt)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -248,8 +330,8 @@ public class SummaryServiceImpl implements SummaryService {
         }
     }
 
-    private String buildPrompt(String purpose, String summaryType) {
-        String typeDesc = switch (summaryType.toUpperCase()) {
+    private String buildPrompt(String purpose, SummaryType summaryType) {
+        String typeDesc = switch (summaryType.toString()) {
             case "BULLET" -> "간결한 bullet point 형태로";
             case "PARAGRAPH" -> "문장형 요약으로";
             case "QA" -> "질문-답변 형태로";
