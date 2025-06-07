@@ -1,7 +1,9 @@
 package com.kdt.yts.YouSumback.service;
 
+import com.kdt.yts.YouSumback.model.dto.request.UserAnswer;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
 import com.kdt.yts.YouSumback.model.dto.request.SummaryRequest;
+import com.kdt.yts.YouSumback.model.dto.response.QuizResultResponse;
 import com.kdt.yts.YouSumback.model.dto.response.SummaryResponse;
 import com.kdt.yts.YouSumback.model.entity.AnswerOption;
 import com.kdt.yts.YouSumback.model.entity.Question;
@@ -27,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -292,6 +293,27 @@ public class SummaryServiceImpl implements SummaryService {
             saveEx.printStackTrace();
             throw saveEx;
         }
+    }
+
+
+    @Override
+    public QuizResultResponse checkQuizAnswers(int quizId, List<UserAnswer> answers) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("퀴즈 없음"));
+
+        int score = 0;
+        List<Boolean> results = new ArrayList<>();
+
+        for (UserAnswer ua : answers) {
+            AnswerOption selectedOption = answerOptionRepository.findById(ua.getAnswerOptionId())
+                    .orElseThrow(() -> new RuntimeException("선택한 보기 없음"));
+
+            boolean correct = Boolean.TRUE.equals(selectedOption.getIsCorrect());
+            results.add(correct);
+            if (correct) score++;
+        }
+
+        return new QuizResultResponse(score, results);
     }
 
 
