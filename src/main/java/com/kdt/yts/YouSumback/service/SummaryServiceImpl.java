@@ -160,28 +160,39 @@ public class SummaryServiceImpl implements SummaryService {
     @Override
     public String callOpenAISummary(String text) {
         return chatClient.prompt()
-                .user("다음 내용을 바탕으로 요약해줘:\n" + text)
+                .user(text)
                 .call()
                 .content();
     }
 
-    // 요약 프롬프트를 생성하는 메서드 (유저의 목적과 요약 유형에 따라 다름)
+    // 지침 + 프롬프트 템플릿을 반환 (text는 포함 X)
     private String buildPrompt(String userPrompt, SummaryType summaryType) {
-        String typeDesc = switch (summaryType) {
-            case BASIC -> "간단하게 요약해줘";
-            case THREE_LINE -> "3줄로 요약해줘";
-            case KEYWORD -> "핵심 키워드 위주로 요약해줘";
-            case TIMELINE -> "시간 순 흐름에 따라 요약해줘";
+        String formatInstruction = switch (summaryType) {
+            case BASIC -> "전체 내용을 한눈에 이해할 수 있게 요약해줘. 길이는 4~5문장 이내로 해줘.";
+            case THREE_LINE -> "가장 중요한 내용을 3줄로 요약해줘. 각 줄은 한 문장으로 해줘.";
+            case KEYWORD -> "핵심 키워드를 3~5개 뽑아줘. 각 키워드는 간단한 설명과 함께 적어줘.";
+            case TIMELINE -> "시간 순서대로 사건이나 내용 흐름을 정리해줘. 각 항목은 간결한 문장으로 정리해줘.";
         };
 
-        String userPromptDesc = switch (userPrompt.toUpperCase()) {
-            case "REVIEW" -> "복습 목적에 맞춰";
-            case "EXAM" -> "시험 대비를 위해";
-            default -> "학습 목적에 맞게";
-        };
+        return String.format("""
+        당신은 유튜브 영상 자막을 분석하여 사용자의 학습 목적에 맞는 요약을 생성하는 전문가입니다.
 
-        return String.format("%s %s", userPromptDesc, typeDesc);
+        아래는 사용자의 학습 목적입니다:
+        \"%s\"
+
+        요약은 다음 지침을 따라주세요:
+        - 문장은 짧고 명확하게 작성할 것
+        - 불필요한 반복은 제외할 것
+        - 중요한 개념이나 주장 위주로 요약할 것
+        - %s
+
+        다음은 유튜브 영상의 전체 스크립트입니다:
+        ----
+        {TEXT}
+        ----
+        """, userPrompt.trim(), formatInstruction);
     }
+
 
     // 텍스트를 청크로 나누는 메서드
     private List<String> splitTextIntoChunks(String text, int chunkSize) {

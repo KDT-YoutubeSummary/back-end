@@ -17,7 +17,7 @@ def extract_youtube_id(link):
 
 YTDLP_PATH = r"C:\\Users\\yes36\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\yt-dlp.exe"
 
-# ✅ 자막 여부 확인 (자동 생성 자막 포함)
+# ✅ 자막 여부 확인
 def has_korean_subtitles(youtube_url):
     result = subprocess.run([
         YTDLP_PATH, "--list-subs", "--write-auto-sub", youtube_url
@@ -28,7 +28,7 @@ def has_korean_subtitles(youtube_url):
             return True
     return False
 
-# ✅ 자막 다운로드 (자동 생성 포함)
+# ✅ 자막 다운로드
 def download_subtitles(youtube_url, youtube_id, text_dir):
     output_path = os.path.join(text_dir, f"{youtube_id}.ko.vtt")
     try:
@@ -102,9 +102,13 @@ print(f"[WHISPER] [INFO] YouTube 오디오 다운로드 중: {youtube_url}")
 try:
     subprocess.run([
         YTDLP_PATH,
-        "--user-agent", "Mozilla/5.0",
         "--ffmpeg-location", r"C:\\ffmpeg\\bin",
+        "--no-check-certificate",
+        "--force-ipv4",
+        "--user-agent", "Mozilla/5.0",
+        "--referer", "https://www.youtube.com",
         "-x", "--audio-format", "wav",
+        "-f", "bestaudio[ext=m4a]/bestaudio/best",
         "-o", os.path.join(audio_dir, f"{youtube_id}.%(ext)s"),
         youtube_url
     ], check=True)
