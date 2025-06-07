@@ -1,14 +1,20 @@
 package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter @Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Table(name = "user_activity_log")
 public class UserActivityLog {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "log_id", nullable = false)
     private Long id; // 로그 식별자
 
@@ -29,8 +35,12 @@ public class UserActivityLog {
     private Long targetEntityIdInt; // 활동 대상 정수형 ID
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createAt; // 활동 발생 일자
+    private LocalDateTime createdAt; // 활동 발생 일자
 
     @Column(name = "activity_detail", columnDefinition = "TEXT", nullable = true)
     private String activityDetail; // 활동 상세 내용
+
+    @Column(name = "details", columnDefinition = "json")
+    private String details; // 추가적인 활동 세부 정보 (JSON 형식으로 저장 가능)
+
 }

@@ -32,6 +32,9 @@ public class Question {
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
     private List<AnswerOption> options;
 
+    @Column(length = 255)
+    private String explanation; // 질문에 대한 설명 (선택적)
+
     // 생성자, 게터, 세터 등은 Lombok 어노테이션으로 자동 생성됨
 //    public void setQuiz(Quiz quiz) {
 //        this.quiz = quiz;

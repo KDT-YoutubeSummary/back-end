@@ -1,6 +1,7 @@
 package com.kdt.yts.YouSumback.service;
 
 import com.kdt.yts.YouSumback.model.dto.request.RegisterRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.response.UserInfoDTO;
 import com.kdt.yts.YouSumback.model.entity.User;
 import com.kdt.yts.YouSumback.repository.UserRepository;
 import com.kdt.yts.YouSumback.security.JwtProvider;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
@@ -59,5 +61,11 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    // 사용자 정보 조회
+    public UserInfoDTO getUserInfo(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("사용자 없음"));
+        return new UserInfoDTO(user.getUserName(), user.getEmail());
+    }
 }
 

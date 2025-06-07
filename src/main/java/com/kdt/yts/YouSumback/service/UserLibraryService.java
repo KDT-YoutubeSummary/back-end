@@ -28,6 +28,7 @@ public class UserLibraryService {
     private final UserLibraryRepository userLibraryRepository;
     private final UserLibraryTagRepository userLibraryTagRepository;
     private final TagRepository tagRepository;
+    private final UserActivityLogRepository userActivityLogRepository;
 
 //    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -182,5 +183,19 @@ public class UserLibraryService {
             throw new SecurityException("해당 라이브러리에 대한 권한이 없습니다.");
         }
         library.setUserNotes(requestDTO.getUserNotes());
+
+        // ✅ 활동 로그 저장
+        UserActivityLog logEntry = UserActivityLog.builder()
+                .user(library.getUser())
+                .activityType("USER_NOTE_UPDATED")
+                .targetEntityType("USER_LIBRARY")
+                .targetEntityIdInt(library.getId())
+                .activityDetail("사용자 메모 수정 완료")
+                .details(String.format("{\"summaryTitle\": \"%s\", \"newNote\": \"%s\"}",
+                        library.getSummary().getAudioTranscript().getVideo().getTitle(),
+                        requestDTO.getUserNotes()))
+                .createdAt(LocalDateTime.now())
+                .build();
+        userActivityLogRepository.save(logEntry);
     }
 }

@@ -101,6 +101,7 @@ CREATE TABLE `question` (
                           quiz_id INT NOT NULL,
                           question_text TEXT NOT NULL,
                           language_code VARCHAR(10) NOT NULL, -- VARCHAR(255) -> VARCHAR(10) (언어 코드에 적합)
+                          explanation TEXT, -- (추가) 질문에 대한 설명
                           CONSTRAINT fk_question_quiz FOREIGN KEY (quiz_id) REFERENCES quiz(quiz_id) ON DELETE CASCADE
 );
 
@@ -209,9 +210,9 @@ INSERT INTO quiz (quiz_id, summary_id, title) VALUES
     (601, 201, 'AI 기술 요약 퀴즈');
 
 -- ✅ 10. 질문
-INSERT INTO question (question_id, quiz_id, question_text, language_code) VALUES
-                                                                              (701, 601, '이 영상에서 주로 다루는 기술은 무엇인가요?', 'ko'),
-                                                                              (702, 601, 'AI의 어떤 하위 분야에 대한 언급이 있었나요?', 'ko');
+INSERT INTO question (question_id, quiz_id, question_text, language_code, explanation) VALUES
+                                                                              (701, 601, '이 영상에서 주로 다루는 기술은 무엇인가요?', 'ko', 'AI 기술에 대한 설명이 포함되어 있습니다.'),
+                                                                              (702, 601, 'AI의 어떤 하위 분야에 대한 언급이 있었나요?', 'ko', 'AI의 하위 분야에 대한 설명이 포함되어 있습니다.');
 
 -- ✅ 11. 선택지
 INSERT INTO answer_option (

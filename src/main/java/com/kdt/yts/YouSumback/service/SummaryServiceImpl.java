@@ -1,5 +1,6 @@
 package com.kdt.yts.YouSumback.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.SummaryRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.SummaryResponseDTO;
@@ -26,6 +27,8 @@ public class SummaryServiceImpl implements SummaryService {
     private final UserRepository userRepository;
     private final AudioTranscriptRepository audioTranscriptRepository;
     private final SummaryRepository summaryRepository;
+    private final UserActivityLogRepository userActivityLogRepository;
+    private final ObjectMapper objectMapper;
 
     // ChatClient.Builder를 주입받아 ChatClient 생성
     @Autowired
@@ -36,7 +39,9 @@ public class SummaryServiceImpl implements SummaryService {
                               UserLibraryTagRepository userLibraryTagRepository,
                               UserRepository userRepository,
                               AudioTranscriptRepository audioTranscriptRepository,
-                              SummaryRepository summaryRepository) {
+                              SummaryRepository summaryRepository,
+                              UserActivityLogRepository userActivityLogRepository,
+                              ObjectMapper objectMapper) {
         this.chatClient = chatClientBuilder.build();
         this.answerOptionRepository = answerOptionRepository;
         this.tagRepository = tagRepository;
@@ -45,6 +50,8 @@ public class SummaryServiceImpl implements SummaryService {
         this.userRepository = userRepository;
         this.audioTranscriptRepository = audioTranscriptRepository;
         this.summaryRepository = summaryRepository;
+        this.userActivityLogRepository = userActivityLogRepository;
+        this.objectMapper = new ObjectMapper();
     }
 
     // 메인 요약 메서드
@@ -116,6 +123,23 @@ public class SummaryServiceImpl implements SummaryService {
                 userLibraryTagRepository.save(userLibraryTag);
             }
         }
+        // ✅ 활동 로그 저장
+        UserActivityLog log = UserActivityLog.builder()
+                .user(user)
+                .activityType("SUMMARY_CREATED")
+                .targetEntityType("SUMMARY")
+                .targetEntityIdInt(saved.getId())
+                .activityDetail("요약 생성 완료: " + summaryType)
+                .details(String.format("""
+    {
+        "summaryType": "%s",
+        "videoId": %d,
+        "videoTitle": "%s"
+    }
+""", summaryType, transcript.getVideo().getId(), transcript.getVideo().getTitle()))
+                .createdAt(LocalDateTime.now())
+                .build();
+        userActivityLogRepository.save(log);
 
         return new SummaryResponseDTO(
                 saved.getId(),
@@ -270,10 +294,15 @@ public class SummaryServiceImpl implements SummaryService {
     // 퀴즈 생성 메서드
     @Override
     public List<Quiz> generateFromSummary(QuizRequestDTO request) {
-        String prompt = "다음 내용을 바탕으로 객관식 퀴즈를 " + request.getNumberOfQuestions() + "개 만들어줘.\n"
+        // 1. Summary 가져오기
+        Summary summary = summaryRepository.findById(request.getTranscriptId())
+                .orElseThrow(() -> new RuntimeException("Summary not found"));
+
+        // 2. 요약 텍스트로 퀴즈 생성 (LLM 호출)
+        String prompt = "다음 내용을 바탕으로 객관식 퀴즈를 1개 만들어줘.\n"
                 + "문제 형식은 다음과 같아:\n"
                 + "Q: ...\n1. ...\n2. ...\n3. ...\n4. ...\n정답: ...\n\n"
-                + request.getSummaryText();
+                + summary.getSummaryText();
 
         String aiResponse = callOpenAISummary(prompt);
         String[] quizBlocks = aiResponse.split("(?=Q:)");
@@ -296,15 +325,25 @@ public class SummaryServiceImpl implements SummaryService {
                 int answerNum = Integer.parseInt(lines[5].replaceAll("[^0-9]", ""));
                 options.get(answerNum - 1).setIsCorrect(true);
 
+
+                // 해설 파싱
+                String explanation = "";
+                if (lines.length >= 7 && lines[6].startsWith("해설:")) {
+                    explanation = lines[6].substring(3).trim();
+                }
+
                 Question question = Question.builder()
                         .questionText(questionText)
                         .options(options)
+                        .explanation(explanation)
+                        .languageCode("ko")
                         .build();
 
                 Quiz quiz = Quiz.builder()
-                        .summary(Summary.builder().id(request.getSummaryId()).build())
+                        .summary(summary)
                         .questions(List.of(question))
                         .createdAt(LocalDateTime.now())
+                        .title("AI 자동 생성 퀴즈")
                         .build();
 
                 quizzes.add(quiz);

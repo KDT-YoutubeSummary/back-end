@@ -3,12 +3,10 @@ package com.kdt.yts.YouSumback.service;
 import com.kdt.yts.YouSumback.model.dto.request.ReminderCreateRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.ReminderResponseDTO;
 import com.kdt.yts.YouSumback.model.dto.request.ReminderUpdateRequestDTO;
-import com.kdt.yts.YouSumback.model.entity.Reminder;
-import com.kdt.yts.YouSumback.model.entity.ReminderType;
-import com.kdt.yts.YouSumback.model.entity.User;
-import com.kdt.yts.YouSumback.model.entity.UserLibrary;
+import com.kdt.yts.YouSumback.model.entity.*;
 import com.kdt.yts.YouSumback.exception.ResourceNotFoundException;
 import com.kdt.yts.YouSumback.repository.ReminderRepository;
+import com.kdt.yts.YouSumback.repository.UserActivityLogRepository;
 import com.kdt.yts.YouSumback.repository.UserRepository;
 import com.kdt.yts.YouSumback.repository.UserLibraryRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +31,7 @@ public class ReminderService {
     private final UserRepository userRepository;
     private final UserLibraryRepository userLibraryRepository;
     private final EmailService emailService;
+    private final UserActivityLogRepository userActivityLogRepository; // 활동 로그 저장소
 
     // ---------------------- 리마인더 (C)생성, (R)조회, (U)수정, (D)삭제 ----------------------
 
@@ -61,7 +60,22 @@ public class ReminderService {
 
         Reminder savedReminder = reminderRepository.save(reminder); // 데이터베이스에 리마인더 저장
         log.info("Created reminder with ID: {}", savedReminder.getId());
+
+        // ✅ 활동 로그 저장
+        UserActivityLog logEntry = UserActivityLog.builder()
+                .user(user)
+                .activityType("REMINDER_CREATED")
+                .targetEntityType("REMINDER")
+                .targetEntityIdInt(savedReminder.getId())
+                .activityDetail("리마인더 생성 완료: " + savedReminder.getReminderType())
+                .details(String.format("{\"summaryTitle\": \"%s\"}",
+                        savedReminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle()))
+                .createdAt(LocalDateTime.now())
+                .build();
+        userActivityLogRepository.save(logEntry);
+
         return new ReminderResponseDTO(savedReminder); // 저장된 리마인더를 DTO로 변환하여 반환
+
     }
 
     @Transactional(readOnly = true) // 읽기 전용 트랜잭션으로 설정하여 성능을 최적화합니다.
@@ -117,6 +131,20 @@ public class ReminderService {
 
         Reminder updatedReminder = reminderRepository.save(reminder); // 데이터베이스에 변경사항 저장
         log.info("Updated reminder with ID: {}", updatedReminder.getId());
+
+        // ✅ 활동 로그 저장
+        UserActivityLog logEntry = UserActivityLog.builder()
+                .user(reminder.getUser())
+                .activityType("REMINDER_UPDATED")
+                .targetEntityType("REMINDER")
+                .targetEntityIdInt(updatedReminder.getId())
+                .activityDetail("리마인더 수정 완료: " + updatedReminder.getReminderType())
+                .details(String.format("{\"summaryTitle\": \"%s\"}",
+                        updatedReminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle()))
+                .createdAt(LocalDateTime.now())
+                .build();
+        userActivityLogRepository.save(logEntry);
+
         return new ReminderResponseDTO(updatedReminder);
     }
 

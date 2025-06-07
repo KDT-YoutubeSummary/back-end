@@ -8,6 +8,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
+// QuizResponseDTO는 퀴즈의 응답을 나타내는 DTO입니다.
 public class QuizResponseDTO {
     private String title; // 퀴즈 제목
     private LocalDateTime createdAt; // 퀴즈 생성 시간
