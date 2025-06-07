@@ -40,4 +40,5 @@ public class VideoRecommendation{
 
     @Column(name = "clicked_at")
     private LocalDateTime clickedAt; // 클릭 시간 (nullable)
+
 }

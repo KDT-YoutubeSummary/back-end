@@ -1,10 +1,10 @@
 package com.kdt.yts.YouSumback.service;
 
+import com.kdt.yts.YouSumback.model.dto.response.VideoAiRecommendationResponseDTO;
 import com.kdt.yts.YouSumback.model.entity.VideoRecommendation;
 import com.kdt.yts.YouSumback.repository.UserLibraryTagRepository;
 import com.kdt.yts.YouSumback.repository.VideoRecommendationRepository;
 import com.kdt.yts.YouSumback.service.client.OpenAIClient;
-import com.kdt.yts.YouSumback.model.dto.response.VideoAiRecommendationResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kdt.yts.YouSumback.model.entity.Video;
 import com.kdt.yts.YouSumback.model.entity.UserLibrary;
@@ -47,7 +47,7 @@ public class VideoRecommendationService {
 
     // 사용자 ID로 영상 추천 목록 찾기
     public List<VideoRecommendation> getRecommendationsByUserId(Long userId) {
-        return videoRecommendationRepository.findByUser_UserId(userId);
+        return videoRecommendationRepository.findByUser_Id(userId);
     }
 
     // 영상 추천 삭제
@@ -56,8 +56,8 @@ public class VideoRecommendationService {
     }
 
     // userLibraryId 기반 AI 추천 (비동기 처리)
-    public Mono<List<VideoAiRecommendationResponse>> getAiRecommendationByUserLibraryId(Long userLibraryId) {
-        return Mono.fromCallable(() -> userLibraryTagRepository.findByUserLibrary_UserLibraryId(userLibraryId))
+    public Mono<List<VideoAiRecommendationResponseDTO>> getAiRecommendationByUserLibraryId(Long userLibraryId) {
+        return Mono.fromCallable(() -> userLibraryTagRepository.findByUserLibrary_Id(userLibraryId))
                 .map(tags -> tags.stream().map(t -> t.getTag().getTagName()).toList())
                 .flatMap(tagNames -> {
                     if (tagNames.isEmpty()) {
@@ -125,9 +125,9 @@ public class VideoRecommendationService {
                                     try {
                                         String cleaned = response.replaceAll("(?s)```json|```|`", "").trim();
                                         ObjectMapper mapper = new ObjectMapper();
-                                        List<VideoAiRecommendationResponse> recommendations = mapper.readValue(
+                                        List<VideoAiRecommendationResponseDTO> recommendations = mapper.readValue(
                                                 cleaned,
-                                                mapper.getTypeFactory().constructCollectionType(List.class, VideoAiRecommendationResponse.class)
+                                                mapper.getTypeFactory().constructCollectionType(List.class, VideoAiRecommendationResponseDTO.class)
                                         );
 
                                         // 최대 5개로 제한
@@ -146,13 +146,17 @@ public class VideoRecommendationService {
 
     // AI 추천 결과를 video_recommendation 테이블에 저장
     @Transactional
-    public List<VideoRecommendation> saveAiRecommendation(Long userLibraryId, List<VideoAiRecommendationResponse> responses) {
-        UserLibrary userLibrary = userLibraryRepository.findById(userLibraryId.intValue())
+    public List<VideoRecommendation> saveAiRecommendation(Long userLibraryId, List<VideoAiRecommendationResponseDTO> responses) {
+        UserLibrary userLibrary = userLibraryRepository.findById(userLibraryId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 userLibraryId의 UserLibrary가 없습니다."));
-        Video recommendedVideo = userLibrary.getSummary().getAudioTranscript().getVideo();
+//        Video recommendedVideo = userLibrary.getSummary().getAudioTranscript().getVideo();
+        // 해당 비디오는 추천되는 비디오가 아니라 유저 라이브러리에 있는 추천의 기준이 되는 영상임
+        // 따라서 아래와 같이 수정
+
+        Video OriginalVideo = userLibrary.getSummary().getAudioTranscript().getVideo();
         List<VideoRecommendation> savedList = new ArrayList<>();
 
-        for (VideoAiRecommendationResponse response : responses) {
+        for (VideoAiRecommendationResponseDTO response : responses) {
             String url = response.getUrl();
             String youtubeId;
 
@@ -189,18 +193,25 @@ public class VideoRecommendationService {
             // 추천 정보 저장
             VideoRecommendation recommendation = new VideoRecommendation();
             recommendation.setUser(userLibrary.getUser());
-            recommendation.setSourceVideo(video);
-            recommendation.setRecommendedVideo(recommendedVideo); // recommended_video_id 설정
-            recommendation.setVideo(video);
-            recommendation.setVideo2(recommendedVideo); // 추천의 계기가 된 영상
+            recommendation.setSourceVideo(OriginalVideo);
+            recommendation.setRecommendedVideo(video); // recommended_video_id 설정
+//            recommendation.setSourceVideo(video);
+//            recommendation.setRecommendedVideo(recommendedVideo); // 추천의 계기가 된 영상
             recommendation.setRecommendationReason(response.getReason());
-            recommendation.setRecommendationAiVersion("GPT-4"); // AI 버전 정보
+//            recommendation.setRecommendationAiVersion("GPT-4"); // AI 버전 정보
 
             VideoRecommendation saved = videoRecommendationRepository.save(recommendation);
             savedList.add(saved);
         }
 
         return savedList;
+    }
+    public List<VideoAiRecommendationResponseDTO> toResponseDTO(List<VideoRecommendation> recommendations) {
+        return recommendations.stream().map(rec -> new VideoAiRecommendationResponseDTO(
+                rec.getRecommendedVideo().getTitle(),  // 추천된 영상 제목
+                "https://www.youtube.com/watch?v=" + rec.getRecommendedVideo().getYoutubeId(), // 추천된 영상 링크
+                rec.getRecommendationReason()  // 추천 사유
+        )).toList();
     }
 }
 
