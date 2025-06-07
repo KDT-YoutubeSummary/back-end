@@ -1,9 +1,10 @@
 package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
-import java.util.List;
-
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -11,40 +12,26 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "Question")
 public class Question {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "question_id", nullable = false)
-    private int questionId;
+    @Column(name = "question_id")
+    // ↓ int → Integer
+    private Integer questionId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quiz_id", nullable = false)
     private Quiz quiz;
 
     @Column(name = "question_text", columnDefinition = "TEXT", nullable = false)
     private String questionText;
 
-    @Column(name = "language_code", length = 255, nullable = false)
+    @Column(name = "language_code", length = 10, nullable = false)
     private String languageCode;
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
-    private List<AnswerOption> options;
-
-    // ✅ Setter
-    public void setQuiz(Quiz quiz) {
-        this.quiz = quiz;
-    }
-
-    public void setQuestionText(String questionText) {
-        this.questionText = questionText;
-    }
-
-    public void setLanguageCode(String languageCode) {
-        this.languageCode = languageCode;
-    }
-
-    public void setOptions(List<AnswerOption> options) {
-        this.options = options;
-    }
+    @Builder.Default
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AnswerOption> options = new ArrayList<>();
 }

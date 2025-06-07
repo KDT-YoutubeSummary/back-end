@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface SummaryRepository extends JpaRepository<Summary, Integer> {
-    Optional<Summary> findByUserUserIdAndAudioTranscriptTranscriptId(Long userId, Long transcriptId);
+    Optional<Summary> findByUserUserIdAndAudioTranscriptTranscriptId(Integer userId, Integer transcriptId);
 
 }

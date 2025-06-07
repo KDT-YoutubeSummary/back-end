@@ -57,7 +57,7 @@ public class AuthService {
         newUser.setUsername(request.getUsername());
         newUser.setEmail(request.getEmail());
         newUser.setPasswordHash(encodedPassword);
-        newUser.setCreateAt(LocalDateTime.now());
+        newUser.setCreatedAt(LocalDateTime.now());
 
         try {
             return userRepository.save(newUser);

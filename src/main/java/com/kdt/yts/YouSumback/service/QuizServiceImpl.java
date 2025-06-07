@@ -28,13 +28,16 @@ public class QuizServiceImpl implements QuizService {
     public List<Quiz> generateFromSummary(QuizRequest request) {
         // 1. AI 요약으로부터 퀴즈 생성
         String aiResponse = summaryService.callOpenAISummary(request.getSummaryText());
+        System.out.println(">>>> AI Response:\n" + aiResponse);
+
 
         // 2. 파싱
         List<QuizParsedResult> parsedList = parseQuizFromAiResponse(aiResponse);
 
         // 3. summary 가져오기
-        Summary summary = summaryRepository.findById(request.getTranscriptId().intValue())
+        Summary summary = summaryRepository.findById(request.getSummaryId())
                 .orElseThrow(() -> new RuntimeException("Summary not found"));
+
 
         // 4. Quiz 엔티티 구성
         Quiz quiz = new Quiz();
@@ -64,33 +67,53 @@ public class QuizServiceImpl implements QuizService {
 
         quizRepository.save(quiz);
         return List.of(quiz);
+
     }
 
     private List<QuizParsedResult> parseQuizFromAiResponse(String aiResponse) {
         List<QuizParsedResult> results = new ArrayList<>();
-        String[] blocks = aiResponse.split("\\n\\n");
+        String[] blocks = aiResponse.split("\\n\\n|\\r\\n\\r\\n"); // 윈도우/유닉스 줄바꿈 모두 대응
 
         for (String block : blocks) {
-            String[] lines = block.strip().split("\\n");
-            if (lines.length < 6 || !lines[0].startsWith("Q:")) continue;
-
-            String question = lines[0].substring(2).trim();
+            System.out.println("Parsing block:\n" + block);
+            String[] lines = block.strip().split("\\n|\\r\\n");
+            String question = null;
             List<String> options = new ArrayList<>();
-            for (int i = 1; i <= 4; i++) {
-                String opt = lines[i].substring(2).trim();
-                options.add(opt);
-            }
-            int answerIndex = Integer.parseInt(lines[5].replace("정답:", "").trim());
+            int answerIndex = -1;
 
-            QuizParsedResult result = new QuizParsedResult();
-            result.setQuestion(question);
-            result.setOptions(options);
-            result.setAnswerIndex(answerIndex);
-            results.add(result);
+            // 문제, 보기, 정답 줄을 동적으로 탐색
+            for (String line : lines) {
+                if (line.trim().startsWith("Q:")) {
+                    question = line.trim().substring(2).trim();
+                } else if (line.trim().matches("^\\d+\\..*")) {
+                    // "1. 보기" 형식
+                    String opt = line.trim().substring(2).trim();
+                    options.add(opt);
+                } else if (line.trim().startsWith("정답:")) {
+                    try {
+                        answerIndex = Integer.parseInt(line.trim().replaceAll("[^0-9]", ""));
+                    } catch (Exception e) {
+                        answerIndex = -1;
+                    }
+                }
+            }
+
+            if (question != null && options.size() == 4 && answerIndex >= 1 && answerIndex <= 4) {
+                QuizParsedResult result = new QuizParsedResult();
+                result.setQuestion(question);
+                result.setOptions(options);
+                result.setAnswerIndex(answerIndex);
+                results.add(result);
+            } else {
+                System.out.println("Skipping block due to format mismatch");
+            }
         }
 
+        System.out.println("Parsed quiz count: " + results.size());
         return results;
     }
+
+
 
     // 내부 DTO 클래스
     public static class QuizParsedResult {

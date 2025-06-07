@@ -8,6 +8,8 @@ import lombok.Setter;
 public class QuizRequest {
     private String summaryText;
     private int numberOfQuestions;
-    private Long transcriptId;
-    private Long summaryId;
+
+    // ↓ Long → Integer 로 변경합니다.
+    private Integer transcriptId;
+    private Integer summaryId;
 }
