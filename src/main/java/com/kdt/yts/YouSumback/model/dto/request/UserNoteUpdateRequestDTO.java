@@ -9,10 +9,6 @@ import lombok.*;
 @AllArgsConstructor
 // UserNoteUpdateRequestDTO는 사용자의 메모를 업데이트하기 위한 요청 DTO 클래스입니다.
 public class UserNoteUpdateRequestDTO {
-
-    @JsonProperty("user_id")
-    private Long userId;
-
     @JsonProperty("user_library_id")
     private Long userLibraryId;
 

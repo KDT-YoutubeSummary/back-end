@@ -123,7 +123,7 @@ public class UserLibraryServiceTest {
         Long id = (long) library.getId();
 
         // when
-        userLibraryService.deleteLibrary(id);
+        userLibraryService.deleteLibrary(id, testUser.getId());
 
         // then
         assertFalse(userLibraryRepository.findById(id).isPresent());

@@ -31,7 +31,7 @@ public class UserLibraryService {
 
 //    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // 유저 라이브러리 저장
+    // 유저 라이브러리 저장 --> 요약 생성 시 자동으로 저장됨
     @Transactional
     public UserLibraryResponseListDTO saveLibrary(Long userId, UserLibraryRequestDTO request) {
         // 1. User 조회 (예외 처리 포함)
@@ -99,32 +99,31 @@ public class UserLibraryService {
     }
 
     // 특정 라이브러리 상세 조회 (요약 본문 포함)
-    public UserLibraryResponseDTO getLibraryDetail(Long libraryId) {
+    public UserLibraryResponseDTO getLibraryDetail(Long libraryId, Long userId) {
         UserLibrary library = userLibraryRepository.findById(libraryId)
                 .orElseThrow(() -> new NoSuchElementException("해당 라이브러리를 찾을 수 없습니다."));
 
+        if (!library.getUser().getId().equals(userId)) {
+            throw new SecurityException("해당 라이브러리에 접근 권한이 없습니다.");
+        }
+
         List<UserLibraryTag> tags = userLibraryTagRepository.findByUserLibrary(library);
-        List<String> tagNames = tags.stream()
-                .map(t -> t.getTag().getTagName())
-                .toList();
+        List<String> tagNames = tags.stream().map(t -> t.getTag().getTagName()).toList();
 
         return UserLibraryResponseDTO.fromEntity(library, tagNames);
     }
 
     // 특정 라이브러리 삭제
     @Transactional
-    public void deleteLibrary(Long libraryId) {
+    public void deleteLibrary(Long libraryId, Long userId) {
         UserLibrary library = userLibraryRepository.findById(libraryId)
                 .orElseThrow(() -> new NoSuchElementException("해당 라이브러리를 찾을 수 없습니다."));
 
-        if (!library.getUser().getId().equals(library.getUser().getId())) {
+        if (!library.getUser().getId().equals(userId)) {
             throw new SecurityException("해당 라이브러리에 대한 권한이 없습니다.");
         }
 
-        // 관련 태그 연결 먼저 삭제
         userLibraryTagRepository.deleteAllByUserLibrary(library);
-
-        // 2라이브러리 삭제
         userLibraryRepository.delete(library);
     }
 
