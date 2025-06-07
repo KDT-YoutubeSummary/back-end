@@ -11,6 +11,8 @@ import com.kdt.yts.YouSumback.service.client.YouTubeClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -78,24 +80,47 @@ public class YouTubeMetadataService {
             }
         }
 
-        // Whisper로 텍스트 추출
-        transcriptService.extractYoutubeIdAndRunWhisper(url, userPrompt);
+        // 1. Whisper 실행 → videoId 반환
+        Long videoId = transcriptService.extractYoutubeIdAndRunWhisper(url, userPrompt);
 
-        // 자막 가져오기
-        String youtubeId = extractYoutubeId(url);
-        AudioTranscript transcript = audioTranscriptRepository.findByYoutubeId(youtubeId)
-                .orElseThrow(() -> new RuntimeException("Transcript not found"));
+        AudioTranscript transcript = audioTranscriptRepository.findByVideoId(videoId)
+                .orElseThrow(() -> new RuntimeException("Transcript not found for videoId = " + videoId));
 
-        // 요약 요청 DTO 구성
+        Long transcriptId = transcript.getId();
+
+        // 3. 텍스트 읽기
+        String cleanedText = transcriptService.readTranscriptText(videoId);
+
+        // 4. 요약 요청 DTO 구성
         SummaryRequestDTO dto = new SummaryRequestDTO();
-        dto.setTranscriptId(transcript.getId());
+        dto.setTranscriptId(transcriptId);
         dto.setUserId(userId);
-        dto.setText(transcript.getTranscriptText());
-        dto.setUserPrompt(userPrompt);
+        dto.setText(Files.readString(Path.of(transcript.getTranscriptPath()))); // 텍스트 파일 내용 로드
+        dto.setUserPrompt("REVIEW");
+
+
+//        // Whisper로 텍스트 추출
+//        transcriptService.extractYoutubeIdAndRunWhisper(url, userPrompt);
+//
+//        // 자막 가져오기
+//        String youtubeId = extractYoutubeId(url);
+//        Video video = videoRepository.findByYoutubeId(youtubeId)
+//                .orElseThrow(() -> new RuntimeException("Video not found"));
+//
+//        // 자막 정제 후 텍스트 읽기
+//        String cleanedText = transcriptService.readTranscriptText(video.getId());
+//
+//        // 요약 요청 DTO 구성
+//        SummaryRequestDTO dto = new SummaryRequestDTO();
+////        dto.setTranscriptId(video.getId());
+//        dto.setVideoId(video.getId());
+//        dto.setUserId(userId);
+//        dto.setText(cleanedText);
+//        dto.setUserPrompt(userPrompt);
 
         // ✅ summaryType이 null이면 기본값 지정
         if (summaryType == null || summaryType.isBlank()) {
-            summaryType = "THREE_LINE";
+            summaryType = "BASIC"; // 기본 요약 타입
         }
 
         try {

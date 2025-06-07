@@ -25,8 +25,13 @@ public class AudioTranscript {
     private String youtubeId;
 
     @Lob
-    @Column(name = "transcript_text", nullable = false, columnDefinition = "LONGTEXT")
-    private String transcriptText;
+    @Column(name = "transcript_path", nullable = false, columnDefinition = "LONGTEXT")
+    private String transcriptPath;
+    // 텍스트를 저장하는 대신, 파일 경로를 저장합니다.
+
+//    @Lob
+//    @Column(name = "transcript_text", nullable = false, columnDefinition = "LONGTEXT")
+//    private String transcriptText;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

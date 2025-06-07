@@ -73,7 +73,8 @@ public class SummaryServiceImpl implements SummaryService {
 
         // 3. Summary 저장
         User user = userRepository.findById(userId).orElseThrow();
-        AudioTranscript transcript = audioTranscriptRepository.findById(transcriptId).orElseThrow();
+        AudioTranscript transcript = audioTranscriptRepository.findById(transcriptId)
+                .orElseThrow(() -> new RuntimeException("Transcript not found for ID = " + transcriptId));
 
         Summary summary = Summary.builder()
                 .user(user)
@@ -349,7 +350,7 @@ public class SummaryServiceImpl implements SummaryService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String prompt = buildPrompt(userPrompt, summaryType);
-        String input = prompt + "\n\n" + transcript.getTranscriptText();
+        String input = prompt + "\n\n" + transcript.getTranscriptPath();
         String summaryText = callOpenAISummary(input);
 
         Summary summary = Summary.builder()

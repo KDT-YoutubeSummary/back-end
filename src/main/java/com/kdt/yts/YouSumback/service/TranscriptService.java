@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +23,7 @@ public class TranscriptService {
     private final AudioTranscriptRepository transcriptRepository;
     private final TextCleaner textCleaner;
 
-    public void extractYoutubeIdAndRunWhisper(String originalUrl, String purpose) throws Exception {
+    public Long extractYoutubeIdAndRunWhisper(String originalUrl, String purpose) throws Exception {
         // 1. 유튜브 ID 추출
         String youtubeId = extractYoutubeId(originalUrl);
         if (youtubeId == null || youtubeId.isEmpty()) {
@@ -47,6 +48,8 @@ public class TranscriptService {
                 originalUrl  // ← 전체 URL
         );
 
+        int durationSeconds = -1; // 기본값 (에러 대비)
+
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(new File(".")); // 현재 디렉토리 기준
         pb.redirectErrorStream(false); // stderr 분리
@@ -57,6 +60,16 @@ public class TranscriptService {
             String line;
             while ((line = reader.readLine()) != null) {
                 System.out.println("[WHISPER STDOUT] " + line);
+
+                // ✅ duration 결과 파싱
+                if (line.startsWith("[DURATION_RESULT]")) {
+                    try {
+                        durationSeconds = Integer.parseInt(line.replace("[DURATION_RESULT]", "").trim());
+                        System.out.println("✅ 추출된 영상 길이 (초): " + durationSeconds);
+                    } catch (NumberFormatException e) {
+                        System.err.println("⚠ 영상 길이 파싱 실패: " + line);
+                    }
+                }
             }
         }
 
@@ -71,25 +84,50 @@ public class TranscriptService {
         if (exitCode != 0) {
             throw new RuntimeException("❌ Whisper 실행 실패 (exit code: " + exitCode + ")");
         }
-        // 4. Whisper 텍스트 파일 읽고 정제
-        String transcriptPath = "src/main/resources/textfiles/" + youtubeId + ".txt";
-        String rawText = Files.readString(Path.of(transcriptPath));
+
+        // 영상 길이 DB 저장
+        video.setDurationSeconds(durationSeconds);
+        videoRepository.save(video); // 업데이트
+
+//        // 4. Whisper 텍스트 파일 읽고 정제
+//        String transcriptPath = "src/main/resources/textfiles/" + youtubeId + ".txt";
+//        String rawText = Files.readString(Path.of(transcriptPath));
+//        String cleanedText = textCleaner.clean(rawText);
+
+        // 4. Whisper 결과 텍스트 파일 경로
+        String fileName = youtubeId + ".txt";
+        String rawFilePath = "src/main/resources/textfiles/" + fileName;
+
+        /// 5. 정제 후 정제 파일로 저장
+        String rawText = Files.readString(Path.of(rawFilePath));
         String cleanedText = textCleaner.clean(rawText);
+        String cleanedFilePath = "src/main/resources/textfiles/cleaned_" + fileName;
+        Files.writeString(Path.of(cleanedFilePath), cleanedText); // 정제 파일 저장
 
-        // 5. AudioTranscript 저장 전 중복 확인
-        if (transcriptRepository.findByVideoId(video.getId()).isPresent()) {
-            System.out.println("📌 이미 해당 영상에 대한 transcript가 존재합니다. 저장 생략.");
-            return;
-        }
+//        // 6. 이미 존재하면 저장 생략
+//        if (transcriptRepository.findByVideoId(video.getId()).isPresent()) {
+//            System.out.println("📌 이미 해당 영상에 대한 transcript가 존재합니다. 저장 생략.");
+//            return video.getId();
+//        }
 
-        // 저장
-        AudioTranscript transcript = AudioTranscript.builder()
-                .video(video)
-                .youtubeId(youtubeId)
-                .transcriptText(cleanedText)
-                .createdAt(LocalDateTime.now())
-                .build();
+        // 7. DB에 경로 저장 (있으면 update, 없으면 insert)
+        AudioTranscript transcript = transcriptRepository.findByVideoId(video.getId())
+                .map(existing -> {
+                    existing.setTranscriptPath(cleanedFilePath);
+                    existing.setCreatedAt(LocalDateTime.now());
+                    return existing;
+                })
+                .orElseGet(() -> AudioTranscript.builder()
+                        .video(video)
+                        .youtubeId(youtubeId)
+                        .transcriptPath(cleanedFilePath)
+                        .createdAt(LocalDateTime.now())
+                        .build()
+                );
+
         transcriptRepository.save(transcript);
+
+        return video.getId();
     }
 
     // 유튜브 URL에서 ID 추출
@@ -106,5 +144,11 @@ public class TranscriptService {
             throw new RuntimeException("YouTube ID 추출 실패", e);
         }
         return null;
+    }
+
+    public String readTranscriptText(Long videoId) throws IOException {
+        AudioTranscript transcript = transcriptRepository.findByVideoId(videoId)
+                .orElseThrow(() -> new NoSuchElementException("Transcript not found"));
+        return Files.readString(Path.of(transcript.getTranscriptPath()));
     }
 }

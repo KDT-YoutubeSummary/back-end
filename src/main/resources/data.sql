@@ -35,7 +35,7 @@ CREATE TABLE `audio_transcript` (
                      transcript_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
                      video_id INT NOT NULL UNIQUE, -- 단일 트랜스크립트 가정 유지
                      youtube_id VARCHAR(255) NOT NULL UNIQUE,
-                     transcript_text TEXT NOT NULL,
+                     transcript_path TEXT NOT NULL, -- 텍스트로 저장하지 않고 파일 경로로 저장
                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, -- create_at -> created_at
                      CONSTRAINT fk_audio_transcript_video FOREIGN KEY (video_id) REFERENCES video(video_id) ON DELETE CASCADE
 );
@@ -174,8 +174,8 @@ INSERT INTO video (video_id, youtube_id, title, original_url, uploader_name, thu
                                                                                                                                                                     (3, 'yt999', '강력 추천 영상', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'Uploader X', NULL, 9999, '2025-06-05 06:35:00', 200, 'ko');
 
 -- ✅ 3. 트랜스크립트
-INSERT INTO audio_transcript (transcript_id, video_id, youtube_id, transcript_text) VALUES
-    (1, 1, 'yt001', 'This is a sample transcript.');
+INSERT INTO audio_transcript (transcript_id, video_id, youtube_id, transcript_path) VALUES
+    (1, 1, 'yt001', 'C:\workspace\back-end\src\main\resources\textfiles\CFIW0rgYF3Q.txt');
 
 -- ✅ 4. 요약
 INSERT INTO summary (summary_id, user_id, transcript_id, summary_text, user_prompt, language_code, summary_type) VALUES
