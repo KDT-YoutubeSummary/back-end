@@ -3,6 +3,8 @@ package com.kdt.yts.YouSumback.service;
 import com.kdt.yts.YouSumback.model.dto.request.UserAnswer;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
 import com.kdt.yts.YouSumback.model.dto.request.SummaryRequest;
+import com.kdt.yts.YouSumback.model.dto.response.OptionDto;
+import com.kdt.yts.YouSumback.model.dto.response.QuestionWithOptionsResponse;
 import com.kdt.yts.YouSumback.model.dto.response.QuizResultResponse;
 import com.kdt.yts.YouSumback.model.dto.response.SummaryResponse;
 import com.kdt.yts.YouSumback.model.entity.AnswerOption;
@@ -314,6 +316,26 @@ public class SummaryServiceImpl implements SummaryService {
         }
 
         return new QuizResultResponse(score, results);
+    }
+
+    @Override
+    public List<QuestionWithOptionsResponse> getQuestionsFromUserAnswers(List<UserAnswer> answers) {
+        List<QuestionWithOptionsResponse> response = new ArrayList<>();
+
+        for (UserAnswer ua : answers) {
+            AnswerOption selectedOption = answerOptionRepository.findById(ua.getAnswerOptionId())
+                    .orElseThrow(() -> new RuntimeException("선택한 보기 없음"));
+
+            Question q = selectedOption.getQuestion();
+
+            List<OptionDto> optionDtos = q.getOptions().stream()
+                    .map(opt -> new OptionDto(opt.getAnswerOptionId(), opt.getOptionText()))
+                    .toList();
+
+            response.add(new QuestionWithOptionsResponse(q.getQuestionId(), q.getQuestionText(), optionDtos));
+        }
+
+        return response;
     }
 
 

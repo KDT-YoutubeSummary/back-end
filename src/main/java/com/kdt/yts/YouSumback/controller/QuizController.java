@@ -2,6 +2,7 @@ package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.dto.request.QuizAnswerRequest;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
+import com.kdt.yts.YouSumback.model.dto.response.QuestionWithOptionsResponse;
 import com.kdt.yts.YouSumback.model.dto.response.QuizResultResponse;
 import com.kdt.yts.YouSumback.model.entity.Quiz;
 import com.kdt.yts.YouSumback.service.SummaryService;
@@ -33,6 +34,15 @@ public class QuizController {
         return ResponseEntity.ok(
                 summaryService.checkQuizAnswers(quizId, request.getAnswers())
         );
+    }
+
+    @PostMapping("/{quizId}/review")
+    public ResponseEntity<List<QuestionWithOptionsResponse>> reviewQuiz(
+            @PathVariable int quizId,
+            @RequestBody QuizAnswerRequest request) {
+        List<QuestionWithOptionsResponse> result =
+                summaryService.getQuestionsFromUserAnswers(request.getAnswers());
+        return ResponseEntity.ok(result);
     }
 
 

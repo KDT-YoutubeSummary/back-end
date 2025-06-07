@@ -3,6 +3,7 @@ package com.kdt.yts.YouSumback.service;
 import com.kdt.yts.YouSumback.model.dto.request.UserAnswer;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
 import com.kdt.yts.YouSumback.model.dto.request.SummaryRequest;
+import com.kdt.yts.YouSumback.model.dto.response.QuestionWithOptionsResponse;
 import com.kdt.yts.YouSumback.model.dto.response.QuizResultResponse;
 import com.kdt.yts.YouSumback.model.dto.response.SummaryResponse;
 import com.kdt.yts.YouSumback.model.entity.Quiz;
@@ -21,5 +22,8 @@ public interface SummaryService {
     String callOpenAISummary(String text);
 
     QuizResultResponse checkQuizAnswers(int quizId, List<UserAnswer> answers);
+
+    List<QuestionWithOptionsResponse> getQuestionsFromUserAnswers(List<UserAnswer> answers);
+
 
 }
