@@ -7,13 +7,14 @@ import com.kdt.yts.YouSumback.model.entity.Quiz;
 
 import java.util.List;
 
-
 public interface SummaryService {
+
+    // 기존 요약 생성 메서드(그대로 두세요)
     SummaryResponse summarize(SummaryRequest request);
 
-    // ✅ 새로 추가해야 할 메서드 선언
+    // ✨ 퀴즈 생성용 메서드 선언
     List<Quiz> generateFromSummary(QuizRequest request);
 
+    // 요약 전용 AI 호출 메서드(파싱 로직 전용)
     String callOpenAISummary(String text);
-
 }

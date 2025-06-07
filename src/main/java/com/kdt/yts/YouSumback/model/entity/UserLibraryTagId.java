@@ -19,18 +19,19 @@ public class UserLibraryTagId implements Serializable {
 
     // 필드
     @Column(name = "user_library_id")
-    private long userLibraryId;
+    private Long userLibraryId;
     @Column(name = "tag_id")
-    private long tagId;
+    private Integer tagId;
 
 
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof UserLibraryTagId)) return false;
         UserLibraryTagId that = (UserLibraryTagId) o;
-        return userLibraryId == that.userLibraryId && tagId == that.tagId;
+        return Objects.equals(userLibraryId, that.userLibraryId)
+                && Objects.equals(tagId, that.tagId);
     }
 
     @Override

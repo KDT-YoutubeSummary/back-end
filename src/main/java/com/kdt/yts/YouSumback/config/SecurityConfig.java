@@ -47,28 +47,16 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        AuthenticationManager authManager = authenticationManager(http);
-
-        JwtAuthenticationFilter jwtAuthFilter =
-                new JwtAuthenticationFilter(authManager, jwtProvider, userRepository);
-
-        jwtAuthFilter.setFilterProcessesUrl("/api/auth/login");
-
-        JwtAuthorizationFilter jwtAuthzFilter =
-                new JwtAuthorizationFilter(authManager, jwtProvider);
-
         http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(csrf -> csrf.disable()) // CSRF 비활성화
                 .authorizeHttpRequests(authz -> authz
-                        // 로그인/회원가입은 모두 허용
-                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                        // 나머지 모든 요청은 인증 필요
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()  // 모든 요청 인증 없이 허용
                 )
-                .authenticationManager(authManager)
-                .addFilter(jwtAuthFilter)
-                .addFilterBefore(jwtAuthzFilter, UsernamePasswordAuthenticationFilter.class);
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        // 인증 필터 제거 (필요하면 주석처리)
+        // .addFilter(jwtAuthFilter)
+        // .addFilterBefore(jwtAuthzFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

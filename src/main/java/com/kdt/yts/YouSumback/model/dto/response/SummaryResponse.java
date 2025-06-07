@@ -6,7 +6,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class SummaryResponse {
-    private Long answerId;
-    private String summary;
+    private Integer summaryId;   // Long → Integer
+    private String summaryText;
 }
+
 
