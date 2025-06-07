@@ -48,13 +48,12 @@ public class TranscriptService {
                 originalUrl  // ← 전체 URL
         );
 
-        int durationSeconds = -1; // 기본값 (에러 대비)
-
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(new File(".")); // 현재 디렉토리 기준
-        pb.redirectErrorStream(false); // stderr 분리
+        pb.redirectErrorStream(true);
 
         Process process = pb.start();
+        int durationSeconds = -1; // 기본값 (에러 대비)
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
@@ -73,13 +72,6 @@ public class TranscriptService {
             }
         }
 
-        try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-            String line;
-            while ((line = errorReader.readLine()) != null) {
-                System.err.println("[WHISPER STDERR] " + line);
-            }
-        }
-
         int exitCode = process.waitFor();
         if (exitCode != 0) {
             throw new RuntimeException("❌ Whisper 실행 실패 (exit code: " + exitCode + ")");
@@ -94,21 +86,67 @@ public class TranscriptService {
 //        String rawText = Files.readString(Path.of(transcriptPath));
 //        String cleanedText = textCleaner.clean(rawText);
 
-        // 4. Whisper 결과 텍스트 파일 경로
-        String fileName = youtubeId + ".txt";
-        String rawFilePath = "src/main/resources/textfiles/" + fileName;
+//        // 4. Whisper 결과 텍스트 파일 경로
+//        String fileName = youtubeId + ".txt";
+//        String rawFilePath = "src/main/resources/textfiles/" + fileName;
 
-        /// 5. 정제 후 정제 파일로 저장
-        String rawText = Files.readString(Path.of(rawFilePath));
+//        /// 5. 정제 후 정제 파일로 저장
+//        String rawText = Files.readString(Path.of(rawFilePath));
+//        String cleanedText = textCleaner.clean(rawText);
+//        String cleanedFilePath = "src/main/resources/textfiles/cleaned_" + fileName;
+//        Files.writeString(Path.of(cleanedFilePath), cleanedText); // 정제 파일 저장
+//
+////        // 6. 이미 존재하면 저장 생략
+////        if (transcriptRepository.findByVideoId(video.getId()).isPresent()) {
+////            System.out.println("📌 이미 해당 영상에 대한 transcript가 존재합니다. 저장 생략.");
+////            return video.getId();
+////        }
+
+        // ✅ 4. 텍스트 파일 경로 결정 (.txt or .vtt)
+        Path whisperTxtPath = Path.of("src/main/resources/textfiles/" + youtubeId + ".txt");
+        Path vttPath = Path.of("src/main/resources/textfiles/" + youtubeId + ".ko.vtt");
+        String rawFilePath;
+        boolean isWhisper = false; // Whisper 결과 여부
+
+        if (Files.exists(whisperTxtPath)) {
+            rawFilePath = whisperTxtPath.toString();
+            isWhisper = true;
+        } else if (Files.exists(vttPath)) {
+            rawFilePath = vttPath.toString();
+        } else {
+            throw new FileNotFoundException("자막(.vtt) 또는 Whisper 결과(.txt) 파일이 존재하지 않습니다.");
+        }
+
+        // ✅ 5. 정제 처리
+        String rawText;
+        if (isWhisper) {
+            // Whisper의 경우: 이미 텍스트 형태
+            rawText = Files.readString(Path.of(rawFilePath));
+        } else {
+            // VTT 파일: 라인 필터링 (타임라인/헤더 제거)
+            List<String> vttLines = Files.readAllLines(Path.of(rawFilePath));
+            StringBuilder sb = new StringBuilder();
+            for (String line : vttLines) {
+                if (line.trim().isEmpty()) continue;
+                if (line.matches("^[0-9]+$")) continue; // 자막 번호
+                if (line.matches("\\d{2}:\\d{2}:\\d{2}\\.\\d{3} --> .*")) continue; // 타임라인
+                if (line.toLowerCase().contains("webvtt")) continue; // 헤더
+
+                // ✅ <00:00:00.000><c>...</c> 같은 라인 제거
+                if (line.matches(".*<\\d{2}:\\d{2}:\\d{2}\\.\\d{3}>.*")) continue;
+
+                sb.append(line.trim()).append(" ");
+            }
+            rawText = sb.toString().trim();
+        }
+
+        // ✅ 6. 정제 및 저장
         String cleanedText = textCleaner.clean(rawText);
-        String cleanedFilePath = "src/main/resources/textfiles/cleaned_" + fileName;
-        Files.writeString(Path.of(cleanedFilePath), cleanedText); // 정제 파일 저장
+        String cleanedFileName = "cleaned_" + youtubeId + ".txt";
+        String cleanedFilePath = "src/main/resources/textfiles/" + cleanedFileName;
+        Files.writeString(Path.of(cleanedFilePath), cleanedText);
+        System.out.println("✅ 정제 텍스트 저장 완료: " + cleanedFilePath);
 
-//        // 6. 이미 존재하면 저장 생략
-//        if (transcriptRepository.findByVideoId(video.getId()).isPresent()) {
-//            System.out.println("📌 이미 해당 영상에 대한 transcript가 존재합니다. 저장 생략.");
-//            return video.getId();
-//        }
 
         // 7. DB에 경로 저장 (있으면 update, 없으면 insert)
         AudioTranscript transcript = transcriptRepository.findByVideoId(video.getId())
