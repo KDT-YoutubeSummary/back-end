@@ -1,12 +1,10 @@
 package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.entity.VideoRecommendation;
-import com.kdt.yts.YouSumback.model.dto.response.VideoAiRecommendationResponse;
 import com.kdt.yts.YouSumback.service.VideoRecommendationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 

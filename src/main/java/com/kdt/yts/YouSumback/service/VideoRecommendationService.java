@@ -1,6 +1,5 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.config.OpenAIConfig;
 import com.kdt.yts.YouSumback.model.entity.VideoRecommendation;
 import com.kdt.yts.YouSumback.repository.UserLibraryTagRepository;
 import com.kdt.yts.YouSumback.repository.VideoRecommendationRepository;
@@ -18,7 +17,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class VideoRecommendationService {
@@ -58,7 +56,7 @@ public class VideoRecommendationService {
                     if (tagNames.isEmpty()) {
                         return Mono.error(new IllegalArgumentException("해당 라이브러리에 태그가 없습니다."));
                     }
-                    String prompt = "아래 태그들을 바탕으로 유튜브 영상을 5개 추천해줘. 반드시 JSON 배열만 응답해. 예시: [{\"title\":\"영상 제목\", \"url\":\"영상 링크\", \"reason\":\"추천 사유\"}, ...]. 단, 실제로 존재하고 시청 가능한 영상만 추천해줘. 태그: " + tagNames;
+                    String prompt = "아래 태그들을 바탕으로 유튜브 영상을 5개 추천해줘. 반드시 JSON 배열만 응답해. 예시: [{\"title\":\"영상 제목\", \"url\":\"영상 링크\", \"reason\":\"추천 사유\"}, ...]. 반드시 유튜브에서 실제로 재생(시청) 가능한 영상만 추천해줘. 태그: " + tagNames;
                     return openAIClient.chat(prompt)
                             .flatMap(response -> {
                                 try {
@@ -115,3 +113,6 @@ public class VideoRecommendationService {
         return savedList;
     }
 }
+
+
+
