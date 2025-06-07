@@ -61,9 +61,12 @@ public class UserLibraryController {
 
     // 라이브러리 상세 조회
     @GetMapping("/{libraryId}")
-    public ResponseEntity<?> getLibraryDetail(@PathVariable Long libraryId) {
+    public ResponseEntity<?> getLibraryDetail(@PathVariable Long libraryId,
+                                              Authentication authentication) {
+        Long userId = getUserIdFromAuth(authentication); // 🔐 인증된 사용자 ID 추출
+
         try {
-            UserLibraryResponseDTO detail = userLibraryService.getLibraryDetail(libraryId);
+            UserLibraryResponseDTO detail = userLibraryService.getLibraryDetail(libraryId, userId);
             return ResponseEntity.ok().body(Map.of(
                     "code", 200,
                     "message", "라이브러리 상세 조회 완료",
@@ -75,23 +78,40 @@ public class UserLibraryController {
                     "message", "해당 라이브러리를 찾을 수 없습니다.",
                     "data", Map.of()
             ));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "code", 403,
+                    "message", "해당 라이브러리에 대한 권한이 없습니다.",
+                    "data", Map.of()
+            ));
         }
     }
 
     // 라이브러리 삭제
     @DeleteMapping("/{library_id}")
-    public ResponseEntity<?> deleteLibrary(@PathVariable("library_id") Long libraryId) {
+    public ResponseEntity<?> deleteLibrary(@PathVariable("library_id") Long libraryId,
+                                           Authentication authentication) {
+        Long userId = getUserIdFromAuth(authentication); // 🔐 토큰 기반 인증 유저 ID 추출
+
         try {
-            userLibraryService.deleteLibrary(libraryId);
-            return ResponseEntity.ok().body(
-                    Map.of("code", 200, "message", "라이브러리 삭제 완료")
-            );
+            userLibraryService.deleteLibrary(libraryId, userId); // ✅ 사용자 ID 기반 권한 검증 수행
+            return ResponseEntity.ok(Map.of(
+                    "code", 200,
+                    "message", "라이브러리 삭제 완료"
+            ));
         } catch (NoSuchElementException e) {
-            return ResponseEntity.status(404).body(
-                    Map.of("code", 404, "message", "해당 라이브러리를 찾을 수 없습니다.")
-            );
+            return ResponseEntity.status(404).body(Map.of(
+                    "code", 404,
+                    "message", "해당 라이브러리를 찾을 수 없습니다."
+            ));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "code", 403,
+                    "message", "해당 라이브러리에 대한 권한이 없습니다."
+            ));
         }
     }
+
 
     // 라이브러리 검색
     @GetMapping("/search")
@@ -131,13 +151,11 @@ public class UserLibraryController {
     @PatchMapping("/note")
     public ResponseEntity<String> updateUserNote(@RequestBody UserNoteUpdateRequestDTO requestDTO, Authentication auth) {
         Long userId = getUserIdFromAuth(auth);
-        requestDTO.setUserId(userId);  // DTO에 사용자 정보 주입
         userLibraryService.updateUserNotes(userId, requestDTO);
         return ResponseEntity.ok("메모가 성공적으로 업데이트되었습니다.");
     }
 
     // 🔐 공통: 인증 객체에서 userId 추출
-// 🔐 공통: 인증 객체에서 userId 추출
     Long getUserIdFromAuth(Authentication auth) {
         CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
         return userDetails.getUserId(); // ✅ userId는 변하지 않음 (PK 기반)

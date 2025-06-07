@@ -1,6 +1,9 @@
 import sys
 import os
 import subprocess
+# import whisper
+# from concurrent.futures import ThreadPoolExecutor
+
 os.environ["PATH"] += os.pathsep + r"C:\ffmpeg\bin"
 
 # ✅ 유튜브 ID 추출 함수
@@ -98,3 +101,114 @@ except subprocess.CalledProcessError as e:
 
 # ✅ 5. 결과 안내
 print(f"[완료] 변환된 텍스트 파일: {os.path.join(text_dir, youtube_id + '.txt')}")
+
+# # ✅ 유튜브 ID 추출 함수
+# def extract_youtube_id(link):
+#     if "v=" in link:
+#         return link.split("v=")[1].split("&")[0]
+#     elif "youtu.be/" in link:
+#         return link.split("youtu.be/")[1].split("?")[0]
+#     else:
+#         return None
+#
+# # ✅ 오디오 청크 분할 함수
+# def split_audio_ffmpeg(input_wav_path, output_dir, chunk_length=30):
+#     os.makedirs(output_dir, exist_ok=True)
+#     command = [
+#         "ffmpeg",
+#         "-i", input_wav_path,
+#         "-f", "segment",
+#         "-segment_time", str(chunk_length),
+#         "-c", "copy",
+#         os.path.join(output_dir, "chunk_%03d.wav")
+#     ]
+#     subprocess.run(command, check=True)
+#     return sorted([os.path.join(output_dir, f) for f in os.listdir(output_dir) if f.endswith(".wav")])
+#
+# # ✅ Whisper 병렬 처리 함수
+# def transcribe_chunk(model, chunk_path):
+#     result = model.transcribe(chunk_path, language="ko")
+#     return result["text"]
+#
+# # ✅ 메인 실행
+# if __name__ == "__main__":
+#     if len(sys.argv) < 2:
+#         print("❌ 사용법: python yt_whisper.py <YouTube_URL>")
+#         sys.exit(1)
+#
+#     youtube_url = sys.argv[1]
+#     youtube_id = extract_youtube_id(youtube_url)
+#     if not youtube_id:
+#         print("❌ 유효한 YouTube URL이 아닙니다.")
+#         sys.exit(10)
+#
+#     # ✅ 경로 설정
+#     base_dir = "src/main/resources"
+#     audio_dir = os.path.join(base_dir, "audiofiles")
+#     chunk_dir = os.path.join(base_dir, "chunks", youtube_id)
+#     text_dir = os.path.join(base_dir, "textfiles")
+#     os.makedirs(audio_dir, exist_ok=True)
+#     os.makedirs(chunk_dir, exist_ok=True)
+#     os.makedirs(text_dir, exist_ok=True)
+#
+#     output_wav_path = os.path.join(audio_dir, f"{youtube_id}.wav")
+#     output_txt_path = os.path.join(text_dir, f"{youtube_id}.txt")
+#     duration_path = os.path.join(text_dir, f"{youtube_id}_duration.txt")
+#
+#     # ✅ yt-dlp로 오디오 다운로드
+#     print(f"[INFO] YouTube 오디오 다운로드 중: {youtube_url}")
+#     download_cmd = [
+#         "yt-dlp",
+#         "--ffmpeg-location", "C:\\ffmpeg\\bin",
+#         "-x", "--audio-format", "wav",
+#         "-o", os.path.join(audio_dir, f"{youtube_id}.%(ext)s"),
+#         youtube_url
+#     ]
+#     try:
+#         subprocess.run(download_cmd, check=True)
+#     except subprocess.CalledProcessError as e:
+#         print(f"❌ yt-dlp 다운로드 실패: {e}")
+#         sys.exit(10)
+#
+#     # ✅ 영상 길이 추출
+#     print(f"[INFO] 영상 길이 추출 중 (ffprobe 사용): {output_wav_path}")
+#     duration_cmd = [
+#         "ffprobe",
+#         "-v", "error",
+#         "-show_entries", "format=duration",
+#         "-of", "default=noprint_wrappers=1:nokey=1",
+#         output_wav_path
+#     ]
+#     try:
+#         result = subprocess.run(duration_cmd, check=True, stdout=subprocess.PIPE, text=True)
+#         duration_seconds = int(float(result.stdout.strip()))
+#         print(f"[INFO] 추출된 영상 길이: {duration_seconds}초")
+#
+#         with open(duration_path, "w", encoding="utf-8") as f:
+#             f.write(str(duration_seconds))
+#
+#     except Exception as e:
+#         print(f"[WARNING] 영상 길이 추출 실패: {e}")
+#         duration_seconds = 0
+#
+#     # ✅ Whisper 병렬 처리 시작
+#     print(f"[INFO] 오디오 청크 분할 중: {output_wav_path}")
+#     try:
+#         audio_chunks = split_audio_ffmpeg(output_wav_path, chunk_dir)
+#     except Exception as e:
+#         print(f"❌ 오디오 분할 실패: {e}")
+#         sys.exit(10)
+#
+#     print(f"[INFO] Whisper 모델 로드 중 (GPU)")
+#     model = whisper.load_model("small", device="cuda")
+#
+#     print(f"[INFO] {len(audio_chunks)}개 청크 병렬 변환 중 ...")
+#     with ThreadPoolExecutor(max_workers=4) as executor:
+#         results = list(executor.map(lambda c: transcribe_chunk(model, c), audio_chunks))
+#
+#     full_transcript = "\n".join(results)
+#     with open(output_txt_path, "w", encoding="utf-8") as f:
+#         f.write(full_transcript)
+#
+#     # ✅ 결과 안내
+#     print(f"[완료] 변환된 텍스트 파일: {output_txt_path}")
