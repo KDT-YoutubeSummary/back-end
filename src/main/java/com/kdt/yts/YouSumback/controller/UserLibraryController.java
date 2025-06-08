@@ -47,7 +47,7 @@ public class UserLibraryController {
         }
     }
 
-    // 라이브러리 조회
+    // 라이브러리 전체 조회
     @GetMapping
     public ResponseEntity<?> getLibraries(Authentication auth) {
         Long userId = getUserIdFromAuth(auth);

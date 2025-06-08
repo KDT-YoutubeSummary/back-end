@@ -39,6 +39,10 @@ public class UserLibraryResponseListDTO {
     @JsonProperty("user_notes")
     private String userNotes;
 
+    // 썸네일 추가를 위한 유튜브 URL 필드
+    @JsonProperty("original_url")
+    private String originalUrl;
+
     public static UserLibraryResponseListDTO fromEntity(UserLibrary entity, List<String> tags) {
         return UserLibraryResponseListDTO.builder()
                 .userLibraryId(entity.getId())
@@ -48,6 +52,7 @@ public class UserLibraryResponseListDTO {
                 .savedAt(entity.getSavedAt())
                 .lastViewedAt(entity.getLastViewedAt())
                 .userNotes(entity.getUserNotes())
+                .originalUrl(entity.getSummary().getAudioTranscript().getVideo().getOriginalUrl()) // 유튜브 URL 추가
                 .build();
     }
 }
