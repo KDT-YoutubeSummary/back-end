@@ -3,10 +3,9 @@ package com.kdt.yts.YouSumback.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Setter
+@Entity
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,10 +15,11 @@ public class AnswerOption {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "answer_option_id", nullable = false)
-    private Long id; // 답변 선택지 식별자
+    @Column(name = "answer_option_id")
+    // ↓ int → Integer
+    private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
     private Question question; // 질문 식별자
 
@@ -27,30 +27,5 @@ public class AnswerOption {
     private String optionText;
 
     @Column(name = "is_correct", nullable = false)
-    private Boolean isCorrect; // 정답 여부
-
-    @Column(name = "transcript_id", nullable = false)
-    private Long transcriptId;
-
-    @Column(name = "summary_text", columnDefinition = "TEXT", nullable = false)
-    private String summaryText;
-
-    @Column(name = "summary_type", length = 50)
-    private String summaryType;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    // 생성자, 게터, 세터 등은 Lombok 어노테이션으로 자동 생성됨
-//    public void setQuestion(Question question) {
-//        this.question = question;
-//    }
-//
-//    public void setOptionText(String optionText) {
-//        this.optionText = optionText;
-//    }
-//
-//    public void setIsCorrect(boolean isCorrect) {
-//        this.isCorrect = isCorrect;
-//    }
+    private Boolean isCorrect;
 }
