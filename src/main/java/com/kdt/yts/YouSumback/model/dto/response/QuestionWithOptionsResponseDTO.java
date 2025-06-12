@@ -7,8 +7,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class QuestionWithOptionsResponse {
+public class QuestionWithOptionsResponseDTO {
     private Long questionId;
-    private String questionText;
-    private List<OptionDto> options;
+    private List<OptionDTO> options;
 }

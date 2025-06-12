@@ -3,6 +3,8 @@ package com.kdt.yts.YouSumback.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Entity
@@ -26,4 +28,18 @@ public class AnswerOption {
 
     @Column(name = "is_correct", nullable = false)
     private Boolean isCorrect;
+
+    @Column(name = "transcript_id", nullable = false)
+    private Long transcriptId;
+
+    @Column(name = "summary_text", columnDefinition = "TEXT")
+    private String summaryText;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "summary_type")
+    private SummaryType summaryType;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
 }

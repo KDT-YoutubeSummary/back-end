@@ -9,6 +9,7 @@ import java.util.List;
 @AllArgsConstructor
 // QuestionDTO는 퀴즈의 각 문제를 나타내는 DTO입니다.
 public class QuestionDTO {
+    private Long questionId; // 문제 ID
     private String questionText; // 질문 텍스트
-    private List<AnswerOptionDTO> options; // 답변 옵션 리스트
+    private List<OptionDTO> options; // 답변 옵션 리스트
 }

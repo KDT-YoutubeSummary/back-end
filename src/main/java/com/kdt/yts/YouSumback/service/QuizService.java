@@ -10,6 +10,5 @@ import java.util.List;
 public interface QuizService {
     List<Quiz> generateFromSummary(QuizRequestDTO request);
 
-
 //    QuizResponseDTO getQuizBySummaryId(Long summaryId);
 }

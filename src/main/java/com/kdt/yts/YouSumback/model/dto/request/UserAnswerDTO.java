@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class UserAnswer {
-    private int questionId;
-    private int answerOptionId;  // ← 이게 핵심
+public class UserAnswerDTO {
+    private Long questionId;
+    private Long answerOptionId;  // ← 이게 핵심
 }

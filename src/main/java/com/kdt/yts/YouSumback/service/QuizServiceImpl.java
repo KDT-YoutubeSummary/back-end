@@ -1,8 +1,6 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
-import com.kdt.yts.YouSumback.model.dto.response.QuizCheckResponseDTO;
 import com.kdt.yts.YouSumback.model.entity.AnswerOption;
 import com.kdt.yts.YouSumback.model.entity.Question;
 import com.kdt.yts.YouSumback.model.entity.Quiz;

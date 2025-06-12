@@ -1,9 +1,7 @@
 package com.kdt.yts.YouSumback.service;
 
-import com.kdt.yts.YouSumback.model.dto.request.UserAnswer;
-import com.kdt.yts.YouSumback.model.dto.response.OptionDto;
-import com.kdt.yts.YouSumback.model.dto.response.QuestionWithOptionsResponse;
-import com.kdt.yts.YouSumback.model.dto.response.QuizResultResponse;
+import com.kdt.yts.YouSumback.model.dto.request.UserAnswerDTO;
+import com.kdt.yts.YouSumback.model.dto.response.*;
 import com.kdt.yts.YouSumback.model.entity.AnswerOption;
 import com.kdt.yts.YouSumback.model.entity.Question;
 import com.kdt.yts.YouSumback.model.entity.Quiz;
@@ -22,7 +20,6 @@ import com.kdt.yts.YouSumback.repository.UserLibraryTagRepository;
 import com.kdt.yts.YouSumback.repository.UserRepository;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.SummaryRequestDTO;
-import com.kdt.yts.YouSumback.model.dto.response.SummaryResponseDTO;
 import com.kdt.yts.YouSumback.model.entity.*;
 import com.kdt.yts.YouSumback.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -77,6 +74,7 @@ public class SummaryServiceImpl implements SummaryService {
     }
 
     // 메인 요약 메서드
+
     @Override
     public SummaryResponseDTO summarize(SummaryRequestDTO request) {
         String text = request.getText();
@@ -243,7 +241,7 @@ public class SummaryServiceImpl implements SummaryService {
 
     // 퀴즈 생성 메서드
     @Transactional
-    public List<Quiz> generateFromSummary(QuizRequestDTO request) {
+    public List<QuizResponseDTO> generateFromSummary(QuizRequestDTO request) {
         // 1) Summary 엔티티 조회
         Summary summary = summaryRepository.findById(request.getSummaryId())
                 .orElseThrow(() -> new RuntimeException("Summary not found"));
@@ -333,6 +331,10 @@ public class SummaryServiceImpl implements SummaryService {
                         AnswerOption opt = AnswerOption.builder()
                                 .optionText(optText)
                                 .isCorrect(false)
+                                .createdAt(LocalDateTime.now())
+                                .transcriptId(summary.getAudioTranscript().getId())
+                                .summaryText(summary.getSummaryText())
+                                .summaryType(summary.getSummaryType())
                                 .build();
                         options.add(opt);
                     }
@@ -388,7 +390,7 @@ public class SummaryServiceImpl implements SummaryService {
         try {
             Quiz savedQuiz = quizRepository.save(quiz);
             System.out.println("✅ Saved Quiz id = " + savedQuiz.getId());
-            return List.of(savedQuiz);
+            return List.of(convertToDTO(savedQuiz));
         } catch (Exception saveEx) {
             System.out.println("❌ Quiz 저장 중 예외:");
             saveEx.printStackTrace();
@@ -396,15 +398,37 @@ public class SummaryServiceImpl implements SummaryService {
         }
     }
 
+    private QuizResponseDTO convertToDTO(Quiz quiz) {
+        return new QuizResponseDTO(
+                quiz.getId(), // ✅ 이제 맞음!
+                quiz.getTitle(),
+                quiz.getCreatedAt(),
+                quiz.getQuestions().stream().map(q ->
+                        new QuestionDTO(
+                                q.getId(), // ✅ questionId
+                                q.getQuestionText(),
+                                q.getOptions().stream().map(o ->
+                                        new OptionDTO(
+                                                o.getId(), // ✅ answerOptionId
+                                                o.getOptionText()
+                                        )
+                                ).toList()
+                        )
+                ).toList()
+        );
+    }
+
+
+    @Transactional
     @Override
-    public QuizResultResponse checkQuizAnswers(int quizId, List<UserAnswer> answers) {
+    public QuizResultResponseDTO checkQuizAnswers(Long quizId, List<UserAnswerDTO> answers) {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("퀴즈 없음"));
 
         int score = 0;
         List<Boolean> results = new ArrayList<>();
 
-        for (UserAnswer ua : answers) {
+        for (UserAnswerDTO ua : answers) {
             AnswerOption selectedOption = answerOptionRepository.findById(ua.getAnswerOptionId())
                     .orElseThrow(() -> new RuntimeException("선택한 보기 없음"));
 
@@ -413,24 +437,25 @@ public class SummaryServiceImpl implements SummaryService {
             if (correct) score++;
         }
 
-        return new QuizResultResponse(score, results);
+        return new QuizResultResponseDTO(score, results);
     }
 
+    @Transactional
     @Override
-    public List<QuestionWithOptionsResponse> getQuestionsFromUserAnswers(List<UserAnswer> answers) {
-        List<QuestionWithOptionsResponse> response = new ArrayList<>();
+    public List<QuestionWithOptionsResponseDTO> getQuestionsFromUserAnswers(List<UserAnswerDTO> answers) {
+        List<QuestionWithOptionsResponseDTO> response = new ArrayList<>();
 
-        for (UserAnswer ua : answers) {
+        for (UserAnswerDTO ua : answers) {
             AnswerOption selectedOption = answerOptionRepository.findById(ua.getAnswerOptionId())
                     .orElseThrow(() -> new RuntimeException("선택한 보기 없음"));
 
             Question q = selectedOption.getQuestion();
 
-            List<OptionDto> optionDtos = q.getOptions().stream()
-                    .map(opt -> new OptionDto(opt.getId(), opt.getOptionText()))
+            List<OptionDTO> optionDtos = q.getOptions().stream()
+                    .map(opt -> new OptionDTO(opt.getId(), opt.getOptionText()))
                     .toList();
 
-            response.add(new QuestionWithOptionsResponse(q.getId(), q.getQuestionText(), optionDtos));
+            response.add(new QuestionWithOptionsResponseDTO(q.getId(), optionDtos));
         }
 
         return response;

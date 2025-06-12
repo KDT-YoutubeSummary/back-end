@@ -8,5 +8,5 @@ import java.util.List;
 @Setter
 @Getter
 public class QuizAnswerRequest {
-    private List<UserAnswer> answers;
+    private List<UserAnswerDTO> answers;
 }
