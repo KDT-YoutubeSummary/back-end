@@ -6,8 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-public interface SummaryRepository extends JpaRepository<Summary, Integer> {
-    Optional<Summary> findByUserUserIdAndAudioTranscriptTranscriptId(Integer userId, Integer transcriptId);
 @Repository
 public interface SummaryRepository extends JpaRepository<Summary, Long> {
     Optional<Summary> findById(Long id);

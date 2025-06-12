@@ -2,6 +2,7 @@ package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.dto.request.QuizAnswerRequest;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
+import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.QuestionWithOptionsResponse;
 import com.kdt.yts.YouSumback.model.dto.response.QuizResultResponse;
 import com.kdt.yts.YouSumback.model.entity.Quiz;
@@ -21,7 +22,7 @@ public class QuizController {
     private final SummaryService summaryService;
 
     @PostMapping("/generate")
-    public ResponseEntity<List<Quiz>> generateQuiz(@RequestBody QuizRequest request) {
+    public ResponseEntity<List<Quiz>> generateQuiz(@RequestBody QuizRequestDTO request) {
         // SummaryService.generateFromSummary(...)를 호출해야
         // “퀴즈용 프롬프트 → AI 호출 → 파싱 → DB 저장” 로직이 실행됩니다.
         return ResponseEntity.ok(summaryService.generateFromSummary(request));

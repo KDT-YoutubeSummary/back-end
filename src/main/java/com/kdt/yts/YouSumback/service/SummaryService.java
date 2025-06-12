@@ -1,11 +1,8 @@
 package com.kdt.yts.YouSumback.service;
 
 import com.kdt.yts.YouSumback.model.dto.request.UserAnswer;
-import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
-import com.kdt.yts.YouSumback.model.dto.request.SummaryRequest;
 import com.kdt.yts.YouSumback.model.dto.response.QuestionWithOptionsResponse;
 import com.kdt.yts.YouSumback.model.dto.response.QuizResultResponse;
-import com.kdt.yts.YouSumback.model.dto.response.SummaryResponse;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.SummaryRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.SummaryResponseDTO;
@@ -21,7 +18,6 @@ import java.util.Optional;
 public interface SummaryService {
     SummaryResponseDTO summarize(SummaryRequestDTO request);
 
-    // 새로 추가해야 할 메서드 선언
     List<Quiz> generateFromSummary(QuizRequestDTO request);
 
     // 요약 전용 AI 호출 메서드(파싱 로직 전용)
@@ -31,10 +27,6 @@ public interface SummaryService {
 
     List<QuestionWithOptionsResponse> getQuestionsFromUserAnswers(List<UserAnswer> answers);
 
-
     Optional<UserLibrary> findUserLibraryByUserAndSummary(Long userId, Summary summary);
-
-    // 요약 생성
-    void generateSummary(String youtubeId, String userPrompt, SummaryType summaryType);
 
 }

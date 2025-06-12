@@ -1,12 +1,9 @@
 package com.kdt.yts.YouSumback.service;
 
 import com.kdt.yts.YouSumback.model.dto.request.UserAnswer;
-import com.kdt.yts.YouSumback.model.dto.request.QuizRequest;
-import com.kdt.yts.YouSumback.model.dto.request.SummaryRequest;
 import com.kdt.yts.YouSumback.model.dto.response.OptionDto;
 import com.kdt.yts.YouSumback.model.dto.response.QuestionWithOptionsResponse;
 import com.kdt.yts.YouSumback.model.dto.response.QuizResultResponse;
-import com.kdt.yts.YouSumback.model.dto.response.SummaryResponse;
 import com.kdt.yts.YouSumback.model.entity.AnswerOption;
 import com.kdt.yts.YouSumback.model.entity.Question;
 import com.kdt.yts.YouSumback.model.entity.Quiz;
@@ -23,7 +20,6 @@ import com.kdt.yts.YouSumback.repository.TagRepository;
 import com.kdt.yts.YouSumback.repository.UserLibraryRepository;
 import com.kdt.yts.YouSumback.repository.UserLibraryTagRepository;
 import com.kdt.yts.YouSumback.repository.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.SummaryRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.SummaryResponseDTO;
@@ -182,15 +178,6 @@ public class SummaryServiceImpl implements SummaryService {
         );
     }
 
-    // OpenAI API를 호출하여 요약 생성
-    @Override
-    public String callOpenAISummary(String text) {
-        return chatClient.prompt()
-                .user(text)
-                .call()
-                .content();
-    }
-
     // 지침 + 프롬프트 템플릿을 반환 (text는 포함 X)
     private String buildPrompt(String userPrompt, SummaryType summaryType) {
         String formatInstruction = switch (summaryType) {
@@ -217,18 +204,6 @@ public class SummaryServiceImpl implements SummaryService {
         {TEXT}
         ----
         """, userPrompt.trim(), formatInstruction);
-    }
-
-
-    // 텍스트를 청크로 나누는 메서드
-    private List<String> splitTextIntoChunks(String text, int chunkSize) {
-        List<String> chunks = new ArrayList<>();
-        int length = text.length();
-        for (int start = 0; start < length; start += chunkSize) {
-            int end = Math.min(length, start + chunkSize);
-            chunks.add(text.substring(start, end));
-        }
-        return chunks;
     }
 
     // LLM 기반 해시태그 추출
@@ -268,7 +243,7 @@ public class SummaryServiceImpl implements SummaryService {
 
     // 퀴즈 생성 메서드
     @Transactional
-    public List<Quiz> generateFromSummary(QuizRequest request) {
+    public List<Quiz> generateFromSummary(QuizRequestDTO request) {
         // 1) Summary 엔티티 조회
         Summary summary = summaryRepository.findById(request.getSummaryId())
                 .orElseThrow(() -> new RuntimeException("Summary not found"));
@@ -412,7 +387,7 @@ public class SummaryServiceImpl implements SummaryService {
         // 7) 저장 (cascade = ALL 덕분에 Question/AnswerOption 전체가 함께 INSERT)
         try {
             Quiz savedQuiz = quizRepository.save(quiz);
-            System.out.println("✅ Saved Quiz id = " + savedQuiz.getQuizId());
+            System.out.println("✅ Saved Quiz id = " + savedQuiz.getId());
             return List.of(savedQuiz);
         } catch (Exception saveEx) {
             System.out.println("❌ Quiz 저장 중 예외:");
@@ -452,10 +427,10 @@ public class SummaryServiceImpl implements SummaryService {
             Question q = selectedOption.getQuestion();
 
             List<OptionDto> optionDtos = q.getOptions().stream()
-                    .map(opt -> new OptionDto(opt.getAnswerOptionId(), opt.getOptionText()))
+                    .map(opt -> new OptionDto(opt.getId(), opt.getOptionText()))
                     .toList();
 
-            response.add(new QuestionWithOptionsResponse(q.getQuestionId(), q.getQuestionText(), optionDtos));
+            response.add(new QuestionWithOptionsResponse(q.getId(), q.getQuestionText(), optionDtos));
         }
 
         return response;

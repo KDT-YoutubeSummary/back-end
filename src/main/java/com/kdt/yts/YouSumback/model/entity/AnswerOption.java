@@ -9,7 +9,6 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
 @Table(name = "answer_option")
 public class AnswerOption {
 
@@ -28,9 +27,3 @@ public class AnswerOption {
     @Column(name = "is_correct", nullable = false)
     private Boolean isCorrect;
 }
-
-    public void setIsCorrect(boolean isCorrect) {
-        this.isCorrect = isCorrect;
-    }
-}
-

@@ -6,6 +6,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class OptionDto {
-    private int answerOptionId;
+    private Long answerOptionId;
     private String optionText;
 }
