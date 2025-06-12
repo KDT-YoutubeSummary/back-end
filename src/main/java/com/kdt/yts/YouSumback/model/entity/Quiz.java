@@ -21,9 +21,6 @@ public class Quiz {
     @Column(name = "quiz_id", nullable = false)
     private Long id; // 퀴즈 식별자
 
-    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL)
-    private List<Question> questions = new ArrayList<>();
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "summary_id", nullable = false)
     private Summary summary;
