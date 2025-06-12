@@ -1,6 +1,7 @@
 package com.kdt.yts.YouSumback.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,14 +22,14 @@ public class Summary {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false,
-            foreignKey = @ForeignKey(name = "fk_summary_user"))
-    @JsonIgnore
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transcript_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_summary_audiotranscript"))
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private AudioTranscript audioTranscript;
 
     @Column(name = "summary_text", nullable = false)
