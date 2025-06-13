@@ -71,6 +71,12 @@ os.makedirs(text_dir, exist_ok=True)
 
 audio_path = os.path.join(audio_dir, f"{youtube_id}.wav")
 
+# ✅ 이미 자막 파일이 있으면 Whisper 생략
+existing_subtitle_path = os.path.join(text_dir, f"{youtube_id}.ko.vtt")
+if os.path.exists(existing_subtitle_path):
+    print(f"[WHISPER] [INFO] 이미 자막 파일 존재: {existing_subtitle_path}")
+    sys.exit(0)
+
 # ✅ 자막 있으면 자막 다운로드 → 없으면 Whisper
 if has_korean_subtitles(youtube_url):
     print("[WHISPER] [INFO] 한국어 자막이 있어 자막 다운로드로 진행합니다.")
