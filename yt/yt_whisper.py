@@ -1,6 +1,7 @@
 import sys
 import os
 import subprocess
+import glob
 from faster_whisper import WhisperModel
 
 # ✅ 유튜브 ID 추출
@@ -15,7 +16,7 @@ def extract_youtube_id(link):
 # ✅ 자막 여부 확인
 def has_korean_subtitles(youtube_url):
     result = subprocess.run([
-        "yt-dlp", "--list-subs", "--write-auto-sub", youtube_url
+        "yt-dlp", "--list-subs", youtube_url
     ], capture_output=True, text=True)
     return "ko" in result.stdout or "a.ko" in result.stdout
 
@@ -27,11 +28,13 @@ def download_subtitles(youtube_url, youtube_id, text_dir):
             "--write-auto-sub",
             "--sub-lang", "ko",
             "--skip-download",
-            "--output", os.path.join(text_dir, f"{youtube_id}"),
+            "-o", os.path.join(text_dir, f"{youtube_id}"),
             youtube_url
         ], check=True)
-        output_path = os.path.join(text_dir, f"{youtube_id}.ko.vtt")
-        return output_path if os.path.exists(output_path) else None
+
+        # ✅ 실제 저장된 자막 파일 탐색
+        candidates = glob.glob(os.path.join(text_dir, f"{youtube_id}*.vtt"))
+        return candidates[0] if candidates else None
     except subprocess.CalledProcessError as e:
         print(f"[WHISPER] ❌ 자막 다운로드 실패: {e}")
         return None
@@ -72,9 +75,9 @@ os.makedirs(text_dir, exist_ok=True)
 audio_path = os.path.join(audio_dir, f"{youtube_id}.wav")
 
 # ✅ 이미 자막 파일이 있으면 Whisper 생략
-existing_subtitle_path = os.path.join(text_dir, f"{youtube_id}.ko.vtt")
-if os.path.exists(existing_subtitle_path):
-    print(f"[WHISPER] [INFO] 이미 자막 파일 존재: {existing_subtitle_path}")
+existing_subtitle_path = glob.glob(os.path.join(text_dir, f"{youtube_id}*.vtt"))
+if existing_subtitle_path:
+    print(f"[WHISPER] [INFO] 이미 자막 파일 존재: {existing_subtitle_path[0]}")
     sys.exit(0)
 
 # ✅ 자막 있으면 자막 다운로드 → 없으면 Whisper
