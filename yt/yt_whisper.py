@@ -13,12 +13,28 @@ def extract_youtube_id(link):
     else:
         return None
 
-# ✅ 자막 여부 확인
+# ✅ 자막 여부 확인 (강화 버전)
 def has_korean_subtitles(youtube_url):
-    result = subprocess.run([
-        "yt-dlp", "--list-subs", youtube_url
-    ], capture_output=True, text=True)
-    return "ko" in result.stdout or "a.ko" in result.stdout
+    try:
+        result = subprocess.run([
+            "yt-dlp", "--cookies", "yt/cookies.txt",  # ✅ 쿠키 추가로 로그인 기반 자막도 감지
+            "--list-subs", youtube_url
+        ], capture_output=True, text=True, check=True)
+
+        print("[DEBUG] yt-dlp --list-subs 출력:\n", result.stdout)
+
+        for line in result.stdout.splitlines():
+            normalized = line.lower().replace("-", "").replace(".", "").replace("_", "")
+            if "ko" in normalized:
+                print(f"[DEBUG] 자막 줄 탐지됨: {line}")
+                return True
+
+        print("[DEBUG] 한국어 자막 없음")
+        return False
+
+    except subprocess.CalledProcessError as e:
+        print(f"[ERROR] yt-dlp 자막 확인 중 오류 발생: {e}")
+        return False
 
 # ✅ 자막 다운로드
 def download_subtitles(youtube_url, youtube_id, text_dir):
