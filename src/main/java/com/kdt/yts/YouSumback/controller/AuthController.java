@@ -12,6 +12,10 @@ import com.kdt.yts.YouSumback.model.entity.User;
 import com.kdt.yts.YouSumback.service.GoogleOAuthService;
 import com.kdt.yts.YouSumback.service.UserService;
 import com.kdt.yts.YouSumback.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +27,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RequestMapping("/api/auth")
 // AuthController는 사용자 인증과 관련된 API 엔드포인트를 처리하는 컨트롤러입니다.
+@Tag(name = "인증", description = "사용자 인증 관련 API")
 public class AuthController {
 
     private final AuthService authService;
@@ -30,6 +35,11 @@ public class AuthController {
     private final UserService userService;
 
     // 기본 로그인 엔드포인트
+    @Operation(summary = "일반 로그인", description = "이메일과 비밀번호를 사용하여 로그인")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "로그인 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
         String token = authService.authenticate(request);
@@ -37,6 +47,11 @@ public class AuthController {
     }
 
     // Google 로그인 엔드포인트
+    @Operation(summary = "구글 로그인", description = "Google OAuth를 통한 로그인")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "구글 로그인 성공"),
+            @ApiResponse(responseCode = "401", description = "구글 토큰 인증 실패")
+    })
     @PostMapping("/google")
     public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequestDTO request) {
         String idToken = request.getId_token();
@@ -60,6 +75,11 @@ public class AuthController {
     }
 
     // 회원가입 엔드포인트
+    @Operation(summary = "회원가입", description = "새로운 사용자 계정 등록")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "회원가입 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 입력 데이터")
+    })
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDTO> register(@RequestBody RegisterRequestDTO request) {
         // AuthService.register()가 User 엔티티를 반환
@@ -75,6 +95,11 @@ public class AuthController {
     }
 
     // 회원정보 수정 엔드포인트
+    @Operation(summary = "회원정보 수정", description = "기존 사용자 정보 수정")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "정보 수정 성공"),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+    })
     @PutMapping("/update")
     public ResponseEntity<UpdateUserResponseDTO> updateUser(@RequestBody UpdateUserRequestDTO request) {
         User updated = authService.updateUser(request);
@@ -88,6 +113,11 @@ public class AuthController {
     }
 
     // 회원 탈퇴 엔드포인트
+    @Operation(summary = "회원 탈퇴", description = "사용자 계정 삭제")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "계정 삭제 성공"),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+    })
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteAccount() {
         authService.deleteUser();

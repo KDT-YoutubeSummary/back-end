@@ -5,6 +5,10 @@ import com.kdt.yts.YouSumback.model.dto.response.SummaryResponseDTO;
 import com.kdt.yts.YouSumback.repository.SummaryRepository;
 import com.kdt.yts.YouSumback.security.CustomUserDetails;
 import com.kdt.yts.YouSumback.service.SummaryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +20,19 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/summary")
 @RequiredArgsConstructor
+@Tag(name = "요약", description = "텍스트 요약 관련 API")
 public class SummaryController {
 
 
     private final SummaryService summaryService;
     private final SummaryRepository summaryRepository;
 
+    // 요약 생성
+    @Operation(summary = "텍스트 요약 생성", description = "입력된 텍스트를 분석하여 요약을 생성합니다")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "요약 생성 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 입력 데이터")
+    })
     @GetMapping("/{transcriptId}")
     public ResponseEntity<?> getSummaryByTranscript(@PathVariable Long transcriptId,
                                                     @AuthenticationPrincipal CustomUserDetails userDetails) {

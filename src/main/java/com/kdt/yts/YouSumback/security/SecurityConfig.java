@@ -70,7 +70,12 @@ public class SecurityConfig {
                                 "/api/tags/**",
                                 "/api/recommend/**",
                                 "/api/quiz/**",
-                                "/api/reminder/**"
+                                "/api/reminder/**",
+                                // Swagger
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/api-docs/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
