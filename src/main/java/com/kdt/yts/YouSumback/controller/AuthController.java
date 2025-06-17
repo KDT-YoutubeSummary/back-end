@@ -47,32 +47,32 @@ public class AuthController {
     }
 
     // Google 로그인 엔드포인트
-    @Operation(summary = "구글 로그인", description = "Google OAuth를 통한 로그인")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "구글 로그인 성공"),
-            @ApiResponse(responseCode = "401", description = "구글 토큰 인증 실패")
-    })
-    @PostMapping("/google")
-    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequestDTO request) {
-        String idToken = request.getId_token();
-        GoogleIdToken.Payload payload = googleOAuthService.verifyToken(idToken);
-
-        String email = payload.getEmail();
-        String name = (String) payload.get("name");
-
-        // fallback 처리
-        if (name == null || name.isBlank()) {
-            name = (String) payload.get("given_name");
-            if (name == null || name.isBlank()) {
-                name = "GoogleUser";
-            }
-        }
-
-        User user = userService.loginOrRegister(email, name);
-        String jwt = userService.issueJwtToken(user);
-
-        return ResponseEntity.ok(Map.of("token", jwt));
-    }
+//    @Operation(summary = "구글 로그인", description = "Google OAuth를 통한 로그인")
+//    @ApiResponses({
+//            @ApiResponse(responseCode = "200", description = "구글 로그인 성공"),
+//            @ApiResponse(responseCode = "401", description = "구글 토큰 인증 실패")
+//    })
+//    @PostMapping("/google")
+//    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequestDTO request) {
+//        String idToken = request.getId_token();
+//        GoogleIdToken.Payload payload = googleOAuthService.verifyToken(idToken);
+//
+//        String email = payload.getEmail();
+//        String name = (String) payload.get("name");
+//
+//        // fallback 처리
+//        if (name == null || name.isBlank()) {
+//            name = (String) payload.get("given_name");
+//            if (name == null || name.isBlank()) {
+//                name = "GoogleUser";
+//            }
+//        }
+//
+//        User user = userService.loginOrRegister(email, name);
+//        String jwt = userService.issueJwtToken(user);
+//
+//        return ResponseEntity.ok(Map.of("token", jwt));
+//    }
 
     // 회원가입 엔드포인트
     @Operation(summary = "회원가입", description = "새로운 사용자 계정 등록")

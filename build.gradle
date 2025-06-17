@@ -67,6 +67,7 @@ dependencies {
 
 	// OAuth2 클라이언트 (구글 로그인 등)
 	implementation 'com.google.api-client:google-api-client:2.2.0'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
 	// JWT 토큰 처리
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
