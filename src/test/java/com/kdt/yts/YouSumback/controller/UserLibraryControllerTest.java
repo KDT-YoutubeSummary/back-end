@@ -77,7 +77,7 @@ public class UserLibraryControllerTest {
         //  3. AudioTranscript에 video 설정 포함
         AudioTranscript dummyTranscript = audioTranscriptRepository.save(
                 AudioTranscript.builder()
-                        .transcriptPath("src/main/resources/textfiles/test-video-id.txt")
+                        .transcriptText("이건 테스트 스크립트입니다.")
                         .createdAt(LocalDateTime.now())
                         .video(testVideo) // 비디오 설정
                         .build()
