@@ -55,7 +55,7 @@ public class UserLibraryServiceTest {
                 .build());
 
         AudioTranscript transcript = audioTranscriptRepository.save(AudioTranscript.builder()
-                .transcriptText("이건 테스트 스크립트입니다.")
+                .transcriptPath("src/main/resources/textfiles/test.txt")
                 .createdAt(LocalDateTime.now())
                 .video(video)
                 .build());
