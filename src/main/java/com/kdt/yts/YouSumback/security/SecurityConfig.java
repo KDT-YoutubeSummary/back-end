@@ -85,11 +85,11 @@ public class SecurityConfig {
                         .requestMatchers(
                                 // 개발용
                                 "/api/auth/**",
-                                "/api/reminder/**",
-                                "/api/library/**",
-                                "/api/quiz/**",
-                                "/api/recommendation/**",
-                                "/api/src/**",
+                                "/api/reminders/**",
+                                "/api/libraries/**",
+                                "/api/quizzes/**",
+                                "/api/recommendations/**",
+                                "/api/scripts/**",
                                 "/oauth2/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
