@@ -16,6 +16,8 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import static com.kdt.yts.YouSumback.model.entity.SummaryType.BASIC;
+
 @Service
 @RequiredArgsConstructor
 public class YouTubeMetadataService {
@@ -71,7 +73,7 @@ public class YouTubeMetadataService {
     }
 
     // ✅ 전체 처리 (요약 포함) 후 DTO 반환
-    public SummaryResponseDTO processVideoFromUrl(String url, String userPrompt, String summaryType, Long userId) throws Exception {
+    public SummaryResponseDTO processVideoFromUrl(String url, String userPrompt, SummaryType summaryType, Long userId) throws Exception {
         try {
             saveVideoMetadataFromUrl(url);
         } catch (IllegalArgumentException e) {
@@ -93,9 +95,11 @@ public class YouTubeMetadataService {
 
         // 4. 요약 요청 DTO 구성
         SummaryRequestDTO dto = new SummaryRequestDTO();
-        dto.setTranscriptId(transcriptId);
-        dto.setUserId(userId);
-        dto.setText(Files.readString(Path.of(transcript.getTranscriptPath()))); // 텍스트 파일 내용 로드
+        dto.setOriginalUrl(url);
+        dto.setSummaryType(summaryType);
+        dto.setUserPrompt(userPrompt);
+//        dto.setUserId(userId);
+//        dto.setText(Files.readString(Path.of(transcript.getTranscriptPath()))); // 텍스트 파일 내용 로드
         dto.setUserPrompt("REVIEW");
 
 
@@ -120,7 +124,7 @@ public class YouTubeMetadataService {
 
         // ✅ summaryType이 null이면 기본값 지정
         if (summaryType == null || summaryType.isBlank()) {
-            summaryType = "BASIC"; // 기본 요약 타입
+            summaryType = BASIC; // 기본 요약 타입
         }
 
         try {
@@ -130,6 +134,6 @@ public class YouTubeMetadataService {
         }
 
         // 요약 수행 (SummaryResponseDTO 반환)
-        return summaryService.summarize(dto);
+        return summaryService.summarize(dto, userId);
     }
 }

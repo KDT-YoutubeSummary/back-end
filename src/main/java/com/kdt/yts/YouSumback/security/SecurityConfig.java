@@ -14,6 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+// 추가 import
+import jakarta.servlet.http.HttpServletResponse; // HttpServletResponse import
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -23,7 +26,6 @@ public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
 
-    // OAuth2 관련 클래스들을 의존성으로 주입받습니다.
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
@@ -59,18 +61,32 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 
-        // URL 권한 설정 (개발용으로 대부분의 경로를 열어둡니다)
+        // ✅ 인증/인가 실패 시 처리 방식 정의 (이 부분 추가 또는 수정)
+        http.exceptionHandling(exceptions -> exceptions
+                // 인증되지 않은 사용자가 보호된 리소스에 접근할 때
+                .authenticationEntryPoint((request, response, authException) -> {
+                    System.err.println("❌ Authentication failed: " + authException.getMessage());
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"); // 401 응답
+                })
+                // 인증은 되었지만 권한이 없는 사용자가 접근할 때
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    System.err.println("❌ Access denied: " + accessDeniedException.getMessage());
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"); // 403 응답
+                })
+        );
+
+
+        // URL 권한 설정
         http.authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll() // 개발용으로 모든 요청을 임시로 허용합니다.
+                .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
+                .requestMatchers("/api/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
+                .anyRequest().authenticated()
         );
 
         // OAuth2 로그인 설정
         http.oauth2Login(oauth2 -> oauth2
-                // 로그인 성공 시 JWT를 발급하고 프론트엔드로 리다이렉트 시키는 핸들러
                 .successHandler(oAuth2LoginSuccessHandler)
-                // 로그인 실패 시 프론트엔드의 로그인 페이지로 리다이렉트 시키는 핸들러
                 .failureHandler(oAuth2LoginFailureHandler)
-                // 소셜 로그인 후 사용자 정보를 가져와 DB에 저장/업데이트하는 서비스
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
         );
 

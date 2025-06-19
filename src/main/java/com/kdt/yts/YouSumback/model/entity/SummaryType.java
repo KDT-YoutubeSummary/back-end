@@ -5,4 +5,13 @@ public enum SummaryType {
     THREE_LINE,   // 3줄 요약
     KEYWORD,      // 키워드 중심
     TIMELINE      // 타임라인 요약
+    ;
+
+    public boolean isBlank() {
+        return this == BASIC;
+    }
+
+    public String toUpperCase() {
+        return name();
+    }
 }

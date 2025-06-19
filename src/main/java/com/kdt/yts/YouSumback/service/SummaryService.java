@@ -15,7 +15,7 @@ import java.util.Optional;
 
 
 public interface SummaryService {
-    SummaryResponseDTO summarize(SummaryRequestDTO request);
+    SummaryResponseDTO summarize(SummaryRequestDTO request, Long userId);
 
     List<QuizResponseDTO> generateFromSummary(QuizRequestDTO request);
 

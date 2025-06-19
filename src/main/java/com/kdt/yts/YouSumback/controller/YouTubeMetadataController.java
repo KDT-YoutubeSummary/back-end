@@ -78,6 +78,8 @@ public class YouTubeMetadataController {
             return ResponseEntity.ok(responseDTO); // ✅ 결과 DTO 응답
 
         } catch (Exception e) {
+            System.err.println("❌ Controller: Error processing request: " + e.getMessage());
+            e.printStackTrace(); // ✅ 여기에 스택 트레이스 강제 출력
             return ResponseEntity.status(500).body("❌ 처리 중 오류: " + e.getMessage());
         }
     }

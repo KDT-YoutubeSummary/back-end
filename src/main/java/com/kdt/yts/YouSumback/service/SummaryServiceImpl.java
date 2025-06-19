@@ -2,31 +2,21 @@ package com.kdt.yts.YouSumback.service;
 
 import com.kdt.yts.YouSumback.model.dto.request.UserAnswerDTO;
 import com.kdt.yts.YouSumback.model.dto.response.*;
-import com.kdt.yts.YouSumback.model.entity.AnswerOption;
-import com.kdt.yts.YouSumback.model.entity.Question;
-import com.kdt.yts.YouSumback.model.entity.Quiz;
-import com.kdt.yts.YouSumback.model.entity.Summary;
-import com.kdt.yts.YouSumback.model.entity.Tag;
-import com.kdt.yts.YouSumback.model.entity.UserLibrary;
-import com.kdt.yts.YouSumback.model.entity.UserLibraryTag;
-import com.kdt.yts.YouSumback.model.entity.UserLibraryTagId;
-import com.kdt.yts.YouSumback.repository.AnswerOptionRepository;
-import com.kdt.yts.YouSumback.repository.AudioTranscriptRepository;
-import com.kdt.yts.YouSumback.repository.QuizRepository;
-import com.kdt.yts.YouSumback.repository.SummaryRepository;
-import com.kdt.yts.YouSumback.repository.TagRepository;
-import com.kdt.yts.YouSumback.repository.UserLibraryRepository;
-import com.kdt.yts.YouSumback.repository.UserLibraryTagRepository;
-import com.kdt.yts.YouSumback.repository.UserRepository;
-import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
-import com.kdt.yts.YouSumback.model.dto.request.SummaryRequestDTO;
 import com.kdt.yts.YouSumback.model.entity.*;
 import com.kdt.yts.YouSumback.repository.*;
+import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
+import com.kdt.yts.YouSumback.model.dto.request.SummaryRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException; // IOException import
+import java.nio.charset.StandardCharsets; // StandardCharsets import
+import java.nio.file.Files; // Files import
+import java.nio.file.Path; // Path import
+import java.nio.file.Paths; // Paths import
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -74,20 +64,49 @@ public class SummaryServiceImpl implements SummaryService {
     }
 
     // 메인 요약 메서드
-
     @Override
-    public SummaryResponseDTO summarize(SummaryRequestDTO request) {
-        String text = request.getText();
-        Long transcriptId = request.getTranscriptId();
-        Long userId = request.getUserId();
-        String userPrompt= request.getUserPrompt();
+    @Transactional // 트랜잭션 필요
+    public SummaryResponseDTO summarize(SummaryRequestDTO request, Long userId) { // ✅ userId 파라미터 추가
+        String originalUrl = request.getOriginalUrl(); // SummaryRequestDTO에서 originalUrl을 가져옴
+        String userPrompt = request.getUserPrompt();
         SummaryType summaryType = request.getSummaryType();
 
-        // 1. GPT 요약용 프롬프트 생성
+        System.out.println(">>> SummaryServiceImpl.summarize 진입 - URL: " + originalUrl + ", User ID: " + userId);
+
+        // 1. originalUrl을 사용하여 AudioTranscript 조회 또는 생성
+        AudioTranscript transcript = audioTranscriptRepository.findByVideo_OriginalUrl(originalUrl)
+                .orElseThrow(() -> {
+                    System.err.println("❌ Transcript not found for URL: " + originalUrl + ". YouTube API 호출 로직 및 저장 필요.");
+                    return new RuntimeException("YouTube video transcript not found or not processed for URL: " + originalUrl);
+                });
+
+        // 텍스트 파일 경로에서 실제 텍스트 내용을 불러오는 로직
+        String text;
+        // ✅ 파일 경로가 유효한지 확인하고, 유효하지 않으면 즉시 에러 발생
+        if (transcript.getTranscriptPath() == null || transcript.getTranscriptPath().isEmpty()) {
+            System.err.println("❌ AudioTranscript has no file path for URL: " + originalUrl);
+            throw new RuntimeException("No transcript file path found for URL: " + originalUrl + ". Summary failed.");
+        }
+
+        try {
+            Path filePath = Paths.get(transcript.getTranscriptPath()); // AudioTranscript에서 파일 경로를 가져옴
+            text = Files.readString(filePath, StandardCharsets.UTF_8); // 파일에서 텍스트 읽기
+            System.out.println("✅ Transcript text loaded from file path: " + filePath);
+        } catch (IOException e) {
+            System.err.println("❌ Error reading transcript file from path: " + transcript.getTranscriptPath() + " - " + e.getMessage());
+            throw new RuntimeException("Failed to read transcript text from file.", e);
+        }
+        // 이전 `else` 블록 (textContent 사용 fallback)이 제거됨.
+
+        Long transcriptId = transcript.getId();    // 찾은 transcript에서 ID 추출
+
+        System.out.println("✅ Transcript found/processed. ID: " + transcriptId);
+
+        // 2. GPT 요약용 프롬프트 생성 (기존 로직)
         String prompt = buildPrompt(userPrompt, summaryType);
         String fullPrompt = prompt + "\n\n" + text;
 
-        // 텍스트가 너무 길면 청크로 나누기
+        // 텍스트가 너무 길면 청크로 나누기 (기존 로직)
         List<String> chunks = splitTextIntoChunks(text, 1000);
         List<String> partialSummaries = new ArrayList<>();
 
@@ -95,36 +114,38 @@ public class SummaryServiceImpl implements SummaryService {
             partialSummaries.add(callOpenAISummary(prompt + "\n\n" + chunk));
         }
 
-        // 2. 전체 요약 생성
+        // 2. 전체 요약 생성 (기존 로직)
         String finalSummary = callOpenAISummary(prompt + "\n\n" + String.join("\n", partialSummaries));
+        System.out.println("✅ Final Summary Generated. Length: " + finalSummary.length());
 
-        // 3. Summary 저장
-        User user = userRepository.findById(userId).orElseThrow();
-        AudioTranscript transcript = audioTranscriptRepository.findById(transcriptId)
-                .orElseThrow(() -> new RuntimeException("Transcript not found for ID = " + transcriptId));
+        // 3. Summary 저장 (기존 로직, userId 및 transcript 사용)
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found for ID: " + userId));
 
         Summary summary = Summary.builder()
                 .user(user)
-                .audioTranscript(transcript)
+                .audioTranscript(transcript) // 찾은 transcript 사용
                 .summaryText(finalSummary)
                 .summaryType(summaryType)
-                .userPrompt(prompt)
+                .userPrompt(userPrompt)
                 .createdAt(LocalDateTime.now())
-                .languageCode("ko") // 예시로 한국어로 설정
+                .languageCode(transcript.getVideo().getOriginalLanguageCode())
                 .build();
         Summary saved = summaryRepository.save(summary);
+        System.out.println("✅ Summary Saved. ID: " + saved.getId());
 
-        // 4. 라이브러리 저장
+        // 4. 라이브러리 저장 (기존 로직)
         UserLibrary library = UserLibrary.builder()
                 .user(user)
                 .summary(saved)
                 .lastViewedAt(LocalDateTime.now())
                 .build();
         userLibraryRepository.save(library);
+        System.out.println("✅ UserLibrary Saved. User ID: " + user.getId() + ", Summary ID: " + saved.getId());
 
-        // 5. LLM 기반 해시태그 추출 및 저장
-        List<String> baseTags = tagRepository.findAll().stream().map(Tag::getTagName).toList();
+        // 5. LLM 기반 해시태그 추출 및 저장 (기존 로직)
         List<String> hashtags = extractTagsWithLLM(finalSummary);
+        System.out.println("✅ Hashtags Extracted: " + hashtags);
 
         for (String keyword : hashtags) {
             Tag tag = tagRepository.findByTagName(keyword)
@@ -143,7 +164,9 @@ public class SummaryServiceImpl implements SummaryService {
                 userLibraryTagRepository.save(userLibraryTag);
             }
         }
-        // ✅ 활동 로그 저장
+        System.out.println("✅ Tags Processed.");
+
+        // 활동 로그 저장 (기존 로직)
         UserActivityLog log = UserActivityLog.builder()
                 .user(user)
                 .activityType("SUMMARY_CREATED")
@@ -151,16 +174,18 @@ public class SummaryServiceImpl implements SummaryService {
                 .targetEntityIdInt(saved.getId())
                 .activityDetail("요약 생성 완료: " + summaryType)
                 .details(String.format("""
-    {
-        "summaryType": "%s",
-        "videoId": %d,
-        "videoTitle": "%s"
-    }
+{
+"summaryType": "%s",
+"videoId": %d,
+"videoTitle": "%s"
+}
 """, summaryType, transcript.getVideo().getId(), transcript.getVideo().getTitle()))
                 .createdAt(LocalDateTime.now())
                 .build();
         userActivityLogRepository.save(log);
+        System.out.println("✅ UserActivityLog Saved.");
 
+        // 최종 응답 DTO 반환 (기존 로직, transcript 및 summary 사용)
         return new SummaryResponseDTO(
                 saved.getId(),
                 transcript.getId(),
@@ -171,7 +196,7 @@ public class SummaryServiceImpl implements SummaryService {
                 transcript.getVideo().getThumbnailUrl(),
                 transcript.getVideo().getUploaderName(),
                 transcript.getVideo().getViewCount(),
-                summary.getLanguageCode(),
+                transcript.getVideo().getOriginalLanguageCode(),
                 summary.getCreatedAt()
         );
     }
@@ -216,15 +241,15 @@ public class SummaryServiceImpl implements SummaryService {
         );
         String baseTagList = String.join(", ", baseTags);
         String prompt = String.format("""
-                다음 내용을 보고 핵심 해시태그 3개를 추출해줘.
-                아래 기본 태그 중 선택하되, 없으면 자유롭게 생성해도 돼.
-                응답 형식은 해시태그 이름만 쉼표로 구분해서 줘. 예시: 투자, 인공지능, 윤리
+다음 내용을 보고 핵심 해시태그 3개를 추출해줘.
+아래 기본 태그 중 선택하되, 없으면 자유롭게 생성해도 돼.
+응답 형식은 해시태그 이름만 쉼표로 구분해서 줘. 예시: 투자, 인공지능, 윤리
 
-                기본 태그: %s
+기본 태그: %s
 
-                내용:
-                %s
-                """, baseTagList, summaryText);
+내용:
+%s
+""", baseTagList, summaryText);
 
         String response = chatClient.prompt().user(prompt).call().content();
         return Arrays.stream(response.split("[,\\n]"))
@@ -248,27 +273,27 @@ public class SummaryServiceImpl implements SummaryService {
 
         // 2) 퀴즈용 프롬프트 생성
         String prompt = String.format("""
-        아래 요약문을 바탕으로 객관식 퀴즈를 %d개 만들어줘.
-        반드시 아래 형식만 지켜서 출력해줘. 불필요한 설명은 쓰지 마.
+아래 요약문을 바탕으로 객관식 퀴즈를 %d개 만들어줘.
+반드시 아래 형식만 지켜서 출력해줘. 불필요한 설명은 쓰지 마.
 
-        Q: 인공지능이 최근 발전한 분야는 무엇인가요?
-        1. 자연어 처리
-        2. 농업 기술
-        3. 고전 문학
-        4. 스포츠 분석
-        정답: 1
+Q: 인공지능이 최근 발전한 분야는 무엇인가요?
+1. 자연어 처리
+2. 농업 기술
+3. 고전 문학
+4. 스포츠 분석
+정답: 1
 
-        Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
-        1. 챗봇
-        2. 기계 번역
-        3. 음성 인식
-        4. 손글씨 연습장
-        정답: 4
+Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
+1. 챗봇
+2. 기계 번역
+3. 음성 인식
+4. 손글씨 연습장
+정답: 4
 
-        [요약문 시작]
-        %s
-        [요약문 끝]
-        """, request.getNumberOfQuestions(), summary.getSummaryText());
+[요약문 시작]
+%s
+[요약문 끝]
+""", request.getNumberOfQuestions(), summary.getSummaryText());
 
         // 3) 실제 AI 호출
         System.out.println(">>>> Sending Quiz Prompt to AI:\n" + prompt);
@@ -345,8 +370,7 @@ public class SummaryServiceImpl implements SummaryService {
                             answerNum = Integer.parseInt(digits);
                         }
                     }
-                    // 그 외 라인은 무시
-                    }
+                }
 
                 // 6-4) 유효성 검사: 질문, 보기 4개, 정답(1~4)
                 if (questionText.isBlank()) {
@@ -400,16 +424,16 @@ public class SummaryServiceImpl implements SummaryService {
 
     private QuizResponseDTO convertToDTO(Quiz quiz) {
         return new QuizResponseDTO(
-                quiz.getId(), // ✅ 이제 맞음!
+                quiz.getId(), // 이제 맞음!
                 quiz.getTitle(),
                 quiz.getCreatedAt(),
                 quiz.getQuestions().stream().map(q ->
                         new QuestionDTO(
-                                q.getId(), // ✅ questionId
+                                q.getId(), // questionId
                                 q.getQuestionText(),
                                 q.getOptions().stream().map(o ->
                                         new OptionDTO(
-                                                o.getId(), // ✅ answerOptionId
+                                                o.getId(), // answerOptionId
                                                 o.getOptionText()
                                         )
                                 ).toList()
@@ -417,7 +441,6 @@ public class SummaryServiceImpl implements SummaryService {
                 ).toList()
         );
     }
-
 
     @Transactional
     @Override
@@ -489,7 +512,6 @@ public class SummaryServiceImpl implements SummaryService {
                 freq.put(word, freq.getOrDefault(word, 0) + 1);
             }
         }
-
         return freq.entrySet().stream()
                 .sorted((a, b) -> b.getValue() - a.getValue())
                 .limit(limit)

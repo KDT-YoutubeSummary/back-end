@@ -10,4 +10,6 @@ public interface AudioTranscriptRepository extends JpaRepository<AudioTranscript
     Optional<AudioTranscript> findByYoutubeId(String youtubeId);
 
     Optional<AudioTranscript> findByVideoId(Long videoId);
+
+    Optional<AudioTranscript> findByVideo_OriginalUrl(String originalUrl);
 }
