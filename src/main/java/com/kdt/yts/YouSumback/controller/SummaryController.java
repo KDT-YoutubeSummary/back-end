@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/summary")
+@RequestMapping("/api/summaries")
 @RequiredArgsConstructor
 @Tag(name = "요약", description = "텍스트 요약 관련 API")
 public class SummaryController {

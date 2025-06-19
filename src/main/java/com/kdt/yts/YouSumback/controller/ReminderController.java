@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/reminder") // 기본 URL 경로를 설정
+@RequestMapping("/api/reminders") // 기본 URL 경로를 설정
 @RequiredArgsConstructor
 @Tag(name = "리마인더", description = "리마인더 관리 API")
 public class ReminderController {

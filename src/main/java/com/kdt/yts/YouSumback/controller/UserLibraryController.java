@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestController
-@RequestMapping("/api/library")
+@RequestMapping("/api/libraries")
 @RequiredArgsConstructor
 @Tag(name = "유저 라이브러리", description = "사용자 라이브러리 관련 API")
 //@Getter
@@ -184,7 +184,7 @@ public class UserLibraryController {
     }
 
     // 사용자 메모 업데이트
-    @PatchMapping("/note")
+    @PatchMapping("/notes")
     @Operation(summary = "라이브러리 메모 추가 및 수정", description = "해당 라이브러리에 대한 사용자의 메모를 추가 및 수정합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "메모 수정 성공"),

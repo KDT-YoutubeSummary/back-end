@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/recommendation")
+@RequestMapping("/api/recommendations")
 @Tag(name = "영상 추천", description = "영상 추천 관리 API")
 public class VideoRecommendationController {
     @Autowired

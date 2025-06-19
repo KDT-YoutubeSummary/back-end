@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/src")
+@RequestMapping("/api/scripts")
 @RequiredArgsConstructor
 @Tag(name = "대본", description = "음성 및 영상 대본 관리 API")
 // Whisper만 별도 테스트하는 컨트롤러

@@ -62,6 +62,7 @@ public class YouTubeMetadataController {
             @ApiResponse(responseCode = "200", description = "요약 성공"),
             @ApiResponse(responseCode = "404", description = "요약 실패")
     })
+
     @PostMapping("/upload")
     public ResponseEntity<?> uploadFromUrl(@RequestBody TranscriptSaveRequestDTO request,
                                            @AuthenticationPrincipal CustomUserDetails userDetails) {

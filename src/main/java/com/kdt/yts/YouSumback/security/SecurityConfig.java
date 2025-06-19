@@ -16,6 +16,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 // 추가 import
 import jakarta.servlet.http.HttpServletResponse; // HttpServletResponse import
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -53,15 +58,50 @@ public class SecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5174")); // 프론트엔드 주소
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type")); // "Authorization" 헤더 추가
+        configuration.setAllowCredentials(true); // 쿠키 허용
+        configuration.setMaxAge(3600L); // Pre-flight 캐싱 시간 (Optional)
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); // 모든 경로에 대해 적용
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationManager authManager) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> {})
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 
-        // ✅ 인증/인가 실패 시 처리 방식 정의 (이 부분 추가 또는 수정)
+        // URL 권한 설정
+        http.authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                // 개발용
+                                "/api/auth/**",
+                                "/api/reminder/**",
+                                "/api/library/**",
+                                "/api/quiz/**",
+                                "/api/recommendation/**",
+                                "/api/src/**",
+                                "/oauth2/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/api-docs/**",
+                                "/webjars/**"
+                        ).permitAll()
+                        .requestMatchers("/api/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
+                        .anyRequest().authenticated()
+        );
+
+        // ✅ 인증/인가 실패 시 처리 방식 정의
         http.exceptionHandling(exceptions -> exceptions
                 // 인증되지 않은 사용자가 보호된 리소스에 접근할 때
                 .authenticationEntryPoint((request, response, authException) -> {
@@ -73,14 +113,6 @@ public class SecurityConfig {
                     System.err.println("❌ Access denied: " + accessDeniedException.getMessage());
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"); // 403 응답
                 })
-        );
-
-
-        // URL 권한 설정
-        http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
-                .requestMatchers("/api/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
-                .anyRequest().authenticated()
         );
 
         // OAuth2 로그인 설정

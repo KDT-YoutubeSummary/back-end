@@ -25,14 +25,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+
+        // ✅ 인증 예외 처리할 경로들
+        if (path.startsWith("/api/auth")
+                || path.startsWith("/api-docs/swagger-config")
+                || path.startsWith("/oauth2")
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-resources")
+                || path.startsWith("/webjars")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String token = resolveToken(request);
 
         if (token != null && jwtProvider.validateToken(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             try {
-                Long userId = jwtProvider.extractUserId(token); // userId 추출
-                UserDetails userDetails = customUserDetailService.loadUserByUserId(userId); // ✅ 변경된 부분
+                Long userId = jwtProvider.extractUserId(token);
+                UserDetails userDetails = customUserDetailService.loadUserByUserId(userId);
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
