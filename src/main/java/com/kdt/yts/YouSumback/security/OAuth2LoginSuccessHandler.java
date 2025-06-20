@@ -35,7 +35,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             log.info("JWT 토큰 생성 성공.");
 
             // ✨ 2. UriComponentsBuilder를 사용하여 URL을 생성하고, UTF-8로 인코딩하도록 명시합니다.
-            String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth/redirect")
+            String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5174/oauth/redirect")
                     .queryParam("accessToken", accessToken)
                     .queryParam("userId", String.valueOf(user.getId()))
                     .queryParam("userName", user.getUserName()) // 값은 그대로 넣고,

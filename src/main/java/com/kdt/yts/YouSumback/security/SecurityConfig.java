@@ -83,19 +83,15 @@ public class SecurityConfig {
         // URL 권한 설정
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                // 개발용
-                                "/api/auth/**",
-                                "/api/reminders/**",
-                                "/api/libraries/**",
-                                "/api/quizzes/**",
-                                "/api/recommendations/**",
-                                "/api/scripts/**",
-                                "/oauth2/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/swagger-resources/**",
-                                "/api-docs/**",
-                                "/webjars/**"
+                                // 인증없이 허용할 경로들
+                                "/api/auth/login",            // 로그인
+                                "/api/auth/register",         // 회원가입
+                                "/oauth2/**",                 // OAuth2 관련 엔드포인트
+                                "/swagger-ui/**",             // Swagger UI
+                                "/v3/api-docs/**",            // Swagger API 문서
+                                "/swagger-resources/**",      // Swagger 리소스
+                                "/api-docs/**",               // API 문서 (일반적으로 v3/api-docs 포함)
+                                "/webjars/**"                 // Swagger Webjars
                         ).permitAll()
                         .requestMatchers("/api/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
                         .anyRequest().authenticated()

@@ -67,9 +67,47 @@ public class AuthService {
     }
 
     // 회원정보 수정
+//    public User updateUser(UpdateUserRequestDTO request) {
+//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+//        Long userId = userDetails.getUserId();
+//
+//        User existingUser = userRepository.findById(userId)
+//                .orElseThrow(() -> new RuntimeException("User not found"));
+//
+//        if (request.getUserName() != null && !request.getUserName().equals(existingUser.getUserName())) {
+//            if (userRepository.existsByUserName(request.getUserName())) {
+//                throw new RuntimeException("이미 사용 중인 사용자명입니다.");
+//            }
+//            existingUser.setUserName(request.getUserName());
+//        }
+//
+//        if (request.getEmail() != null && !request.getEmail().equals(existingUser.getEmail())) {
+//            if (userRepository.existsByEmail(request.getEmail())) {
+//                throw new RuntimeException("이미 사용 중인 이메일입니다.");
+//            }
+//            existingUser.setEmail(request.getEmail());
+//        }
+//
+//        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+//            String encoded = passwordEncoder.encode(request.getPassword());
+//            existingUser.setPasswordHash(encoded);
+//        }
+//
+//        try {
+//            return userRepository.save(existingUser);
+//        } catch (DataIntegrityViolationException e) {
+//            throw new RuntimeException("회원정보 수정 중 오류가 발생했습니다.", e);
+//        }
+//    }
+
     public User updateUser(UpdateUserRequestDTO request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+
+        if (!(auth.getPrincipal() instanceof CustomUserDetails userDetails)) {
+            throw new RuntimeException("인증된 사용자 정보가 올바르지 않습니다.");
+        }
+
         Long userId = userDetails.getUserId();
 
         User existingUser = userRepository.findById(userId)
@@ -100,6 +138,7 @@ public class AuthService {
             throw new RuntimeException("회원정보 수정 중 오류가 발생했습니다.", e);
         }
     }
+
 
     // 회원 탈퇴
     public void deleteUser() {
