@@ -105,7 +105,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return EXCLUDE_URLS.stream().anyMatch(path::startsWith);
+        return path.startsWith("/api/auth/register")
+                || path.startsWith("/api/auth/login")
+                || path.startsWith("/swagger-ui/")
+                || path.startsWith("/v3/api-docs/");
     }
 
     @Override
