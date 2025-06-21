@@ -22,7 +22,6 @@ public class OpenAIClient {
         this.webClient = WebClient.builder()
                 .baseUrl(openAIConfig.getBaseUrl())
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + openAIConfig.getApiKey())
                 .build();
     }
 
@@ -47,6 +46,7 @@ public class OpenAIClient {
 
         return webClient.post()
                 .uri("/v1/chat/completions")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + openAIConfig.getApiKey())
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(JsonNode.class)

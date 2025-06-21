@@ -39,6 +39,7 @@ public class AnswerOption {
     @Column(name = "summary_type")
     private SummaryType summaryType;
 
+    @Builder.Default
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

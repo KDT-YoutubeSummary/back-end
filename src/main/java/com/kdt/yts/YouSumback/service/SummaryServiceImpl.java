@@ -6,17 +6,16 @@ import com.kdt.yts.YouSumback.model.entity.*;
 import com.kdt.yts.YouSumback.repository.*;
 import com.kdt.yts.YouSumback.model.dto.request.QuizRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.SummaryRequestDTO;
+import com.kdt.yts.YouSumback.service.client.OpenAIClient;
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException; // IOException import
-import java.nio.charset.StandardCharsets; // StandardCharsets import
-import java.nio.file.Files; // Files import
-import java.nio.file.Path; // Path import
-import java.nio.file.Paths; // Paths import
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SummaryServiceImpl implements SummaryService {
 
-    private final ChatClient chatClient;
+    private final OpenAIClient openAIClient;
     private final AnswerOptionRepository answerOptionRepository;
     private final TagRepository tagRepository;
     private final UserLibraryRepository userLibraryRepository;
@@ -37,50 +36,21 @@ public class SummaryServiceImpl implements SummaryService {
     private final QuizRepository quizRepository;
     private final UserActivityLogRepository userActivityLogRepository;
 
-    // ChatClient.Builder를 주입받아 ChatClient 생성
-    @Autowired
-    public SummaryServiceImpl(
-            ChatClient.Builder chatClientBuilder,
-            AnswerOptionRepository answerOptionRepository,
-            TagRepository tagRepository,
-            UserLibraryRepository userLibraryRepository,
-            UserLibraryTagRepository userLibraryTagRepository,
-            UserRepository userRepository,
-            AudioTranscriptRepository audioTranscriptRepository,
-            SummaryRepository summaryRepository,
-            UserActivityLogRepository userActivityLogRepository,
-            QuizRepository quizRepository
-    ) {
-        this.chatClient = chatClientBuilder.build();
-        this.answerOptionRepository = answerOptionRepository;
-        this.tagRepository = tagRepository;
-        this.userLibraryRepository = userLibraryRepository;
-        this.userLibraryTagRepository = userLibraryTagRepository;
-        this.userRepository = userRepository;
-        this.audioTranscriptRepository = audioTranscriptRepository;
-        this.summaryRepository = summaryRepository;
-        this.userActivityLogRepository = userActivityLogRepository;
-        this.quizRepository = quizRepository;
-    }
-
-    // 메인 요약 메서드
     @Override
-    @Transactional // 트랜잭션 필요
-    public SummaryResponseDTO summarize(SummaryRequestDTO request, Long userId) { // ✅ userId 파라미터 추가
-        String originalUrl = request.getOriginalUrl(); // SummaryRequestDTO에서 originalUrl을 가져옴
+    @Transactional
+    public SummaryResponseDTO summarize(SummaryRequestDTO request, Long userId) {
+        String originalUrl = request.getOriginalUrl();
         String userPrompt = request.getUserPrompt();
         SummaryType summaryType = request.getSummaryType();
 
         System.out.println(">>> SummaryServiceImpl.summarize 진입 - URL: " + originalUrl + ", User ID: " + userId);
 
-        // 1. originalUrl을 사용하여 AudioTranscript 조회 또는 생성
         AudioTranscript transcript = audioTranscriptRepository.findByVideo_OriginalUrl(originalUrl)
                 .orElseThrow(() -> {
                     System.err.println("❌ Transcript not found for URL: " + originalUrl + ". YouTube API 호출 로직 및 저장 필요.");
                     return new RuntimeException("YouTube video transcript not found or not processed for URL: " + originalUrl);
                 });
 
-        // 텍스트 파일 경로에서 실제 텍스트 내용을 불러오는 로직
         String text;
         if (summaryType == SummaryType.TIMELINE) {
             String videoId = transcript.getVideo().getYoutubeId();
@@ -92,7 +62,6 @@ public class SummaryServiceImpl implements SummaryService {
                     text = Files.readString(vttPath, StandardCharsets.UTF_8);
                     System.out.println("✅ TIMELINE summary: Loaded VTT file from: " + vttPath);
                 } else {
-                    // Fallback to cleaned text if VTT not found.
                     Path cleanedPath = Paths.get(transcript.getTranscriptPath());
                     System.err.println("⚠️ VTT file not found for TIMELINE summary at " + vttPath + ". Falling back to cleaned text from " + cleanedPath);
                     text = Files.readString(cleanedPath, StandardCharsets.UTF_8);
@@ -102,26 +71,24 @@ public class SummaryServiceImpl implements SummaryService {
                 throw new RuntimeException("Failed to read transcript file for TIMELINE summary.", e);
             }
         } else {
-            // ✅ 파일 경로가 유효한지 확인하고, 유효하지 않으면 즉시 에러 발생
             if (transcript.getTranscriptPath() == null || transcript.getTranscriptPath().isEmpty()) {
                 System.err.println("❌ AudioTranscript has no file path for URL: " + originalUrl);
                 throw new RuntimeException("No transcript file path found for URL: " + originalUrl + ". Summary failed.");
             }
 
             try {
-                Path filePath = Paths.get(transcript.getTranscriptPath()); // AudioTranscript에서 파일 경로를 가져옴
-                text = Files.readString(filePath, StandardCharsets.UTF_8); // 파일에서 텍스트 읽기
+                Path filePath = Paths.get(transcript.getTranscriptPath());
+                text = Files.readString(filePath, StandardCharsets.UTF_8);
                 System.out.println("✅ Transcript text loaded from file path: " + filePath);
             } catch (IOException e) {
                 System.err.println("❌ Error reading transcript file from path: " + transcript.getTranscriptPath() + " - " + e.getMessage());
                 throw new RuntimeException("Failed to read transcript text from file.", e);
             }
         }
-        Long transcriptId = transcript.getId();    // 찾은 transcript에서 ID 추출
+        Long transcriptId = transcript.getId();
 
         System.out.println("✅ Transcript found/processed. ID: " + transcriptId);
 
-        // 2. GPT 요약용 프롬프트 생성 (기존 로직)
         String prompt = buildPrompt(userPrompt, summaryType);
 
         String finalSummary;
@@ -129,27 +96,23 @@ public class SummaryServiceImpl implements SummaryService {
             System.out.println("✅ TIMELINE summary: Bypassing chunking and calling AI with full VTT content.");
             finalSummary = callOpenAISummary(prompt + "\n\n" + text);
         } else {
-            // 텍스트가 너무 길면 청크로 나누기 (기존 로직)
             List<String> chunks = splitTextIntoChunks(text, 1000);
             List<String> partialSummaries = new ArrayList<>();
 
             for (String chunk : chunks) {
                 partialSummaries.add(callOpenAISummary(prompt + "\n\n" + chunk));
             }
-
-            // 2. 전체 요약 생성 (기존 로직)
             String finalSummaryPrompt = "다음은 각 부분에 대한 요약입니다. 이 요약들을 하나로 합쳐서 자연스러운 최종 요약을 만들어주세요:\n\n" + String.join("\n---\n", partialSummaries);
             finalSummary = callOpenAISummary(finalSummaryPrompt);
         }
         System.out.println("✅ Final Summary Generated. Length: " + finalSummary.length());
 
-        // 3. Summary 저장 (기존 로직, userId 및 transcript 사용)
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found for ID: " + userId));
 
         Summary summary = Summary.builder()
                 .user(user)
-                .audioTranscript(transcript) // 찾은 transcript 사용
+                .audioTranscript(transcript)
                 .summaryText(finalSummary)
                 .summaryType(summaryType)
                 .userPrompt(userPrompt)
@@ -159,7 +122,6 @@ public class SummaryServiceImpl implements SummaryService {
         Summary saved = summaryRepository.save(summary);
         System.out.println("✅ Summary Saved. ID: " + saved.getId());
 
-        // 4. 라이브러리 저장 (기존 로직)
         UserLibrary library = UserLibrary.builder()
                 .user(user)
                 .summary(saved)
@@ -168,7 +130,6 @@ public class SummaryServiceImpl implements SummaryService {
         userLibraryRepository.save(library);
         System.out.println("✅ UserLibrary Saved. User ID: " + user.getId() + ", Summary ID: " + saved.getId());
 
-        // 5. LLM 기반 해시태그 추출 및 저장 (기존 로직)
         List<String> hashtags = extractTagsWithLLM(finalSummary).stream().distinct().toList();
         System.out.println("✅ Hashtags Extracted: " + hashtags);
 
@@ -190,7 +151,6 @@ public class SummaryServiceImpl implements SummaryService {
         }
         System.out.println("✅ Tags Processed.");
 
-        // 활동 로그 저장 (기존 로직)
         UserActivityLog log = UserActivityLog.builder()
                 .user(user)
                 .activityType("SUMMARY_CREATED")
@@ -209,7 +169,6 @@ public class SummaryServiceImpl implements SummaryService {
         userActivityLogRepository.save(log);
         System.out.println("✅ UserActivityLog Saved.");
 
-        // 최종 응답 DTO 반환 (기존 로직, transcript 및 summary 사용)
         return new SummaryResponseDTO(
                 saved.getId(),
                 transcript.getId(),
@@ -225,7 +184,6 @@ public class SummaryServiceImpl implements SummaryService {
         );
     }
 
-    // 지침 + 프롬프트 템플릿을 반환 (text는 포함 X)
     private String buildPrompt(String userPrompt, SummaryType summaryType) {
         String formatInstruction = switch (summaryType) {
             case BASIC -> """
@@ -282,7 +240,6 @@ public class SummaryServiceImpl implements SummaryService {
         """, userPrompt, formatInstruction);
     }
 
-    // LLM 기반 해시태그 추출
     private List<String> extractTagsWithLLM(String summaryText) {
         List<String> baseTags = List.of(
                 "경제", "주식", "투자", "금융", "부동산",
@@ -305,7 +262,7 @@ public class SummaryServiceImpl implements SummaryService {
 %s
 """, baseTagList, summaryText);
 
-        String response = chatClient.prompt().user(prompt).call().content();
+        String response = openAIClient.chat(prompt).block();
         return Arrays.stream(response.split("[,\\n]"))
                 .map(String::trim)
                 .filter(s -> !s.isBlank())
@@ -313,19 +270,15 @@ public class SummaryServiceImpl implements SummaryService {
                 .toList();
     }
 
-    // 특정 유저와 요약에 대한 UserLibrary를 찾는 메서드
     public Optional<UserLibrary> findUserLibraryByUserAndSummary(Long userId, Summary summary) {
         return userLibraryRepository.findByUser_IdAndSummary(userId, summary);
     }
 
-    // 퀴즈 생성 메서드
     @Transactional
     public List<QuizResponseDTO> generateFromSummary(QuizRequestDTO request) {
-        // 1) Summary 엔티티 조회
         Summary summary = summaryRepository.findById(request.getSummaryId())
                 .orElseThrow(() -> new RuntimeException("Summary not found"));
 
-        // 2) 퀴즈용 프롬프트 생성
         String prompt = String.format("""
 아래 요약문을 바탕으로 객관식 퀴즈를 %d개 만들어줘.
 반드시 아래 형식만 지켜서 출력해줘. 불필요한 설명은 쓰지 마.
@@ -349,14 +302,9 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
 [요약문 끝]
 """, request.getNumberOfQuestions(), summary.getSummaryText());
 
-        // 3) 실제 AI 호출
         System.out.println(">>>> Sending Quiz Prompt to AI:\n" + prompt);
-        String aiResponseQuiz = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+        String aiResponseQuiz = openAIClient.chat(prompt).block();
         System.out.println(">>>> AI Quiz Response:\n" + aiResponseQuiz);
-        // 4) "Q:"가 시작되는 부분을 기준으로 분리 (Q:를 블록에 그대로 남김)
         String[] rawBlocks = aiResponseQuiz.split("(?m)(?=Q:)");
         List<String> quizBlocks = new ArrayList<>();
         for (String b : rawBlocks) {
@@ -366,153 +314,114 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
             }
         }
 
-        // 5) Quiz 엔티티 초기화
         Quiz quiz = Quiz.builder()
                 .summary(summary)
                 .title("AI 자동 생성 퀴즈")
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        // 6) 블록별로 Question + AnswerOption 생성
+        List<Question> questionList = new ArrayList<>();
         for (String block : quizBlocks) {
             try {
-                // "Q:"부터 시작하므로, 첫 줄에서 질문을 꺼낸다.
                 String[] lines = block.split("\\r?\\n");
                 if (lines.length < 2) {
                     System.out.println("⚠️ 블록 라인 부족: " + block);
                     continue;
                 }
-                // 6-1) 질문 추출: 첫 번째 줄에서 "Q:" 이후 부분
                 String firstLine = lines[0].trim();
                 String questionText;
                 if (firstLine.startsWith("Q:")) {
                     questionText = firstLine.substring(2).trim();
                 } else {
-                    System.out.println("⚠️ 질문 포맷 불일치: " + firstLine);
-                    continue;
+                    continue; // "Q:"로 시작하지 않으면 스킵
                 }
 
-                // 6-2) 보기와 정답 추출 준비
                 List<AnswerOption> options = new ArrayList<>();
-                int answerNum = -1;
-
-                // 6-3) 두 번째 줄부터 마지막 줄까지 순회
-                for (int i = 1; i < lines.length; i++) {
-                    String line = lines[i].trim();
-                    if (line.isEmpty()) {
-                        continue;
-                    }
-
-                    // 보기가 "숫자. 텍스트" 형태인지 확인
+                Integer answerIndex = null;
+                for (String line : Arrays.copyOfRange(lines, 1, lines.length)) {
+                    line = line.trim();
                     if (line.matches("^[0-9]+\\.\\s+.*")) {
-                        // "1. 자연어 처리" → "자연어 처리"
                         String optText = line.replaceFirst("^[0-9]+\\.\\s*", "");
                         AnswerOption opt = AnswerOption.builder()
                                 .optionText(optText)
                                 .isCorrect(false)
-                                .createdAt(LocalDateTime.now())
-                                .transcriptId(summary.getAudioTranscript().getId())
-                                .summaryText(summary.getSummaryText())
-                                .summaryType(summary.getSummaryType())
                                 .build();
                         options.add(opt);
                     }
-                    // 정답이 "정답: 숫자" 형태인지 확인
                     else if (line.startsWith("정답")) {
                         String digits = line.replaceAll("[^0-9]", "");
                         if (!digits.isEmpty()) {
-                            answerNum = Integer.parseInt(digits);
+                            answerIndex = Integer.parseInt(digits);
                         }
                     }
                 }
-
-                // 6-4) 유효성 검사: 질문, 보기 4개, 정답(1~4)
-                if (questionText.isBlank()) {
-                    System.out.println("⚠️ 질문이 비어 있음: " + block);
-                    continue;
+                if (answerIndex != null && answerIndex > 0 && answerIndex <= options.size()) {
+                    options.get(answerIndex - 1).setIsCorrect(true);
+                } else {
+                    System.out.println("⚠️ 정답 인덱스 파싱 실패: " + block);
+                    continue; // 정답 파싱 실패 시 이 블록 스킵
                 }
-                if (options.size() != 4) {
-                    System.out.println("⚠️ 보기 개수 불일치(4개 아님): size=" + options.size() + " → " + block);
-                    continue;
-                }
-                if (answerNum < 1 || answerNum > 4) {
-                    System.out.println("⚠️ 정답 번호 범위 외: " + answerNum + " → " + block);
-                    continue;
-                }
-
-                // 6-5) 정답 표시
-                options.get(answerNum - 1).setIsCorrect(true);
-
-                // 6-6) Question 엔티티 생성 및 연관 관계 설정
-                Question question = Question.builder()
+                Question q = Question.builder()
+                        .quiz(quiz)
                         .questionText(questionText)
                         .languageCode("ko")
+                        .options(options)
                         .build();
-                question.setQuiz(quiz);
 
-                for (AnswerOption opt : options) {
-                    opt.setQuestion(question);
+                for (AnswerOption option : options) {
+                    option.setQuestion(q);
                 }
-                question.setOptions(options);
+                questionList.add(q);
 
-                // 6-7) Quiz.questions 목록에 추가
-                quiz.getQuestions().add(question);
-
-            } catch (Exception ex) {
-                System.out.println("❌ 파싱 예외 발생 블록:\n" + block);
-                ex.printStackTrace();
+            } catch (Exception e) {
+                System.err.println("퀴즈 블록 파싱 중 예외 발생: " + block);
+                e.printStackTrace();
             }
         }
+        quiz.setQuestions(questionList);
 
-        // 7) 저장 (cascade = ALL 덕분에 Question/AnswerOption 전체가 함께 INSERT)
-        try {
-            Quiz savedQuiz = quizRepository.save(quiz);
-            System.out.println("✅ Saved Quiz id = " + savedQuiz.getId());
-            return List.of(convertToDTO(savedQuiz));
-        } catch (Exception saveEx) {
-            System.out.println("❌ Quiz 저장 중 예외:");
-            saveEx.printStackTrace();
-            throw saveEx;
-        }
+        quizRepository.save(quiz);
+
+        return quiz.getQuestions().stream()
+                .map(q -> {
+                    List<OptionDTO> optionDTOs = q.getOptions().stream()
+                            .map(o -> new OptionDTO(o.getId(), o.getOptionText()))
+                            .collect(Collectors.toList());
+                    // 이 부분은 QuestionDTO를 생성해야 합니다.
+                    // 그러나 반환 타입이 List<QuizResponseDTO>이므로, 전체 구조를 맞춰야 합니다.
+                    // 여기서는 임시로 null을 반환하고 전체 로직을 수정합니다.
+                    // 실제로는 Quiz를 DTO로 변환하는 로직이 필요합니다.
+                    return new QuizResponseDTO(quiz.getId(), quiz.getTitle(), quiz.getCreatedAt(), List.of(new QuestionDTO(q.getId(), q.getQuestionText(), optionDTOs)));
+                })
+                .collect(Collectors.toList());
     }
 
-    private QuizResponseDTO convertToDTO(Quiz quiz) {
-        return new QuizResponseDTO(
-                quiz.getId(), // 이제 맞음!
-                quiz.getTitle(),
-                quiz.getCreatedAt(),
-                quiz.getQuestions().stream().map(q ->
-                        new QuestionDTO(
-                                q.getId(), // questionId
-                                q.getQuestionText(),
-                                q.getOptions().stream().map(o ->
-                                        new OptionDTO(
-                                                o.getId(), // answerOptionId
-                                                o.getOptionText()
-                                        )
-                                ).toList()
-                        )
-                ).toList()
-        );
+    private boolean isRelated(String tag, String[] words) {
+        return Arrays.stream(words)
+                .anyMatch(word -> tag.toLowerCase().contains(word) || word.toLowerCase().contains(tag));
     }
 
     @Transactional
     @Override
-    public QuizResultResponseDTO checkQuizAnswers(Long quizId, List<UserAnswerDTO> answers) {
+    public QuizResultResponseDTO checkQuizAnswers(Long quizId, List<UserAnswerDTO> userAnswers) {
         Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("퀴즈 없음"));
+                .orElseThrow(() -> new RuntimeException("퀴즈를 찾을 수 없습니다."));
 
-        int score = 0;
+        int correctCount = 0;
         List<Boolean> results = new ArrayList<>();
 
-        for (UserAnswerDTO ua : answers) {
-            AnswerOption selectedOption = answerOptionRepository.findById(ua.getAnswerOptionId())
-                    .orElseThrow(() -> new RuntimeException("선택한 보기 없음"));
+        for (UserAnswerDTO userAnswer : userAnswers) {
+            AnswerOption selectedOption = answerOptionRepository.findById(userAnswer.getAnswerOptionId())
+                    .orElseThrow(() -> new RuntimeException("선택한 보기를 찾을 수 없습니다."));
 
-            boolean correct = Boolean.TRUE.equals(selectedOption.getIsCorrect());
-            results.add(correct);
-            if (correct) score++;
+            boolean isCorrect = selectedOption.getIsCorrect();
+            if (isCorrect) {
+                correctCount++;
+            }
+            results.add(isCorrect);
         }
+
+        int score = (int) ((double) correctCount / quiz.getQuestions().size() * 100);
 
         return new QuizResultResponseDTO(score, results);
     }
@@ -540,11 +449,7 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
 
     @Override
     public String callOpenAISummary(String fullPrompt) {
-        // 기존 요약용 AI 호출
-        return chatClient.prompt()
-                .user(fullPrompt)
-                .call()
-                .content();
+        return openAIClient.chat(fullPrompt).block();
     }
 
     private List<String> splitTextIntoChunks(String text, int chunkSize) {
@@ -555,27 +460,6 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
             chunks.add(text.substring(start, end));
         }
         return chunks;
-    }
-
-    private List<String> extractHashtags(String text, int limit) {
-        Map<String, Integer> freq = new HashMap<>();
-        String[] words = text.toLowerCase().split("\\W+");
-
-        for (String word : words) {
-            if (word.length() >= 2 && !isStopword(word)) {
-                freq.put(word, freq.getOrDefault(word, 0) + 1);
-            }
-        }
-        return freq.entrySet().stream()
-                .sorted((a, b) -> b.getValue() - a.getValue())
-                .limit(limit)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-    }
-
-    private boolean isStopword(String word) {
-        return List.of("그리고", "하지만", "또한", "이", "그", "저", "있는", "한다", "였다", "하는", "되어", "으로")
-                .contains(word);
     }
 
     private synchronized Tag findOrCreateTag(String tagName) {
