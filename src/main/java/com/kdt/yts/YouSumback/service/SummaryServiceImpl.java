@@ -82,40 +82,65 @@ public class SummaryServiceImpl implements SummaryService {
 
         // 텍스트 파일 경로에서 실제 텍스트 내용을 불러오는 로직
         String text;
-        // ✅ 파일 경로가 유효한지 확인하고, 유효하지 않으면 즉시 에러 발생
-        if (transcript.getTranscriptPath() == null || transcript.getTranscriptPath().isEmpty()) {
-            System.err.println("❌ AudioTranscript has no file path for URL: " + originalUrl);
-            throw new RuntimeException("No transcript file path found for URL: " + originalUrl + ". Summary failed.");
-        }
+        if (summaryType == SummaryType.TIMELINE) {
+            String videoId = transcript.getVideo().getYoutubeId();
+            String lang = transcript.getVideo().getOriginalLanguageCode();
+            Path vttPath = Paths.get("src", "main", "resources", "textfiles", videoId + "." + lang + ".vtt");
 
-        try {
-            Path filePath = Paths.get(transcript.getTranscriptPath()); // AudioTranscript에서 파일 경로를 가져옴
-            text = Files.readString(filePath, StandardCharsets.UTF_8); // 파일에서 텍스트 읽기
-            System.out.println("✅ Transcript text loaded from file path: " + filePath);
-        } catch (IOException e) {
-            System.err.println("❌ Error reading transcript file from path: " + transcript.getTranscriptPath() + " - " + e.getMessage());
-            throw new RuntimeException("Failed to read transcript text from file.", e);
-        }
-        // 이전 `else` 블록 (textContent 사용 fallback)이 제거됨.
+            try {
+                if (Files.exists(vttPath)) {
+                    text = Files.readString(vttPath, StandardCharsets.UTF_8);
+                    System.out.println("✅ TIMELINE summary: Loaded VTT file from: " + vttPath);
+                } else {
+                    // Fallback to cleaned text if VTT not found.
+                    Path cleanedPath = Paths.get(transcript.getTranscriptPath());
+                    System.err.println("⚠️ VTT file not found for TIMELINE summary at " + vttPath + ". Falling back to cleaned text from " + cleanedPath);
+                    text = Files.readString(cleanedPath, StandardCharsets.UTF_8);
+                }
+            } catch (IOException e) {
+                System.err.println("❌ Error reading transcript file for TIMELINE summary: " + e.getMessage());
+                throw new RuntimeException("Failed to read transcript file for TIMELINE summary.", e);
+            }
+        } else {
+            // ✅ 파일 경로가 유효한지 확인하고, 유효하지 않으면 즉시 에러 발생
+            if (transcript.getTranscriptPath() == null || transcript.getTranscriptPath().isEmpty()) {
+                System.err.println("❌ AudioTranscript has no file path for URL: " + originalUrl);
+                throw new RuntimeException("No transcript file path found for URL: " + originalUrl + ". Summary failed.");
+            }
 
+            try {
+                Path filePath = Paths.get(transcript.getTranscriptPath()); // AudioTranscript에서 파일 경로를 가져옴
+                text = Files.readString(filePath, StandardCharsets.UTF_8); // 파일에서 텍스트 읽기
+                System.out.println("✅ Transcript text loaded from file path: " + filePath);
+            } catch (IOException e) {
+                System.err.println("❌ Error reading transcript file from path: " + transcript.getTranscriptPath() + " - " + e.getMessage());
+                throw new RuntimeException("Failed to read transcript text from file.", e);
+            }
+        }
         Long transcriptId = transcript.getId();    // 찾은 transcript에서 ID 추출
 
         System.out.println("✅ Transcript found/processed. ID: " + transcriptId);
 
         // 2. GPT 요약용 프롬프트 생성 (기존 로직)
         String prompt = buildPrompt(userPrompt, summaryType);
-        String fullPrompt = prompt + "\n\n" + text;
 
-        // 텍스트가 너무 길면 청크로 나누기 (기존 로직)
-        List<String> chunks = splitTextIntoChunks(text, 1000);
-        List<String> partialSummaries = new ArrayList<>();
+        String finalSummary;
+        if (summaryType == SummaryType.TIMELINE) {
+            System.out.println("✅ TIMELINE summary: Bypassing chunking and calling AI with full VTT content.");
+            finalSummary = callOpenAISummary(prompt + "\n\n" + text);
+        } else {
+            // 텍스트가 너무 길면 청크로 나누기 (기존 로직)
+            List<String> chunks = splitTextIntoChunks(text, 1000);
+            List<String> partialSummaries = new ArrayList<>();
 
-        for (String chunk : chunks) {
-            partialSummaries.add(callOpenAISummary(prompt + "\n\n" + chunk));
+            for (String chunk : chunks) {
+                partialSummaries.add(callOpenAISummary(prompt + "\n\n" + chunk));
+            }
+
+            // 2. 전체 요약 생성 (기존 로직)
+            String finalSummaryPrompt = "다음은 각 부분에 대한 요약입니다. 이 요약들을 하나로 합쳐서 자연스러운 최종 요약을 만들어주세요:\n\n" + String.join("\n---\n", partialSummaries);
+            finalSummary = callOpenAISummary(finalSummaryPrompt);
         }
-
-        // 2. 전체 요약 생성 (기존 로직)
-        String finalSummary = callOpenAISummary(prompt + "\n\n" + String.join("\n", partialSummaries));
         System.out.println("✅ Final Summary Generated. Length: " + finalSummary.length());
 
         // 3. Summary 저장 (기존 로직, userId 및 transcript 사용)
@@ -144,12 +169,11 @@ public class SummaryServiceImpl implements SummaryService {
         System.out.println("✅ UserLibrary Saved. User ID: " + user.getId() + ", Summary ID: " + saved.getId());
 
         // 5. LLM 기반 해시태그 추출 및 저장 (기존 로직)
-        List<String> hashtags = extractTagsWithLLM(finalSummary);
+        List<String> hashtags = extractTagsWithLLM(finalSummary).stream().distinct().toList();
         System.out.println("✅ Hashtags Extracted: " + hashtags);
 
         for (String keyword : hashtags) {
-            Tag tag = tagRepository.findByTagName(keyword)
-                    .orElseGet(() -> tagRepository.save(Tag.builder().tagName(keyword).build()));
+            Tag tag = findOrCreateTag(keyword);
 
             boolean exists = userLibraryTagRepository
                     .findByUserLibraryAndTag(library, tag)
@@ -157,7 +181,7 @@ public class SummaryServiceImpl implements SummaryService {
 
             if (!exists) {
                 UserLibraryTag userLibraryTag = UserLibraryTag.builder()
-                        .id(new UserLibraryTagId(user.getId(), tag.getId()))
+                        .id(new UserLibraryTagId(library.getId(), tag.getId()))
                         .userLibrary(library)
                         .tag(tag)
                         .build();
@@ -204,29 +228,58 @@ public class SummaryServiceImpl implements SummaryService {
     // 지침 + 프롬프트 템플릿을 반환 (text는 포함 X)
     private String buildPrompt(String userPrompt, SummaryType summaryType) {
         String formatInstruction = switch (summaryType) {
-            case BASIC -> "전체 내용을 한눈에 이해할 수 있게 요약해줘. 길이는 4~5문장 이내로 해줘.";
-            case THREE_LINE -> "가장 중요한 내용을 3줄로 요약해줘. 각 줄은 한 문장으로 해줘.";
-            case KEYWORD -> "핵심 키워드를 3~5개 뽑아줘. 각 키워드는 간단한 설명과 함께 적어줘.";
-            case TIMELINE -> "시간 순서대로 사건이나 내용 흐름을 정리해줘. 각 항목은 간결한 문장으로 정리해줘.";
+            case BASIC -> """
+                    **🔹 기본 요약 (BASIC)**
+                    - 자연스러운 단락 형태의 요약
+                    - 마크다운 문단 스타일 유지 (줄바꿈은 문단 단위)
+                    """;
+            case THREE_LINE -> """
+                    **🔹 3줄 요약 (THREE_LINE)**
+                    - 핵심 내용을 세 문장으로 나눠 줄바꿈하여 출력
+                    - 각 문장은 줄바꿈(\\n)으로 구분
+                    - 예:
+                      첫 번째 핵심 내용 요약.\\n
+                      두 번째 핵심 내용 요약.\\n
+                      세 번째 핵심 내용 요약.
+                    """;
+            case KEYWORD -> """
+                    **🔹 키워드 요약 (KEYWORD)**
+                    - 상단에 관련 핵심 키워드 3~5개 나열 (쉼표로 구분)
+                    - 그 아래 일반 요약 문단 출력
+                    - 요약 문단 안에 등장하는 키워드는 굵은 글씨 처리
+                    - 마크다운 예시:
+                      **Keywords:** AI, 요약, 학습, 유튜브, 자동화
+
+                      본 영상은 **AI** 기술을 활용해 **요약**을 자동으로 수행하며, 사용자의 **학습** 효율을 높이는 **자동화**된 구조를 설명합니다.
+                    """;
+            case TIMELINE -> """
+                    **🔹 타임라인 요약 (TIMELINE)**
+                    - 아래 WEBVTT 형식 스크립트의 내용을 **타임스탬프(예: 00:00:15.480 --> 00:00:17.440)를 기준으로** 시간의 흐름에 따라 요약해주세요.
+                    - 각 타임스탬프의 내용은 해당 시간대의 핵심적인 내용을 한 문장으로 간결하게 요약해야 합니다.
+                    - **WEBVTT 헤더나 NOTE, STYLE 같은 메타데이터는 무시하고, 타임스탬프와 대화 내용만 사용해주세요.**
+                    - 최종 결과는 마크다운 목록 형식으로 정리해주세요.
+                    - 형식 예시:
+                      - **00:15** - 선루프 틸팅 기능 설명
+                      - **01:05** - 김서림 방지 버튼 사용법
+                      - **01:50** - 유막 제거의 중요성 언급
+                    """;
         };
 
         return String.format("""
-        당신은 유튜브 영상 자막을 분석하여 사용자의 학습 목적에 맞는 요약을 생성하는 전문가입니다.
+        아래 텍스트를 기반으로 요약을 생성해주세요.
+        요약은 요약 유형(SummaryType) 에 따라 각각 다른 포맷으로 마크다운 형식으로 출력해 주세요.
+        요약 텍스트는 학습 보조 목적이며, 사용자가 읽기 편하고 시각적으로 명확하게 전달될 수 있도록 구성해주세요.
 
-        아래는 사용자의 학습 목적입니다:
-        \"%s\"
+        사용자 맞춤 요청: "%s"
 
-        요약은 다음 지침을 따라주세요:
-        - 문장은 짧고 명확하게 작성할 것
-        - 불필요한 반복은 제외할 것
-        - 중요한 개념이나 주장 위주로 요약할 것
-        - %s
+        %s
+
+        ⚠️ 출력은 반드시 마크다운 스타일을 지켜주세요.
+        ⚠️ 불필요한 문장이나 형식은 생략하고, 위의 포맷만 충실히 반영해주세요.
 
         다음은 유튜브 영상의 전체 스크립트입니다:
         ----
-        {TEXT}
-        ----
-        """, userPrompt.trim(), formatInstruction);
+        """, userPrompt, formatInstruction);
     }
 
     // LLM 기반 해시태그 추출
@@ -241,13 +294,14 @@ public class SummaryServiceImpl implements SummaryService {
         );
         String baseTagList = String.join(", ", baseTags);
         String prompt = String.format("""
-다음 내용을 보고 핵심 해시태그 3개를 추출해줘.
-아래 기본 태그 중 선택하되, 없으면 자유롭게 생성해도 돼.
+다음 내용을 대표하는 핵심 해시태그 3개를 추출해줘.
+**반드시 아래 기본 태그 목록 안에서만 골라야 해.**
 응답 형식은 해시태그 이름만 쉼표로 구분해서 줘. 예시: 투자, 인공지능, 윤리
 
-기본 태그: %s
+[기본 태그 목록]
+%s
 
-내용:
+[요약 내용]
 %s
 """, baseTagList, summaryText);
 
@@ -302,7 +356,7 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
                 .call()
                 .content();
         System.out.println(">>>> AI Quiz Response:\n" + aiResponseQuiz);
-        // 4) “Q:”가 시작되는 부분을 기준으로 분리 (Q:를 블록에 그대로 남김)
+        // 4) "Q:"가 시작되는 부분을 기준으로 분리 (Q:를 블록에 그대로 남김)
         String[] rawBlocks = aiResponseQuiz.split("(?m)(?=Q:)");
         List<String> quizBlocks = new ArrayList<>();
         for (String b : rawBlocks) {
@@ -322,13 +376,13 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
         // 6) 블록별로 Question + AnswerOption 생성
         for (String block : quizBlocks) {
             try {
-                // “Q:”부터 시작하므로, 첫 줄에서 질문을 꺼낸다.
+                // "Q:"부터 시작하므로, 첫 줄에서 질문을 꺼낸다.
                 String[] lines = block.split("\\r?\\n");
                 if (lines.length < 2) {
                     System.out.println("⚠️ 블록 라인 부족: " + block);
                     continue;
                 }
-                // 6-1) 질문 추출: 첫 번째 줄에서 “Q:” 이후 부분
+                // 6-1) 질문 추출: 첫 번째 줄에서 "Q:" 이후 부분
                 String firstLine = lines[0].trim();
                 String questionText;
                 if (firstLine.startsWith("Q:")) {
@@ -349,9 +403,9 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
                         continue;
                     }
 
-                    // 보기가 “숫자. 텍스트” 형태인지 확인
+                    // 보기가 "숫자. 텍스트" 형태인지 확인
                     if (line.matches("^[0-9]+\\.\\s+.*")) {
-                        // “1. 자연어 처리” → “자연어 처리”
+                        // "1. 자연어 처리" → "자연어 처리"
                         String optText = line.replaceFirst("^[0-9]+\\.\\s*", "");
                         AnswerOption opt = AnswerOption.builder()
                                 .optionText(optText)
@@ -363,7 +417,7 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
                                 .build();
                         options.add(opt);
                     }
-                    // 정답이 “정답: 숫자” 형태인지 확인
+                    // 정답이 "정답: 숫자" 형태인지 확인
                     else if (line.startsWith("정답")) {
                         String digits = line.replaceAll("[^0-9]", "");
                         if (!digits.isEmpty()) {
@@ -485,10 +539,10 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
     }
 
     @Override
-    public String callOpenAISummary(String text) {
+    public String callOpenAISummary(String fullPrompt) {
         // 기존 요약용 AI 호출
         return chatClient.prompt()
-                .user("다음 내용을 바탕으로 요약해줘:\n" + text)
+                .user(fullPrompt)
                 .call()
                 .content();
     }
@@ -522,5 +576,10 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
     private boolean isStopword(String word) {
         return List.of("그리고", "하지만", "또한", "이", "그", "저", "있는", "한다", "였다", "하는", "되어", "으로")
                 .contains(word);
+    }
+
+    private synchronized Tag findOrCreateTag(String tagName) {
+        return tagRepository.findByTagName(tagName)
+                .orElseGet(() -> tagRepository.save(Tag.builder().tagName(tagName).build()));
     }
 }

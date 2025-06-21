@@ -40,10 +40,7 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-//    @Bean
-//    public PasswordEncoder passwordEncoder() {
-//        return new BCryptPasswordEncoder();
-//    }
+    // PasswordEncoder는 AppConfig에서 정의됨
 
     @Bean
     public JwtLoginAuthenticationFilter jwtLoginAuthenticationFilter(AuthenticationManager authManager) {
@@ -60,7 +57,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5174")); // 프론트엔드 주소
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173")); // 프론트엔드 주소
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type")); // "Authorization" 헤더 추가
         configuration.setAllowCredentials(true); // 쿠키 허용
@@ -76,7 +73,11 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(sess -> sess
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // OAuth2를 위해 필요시 세션 생성 허용
+                        .maximumSessions(1) // 동시 세션 1개로 제한
+                        .maxSessionsPreventsLogin(false) // 새 로그인 시 기존 세션 무효화
+                )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 
@@ -87,11 +88,14 @@ public class SecurityConfig {
                                 "/api/auth/login",            // 로그인
                                 "/api/auth/register",         // 회원가입
                                 "/oauth2/**",                 // OAuth2 관련 엔드포인트
+                                "/login/oauth2/code/**",      // OAuth2 콜백 엔드포인트
+                                "/api/auth/google",           // 구글 로그인 API
                                 "/swagger-ui/**",             // Swagger UI
                                 "/v3/api-docs/**",            // Swagger API 문서
                                 "/swagger-resources/**",      // Swagger 리소스
                                 "/api-docs/**",               // API 문서 (일반적으로 v3/api-docs 포함)
-                                "/webjars/**"                 // Swagger Webjars
+                                "/webjars/**",                // Swagger Webjars
+                                "/error"                      // 에러 페이지
                         ).permitAll()
                         .requestMatchers("/api/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
                         .anyRequest().authenticated()
@@ -113,6 +117,12 @@ public class SecurityConfig {
 
         // OAuth2 로그인 설정
         http.oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(authorization -> authorization
+                        .baseUri("/oauth2/authorization") // OAuth2 인증 시작 URI
+                )
+                .redirectionEndpoint(redirection -> redirection
+                        .baseUri("/login/oauth2/code/*") // OAuth2 콜백 URI
+                )
                 .successHandler(oAuth2LoginSuccessHandler)
                 .failureHandler(oAuth2LoginFailureHandler)
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))

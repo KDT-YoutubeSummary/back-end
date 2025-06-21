@@ -46,21 +46,6 @@ public class UserService {
         return jwtProvider.generateToken(user.getId(), user.getEmail());
     }
 
-    public User registerUser(RegisterRequestDTO dto) {
-        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
-        }
-
-        User user = User.builder()
-                .userName(dto.getUserName())
-                .email(dto.getEmail())
-                .passwordHash(dto.getPassword()) // NOTE: 실제 운영 시 해싱 필요
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        return userRepository.save(user);
-    }
-
     // 사용자 정보 조회
     public UserInfoDTO getUserInfo(Long userId) {
         User user = userRepository.findById(userId)

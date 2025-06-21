@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import com.kdt.yts.YouSumback.exception.UserAlreadyExistsException;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -42,10 +43,10 @@ public class AuthService {
     public User register(RegisterRequestDTO request) {
         // 1) username/email 중복 체크: UserRepository에 findByUsername, findByEmail 메서드를 구현해야 합니다.
         if (userRepository.existsByUserName(request.getUserName())) {
-            throw new RuntimeException("이미 사용 중인 사용자명입니다.");
+            throw new UserAlreadyExistsException("이미 사용 중인 사용자명입니다.");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("이미 사용 중인 이메일입니다.");
+            throw new UserAlreadyExistsException("이미 사용 중인 이메일입니다.");
         }
 
         // 2) 비밀번호 암호화
@@ -62,7 +63,7 @@ public class AuthService {
             return userRepository.save(newUser);
         } catch (DataIntegrityViolationException e) {
             // 예기치 않은 DB 제약 위반(예: race condition으로 동시에 중복 요청이 들어왔을 때) 처리
-            throw new RuntimeException("회원가입 처리 중 오류가 발생했습니다.", e);
+            throw new UserAlreadyExistsException("회원가입 처리 중 오류가 발생했습니다.");
         }
     }
 
