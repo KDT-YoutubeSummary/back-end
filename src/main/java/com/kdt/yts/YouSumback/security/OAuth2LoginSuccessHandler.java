@@ -7,12 +7,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets; // ✨ 1. 인코딩을 위한 charset 임포트
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
@@ -31,29 +33,45 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             Object principal = authentication.getPrincipal();
             log.info("Principal 타입: {}", principal.getClass().getName());
             
-            if (!(principal instanceof UserPrincipal)) {
-                throw new RuntimeException("Expected UserPrincipal but got: " + principal.getClass().getName());
+            final String email;
+            final String name;
+            
+            // OAuth2User 또는 OidcUser에서 정보 추출
+            if (principal instanceof UserPrincipal) {
+                UserPrincipal userPrincipal = (UserPrincipal) principal;
+                email = userPrincipal.getEmail();
+                if (userPrincipal.getAttributes() != null) {
+                    name = (String) userPrincipal.getAttributes().get("name");
+                } else {
+                    name = null;
+                }
+            } else if (principal instanceof OidcUser) {
+                OidcUser oidcUser = (OidcUser) principal;
+                email = oidcUser.getEmail();
+                name = oidcUser.getFullName();
+                log.info("OidcUser에서 정보 추출: email={}, name={}", email, name);
+            } else if (principal instanceof OAuth2User) {
+                OAuth2User oAuth2User = (OAuth2User) principal;
+                email = (String) oAuth2User.getAttributes().get("email");
+                name = (String) oAuth2User.getAttributes().get("name");
+                log.info("OAuth2User에서 정보 추출: email={}, name={}", email, name);
+            } else {
+                throw new RuntimeException("지원하지 않는 Principal 타입: " + principal.getClass().getName());
             }
             
-            UserPrincipal userPrincipal = (UserPrincipal) principal;
-            log.info("사용자 정보 추출 완료: {}", userPrincipal.getEmail());
+            if (email == null || email.isEmpty()) {
+                throw new RuntimeException("이메일 정보를 가져올 수 없습니다.");
+            }
+            
+            log.info("사용자 정보 추출 완료: email={}, name={}", email, name);
 
             // 2. 사용자 조회 또는 생성
-            User user = userRepository.findByEmail(userPrincipal.getEmail())
+            User user = userRepository.findByEmail(email)
                     .orElseGet(() -> {
-                        log.info("신규 사용자 생성: {}", userPrincipal.getEmail());
+                        log.info("신규 사용자 생성: {}", email);
                         User newUser = new User();
-                        newUser.setEmail(userPrincipal.getEmail());
-                        
-                        // OAuth2 attributes에서 사용자 이름 추출
-                        String userName = "Google User";
-                        if (userPrincipal.getAttributes() != null) {
-                            String name = (String) userPrincipal.getAttributes().get("name");
-                            if (name != null && !name.isEmpty()) {
-                                userName = name;
-                            }
-                        }
-                        newUser.setUserName(userName);
+                        newUser.setEmail(email);
+                        newUser.setUserName(name != null ? name : "Google User");
                         newUser.setPasswordHash(""); // OAuth 사용자는 비밀번호 없음
                         return userRepository.save(newUser);
                     });
@@ -81,12 +99,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         } catch (Exception e) {
             log.error("OAuth2 로그인 성공 후 처리 중 오류 발생!", e);
-            // 에러 페이지로 리다이렉트하지 말고 직접 프론트엔드 에러 페이지로 리다이렉트
+            // 에러 페이지로 리다이렉트
             String errorUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/login")
                     .queryParam("error", "oauth_processing_failed")
-                    .queryParam("message", "OAuth2 processing failed")
+                    .queryParam("message", "OAuth2 processing failed: " + e.getMessage())
                     .build()
-                    .encode() // URL 인코딩 추가
+                    .encode(StandardCharsets.UTF_8)
                     .toUriString();
             response.sendRedirect(errorUrl);
         }
