@@ -30,6 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // ✅ 인증 예외 처리할 경로들
         if (path.startsWith("/api/auth/login")
                 || path.startsWith("/api/auth/register")
+                || path.startsWith("/api/recommendations")  // 추천 API 경로 추가
                 || path.startsWith("/api-docs/swagger-config")
                 || path.startsWith("/oauth2")
                 || path.startsWith("/swagger-ui")

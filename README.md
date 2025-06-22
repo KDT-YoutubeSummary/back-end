@@ -19,16 +19,18 @@ OpenAI의 Whisper와 GPT API를 활용하여 유튜브 영상을 자동으로 �
 - **개인화 서비스**: 사용자 맞춤형 영상 추천 및 학습 관리
 - **지속적 학습**: 리마인드 알림을 통한 체계적인 복습 지원
 
-## ✨ 핵심 기능 (Key Features)
+## 🎯 핵심 기능 (Core Features)
 
 ### 🎬 영상 처리 및 요약
-- **Whisper STT**: 유튜브 영상 오디오를 텍스트로 변환
-- **다양한 요약 형식**: 기본 요약, 3줄 요약, 키워드 요약, 타임라인 요약
-- **목적별 맞춤 요약**: 사용자가 지정한 목적에 따른 개인화된 요약 생성
-- **자동 해시태그 생성**: AI 기반 콘텐츠 분류 및 태그 자동 생성
+- **자동 텍스트 추출**: Whisper API를 활용한 음성-텍스트 변환
+- **지능형 요약**: GPT API 기반 4가지 요약 타입 제공
+  - 기본 요약 (BASIC): 자연스러운 단락 형태
+  - 3줄 요약 (THREE_LINE): 핵심 내용을 3문장으로 압축
+  - 키워드 요약 (KEYWORD): 주요 키워드와 함께 요약
+  - 타임라인 요약 (TIMELINE): 시간순 구조화된 요약
 
-### 📚 개인 학습 관리
-- **사용자 라이브러리**: 요약된 콘텐츠 저장 및 개인 메모 추가
+### 📚 개인화된 학습 관리
+- **요약 저장소**: 요약된 콘텐츠 저장 및 개인 메모 추가
 - **태그 기반 검색**: 해시태그를 활용한 효율적인 콘텐츠 검색
 - **학습 통계 시각화**: 태그별 학습 현황 및 활동 로그 분석
 
@@ -205,7 +207,7 @@ sequenceDiagram
     end
 ```
 
-#### 4. 라이브러리 관리 및 리마인드 플로우
+#### 4. 요약 저장소 관리 및 리마인드 플로우
 ```mermaid
 sequenceDiagram
     participant U as User
@@ -215,44 +217,50 @@ sequenceDiagram
     participant D as Database<br/>(MySQL)
     participant E as Email Service<br/>(SMTP)
 
-    Note over U,E: 라이브러리 관리 및 리마인드 플로우
+    Note over U,E: 요약 저장소 관리 및 리마인드 플로우
 
     rect rgb(240, 255, 240)
-        Note over U,D: 라이브러리 저장
+        Note over U,D: 요약 저장소 저장
         U->>F: 요약 저장 + 개인 메모
-        F->>A: POST /api/libraries
-        A->>D: 사용자 라이브러리 저장
+        F->>A: POST /api/summary-archives
+        A->>D: 요약 저장소 저장
         A->>D: 태그 기반 자동 분류
         A-->>F: 저장 완료 응답
         F-->>U: 저장 성공 알림
     end
 
     rect rgb(255, 240, 255)
-        Note over U,E: 리마인드 설정 및 알림
-        U->>F: 리마인드 설정 (일간/주간)
-        F->>A: POST /api/reminders
-        A->>D: 리마인드 스케줄 저장
-        A-->>F: 설정 완료 응답
+        Note over U,D: 요약 저장소 조회 및 검색
+        U->>F: 저장된 요약 목록 조회
+        F->>A: GET /api/summary-archives
+        A->>D: 사용자별 요약 저장소 조회
+        A-->>F: 요약 목록 + 태그 정보
+        F-->>U: 요약 저장소 목록 표시
         
-        Note over A,E: 스케줄러에 의한 자동 실행
-        A->>D: 리마인드 대상 조회
-        A->>E: 이메일 발송 요청
-        E-->>U: 복습 알림 이메일
+        U->>F: 태그/제목으로 검색
+        F->>A: GET /api/summary-archives/search
+        A->>D: 검색 조건별 필터링
+        A-->>F: 검색 결과 반환
+        F-->>U: 검색된 요약 목록
     end
 
-    rect rgb(240, 240, 255)
-        Note over U,O: AI 기반 영상 추천
-        U->>F: 추천 영상 요청
-        F->>A: GET /api/recommendations/users/{id}
-        A->>D: 사용자 학습 이력 조회
-        A->>O: GPT API 추천 요청
-        Note right of O: 해시태그 기반<br/>유사 콘텐츠 추천
-        O-->>A: 추천 영상 목록
-        A->>D: 추천 결과 저장
-        A-->>F: 추천 영상 응답
-        F-->>U: 개인화된 추천 목록
+    rect rgb(255, 255, 240)
+        Note over U,E: 리마인드 설정 및 알림
+        U->>F: 리마인드 알림 설정
+        F->>A: POST /api/reminders
+        A->>D: 리마인드 정보 저장
+        A-->>F: 설정 완료 응답
+        F-->>U: 리마인드 설정 완료
+        
+        Note over A,E: 스케줄러 작동 (매분 실행)
+        A->>D: 발송 대상 리마인더 조회
+        A->>E: 이메일 발송 요청
+        E-->>U: 복습 알림 이메일 전송
+        A->>D: 발송 기록 업데이트
     end
 ```
+
+이 플로우는 사용자가 요약을 개인 아카이브에 저장하고, 태그를 통해 체계적으로 관리하며, 정기적인 리마인드를 통해 지속적인 학습을 지원하는 과정을 보여줍니다.
 
 ## 📁 폴더 구조 (Project Structure)
 
@@ -266,7 +274,7 @@ src/main/java/com/kdt/yts/YouSumback/
 │   ├── AuthController.java       # 인증 관련
 │   ├── SummaryController.java    # 요약 기능
 │   ├── QuizController.java       # 퀴즈 기능
-│   ├── UserLibraryController.java # 사용자 라이브러리
+│   ├── SummaryArchiveController.java # 요약 저장소
 │   ├── ReminderController.java   # 리마인드 기능
 │   └── VideoRecommendationController.java # 추천 기능
 ├── 📁 model/
@@ -275,7 +283,7 @@ src/main/java/com/kdt/yts/YouSumback/
 │   │   ├── Video.java
 │   │   ├── Summary.java
 │   │   ├── Quiz.java
-│   │   └── UserLibrary.java
+│   │   └── SummaryArchive.java
 │   └── 📁 dto/                  # 데이터 전송 객체
 │       ├── 📁 request/
 │       └── 📁 response/
@@ -283,7 +291,7 @@ src/main/java/com/kdt/yts/YouSumback/
 │   ├── AuthService.java
 │   ├── SummaryServiceImpl.java
 │   ├── QuizServiceImpl.java
-│   ├── UserLibraryService.java
+│   ├── SummaryArchiveService.java
 │   └── 📁 client/              # 외부 API 클라이언트
 │       ├── OpenAIClient.java
 │       └── YouTubeClient.java

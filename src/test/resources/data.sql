@@ -1,7 +1,7 @@
--- H2 DB Compatible SQL for testing
--- Using all caps for table/column names and no quotes for better compatibility.
+-- src/test/resources/data.sql
+-- Test data for H2
 
--- 사용자 (비밀번호: password)
+-- 사용자
 INSERT INTO USER (USER_ID, USER_NAME, EMAIL, PASSWORD, ROLE) VALUES
 (1, 'testuser', 'test@example.com', '$2a$10$f.wS3yV.n6c5G5w5q8r.W.VbV.VbV.VbV.VbV.VbV.VbV.Vb', 'USER'),
 (10, 'testuser10', 'test10@example.com', '$2a$10$f.wS3yV.n6c5G5w5q8r.W.VbV.VbV.VbV.VbV.VbV.VbV.Vb', 'USER');
@@ -12,10 +12,10 @@ INSERT INTO VIDEO (VIDEO_ID, YOUTUBE_ID, TITLE, UPLOADER_NAME, ORIGINAL_URL, PUB
 (10, 'testVideoId10', 'Test Video Title 10', 'Test Channel 10', 'http://youtu.be/testVideoId10', CURRENT_TIMESTAMP, 'en', 120);
 
 -- 요약
-INSERT INTO SUMMARY (SUMMARY_ID, VIDEO_ID, CONTENT, TYPE) VALUES
-(1, 1, 'This is a test summary content.', 'BASIC'),
-(10, 10, 'This is a test summary for search.', 'BASIC'),
-(11, 10, 'This is a summary for quiz.', 'BASIC');
+INSERT INTO SUMMARY (SUMMARY_ID, VIDEO_ID, CONTENT, TYPE, USER_ID) VALUES
+(1, 1, 'This is a test summary content.', 'BASIC', 1),
+(10, 10, 'This is a test summary for search.', 'BASIC', 10),
+(11, 10, 'This is a summary for quiz.', 'BASIC', 10);
 
 -- 태그
 INSERT INTO TAG (TAG_ID, TAG_NAME) VALUES
@@ -50,4 +50,4 @@ INSERT INTO ANSWER_OPTION (OPTION_ID, QUESTION_ID, TEXT, IS_CORRECT) VALUES
 
 -- 영상 추천
 INSERT INTO VIDEO_RECOMMENDATION (RECOMMENDATION_ID, USER_ID, VIDEO_ID, REASON, CREATED_AT, IS_DELETED) VALUES
-(10, 10, 10, 'Because you are testing', CURRENT_TIMESTAMP, FALSE);
+(10, 10, 10, 'Because you are testing', CURRENT_TIMESTAMP, FALSE); 

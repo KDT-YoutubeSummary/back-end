@@ -57,9 +57,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173")); // 프론트엔드 주소
+        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // 모든 오리진 허용 (개발용)
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type")); // "Authorization" 헤더 추가
+        configuration.setAllowedHeaders(Arrays.asList("*")); // 모든 헤더 허용
         configuration.setAllowCredentials(true); // 쿠키 허용
         configuration.setMaxAge(3600L); // Pre-flight 캐싱 시간 (Optional)
 
@@ -87,15 +87,23 @@ public class SecurityConfig {
                                 // 인증없이 허용할 경로들
                                 "/api/auth/login",            // 로그인
                                 "/api/auth/register",         // 회원가입
+                                "/api/recommendations/**",    // 추천 API 경로 추가
                                 "/oauth2/**",                 // OAuth2 관련 엔드포인트
                                 "/login/oauth2/code/**",      // OAuth2 콜백 엔드포인트
                                 "/api/auth/google",           // 구글 로그인 API
                                 "/swagger-ui/**",             // Swagger UI
+                                "/swagger-ui.html",           // Swagger UI HTML
+                                "/swagger-ui/index.html",     // Swagger UI Index
                                 "/v3/api-docs/**",            // Swagger API 문서
+                                "/v3/api-docs",               // Swagger API 문서 루트
+                                "/api-docs/**",               // API 문서
+                                "/api-docs",                  // API 문서 루트 (수정됨)
                                 "/swagger-resources/**",      // Swagger 리소스
-                                "/api-docs/**",               // API 문서 (일반적으로 v3/api-docs 포함)
+                                "/swagger-config",            // Swagger 설정
                                 "/webjars/**",                // Swagger Webjars
-                                "/error"                      // 에러 페이지
+                                "/actuator/**",               // Spring Boot Actuator
+                                "/error",                     // 에러 페이지
+                                "/favicon.ico"                // 파비콘
                         ).permitAll()
                         .requestMatchers("/api/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
                         .anyRequest().authenticated()

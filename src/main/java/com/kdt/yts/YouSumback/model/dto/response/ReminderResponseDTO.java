@@ -17,7 +17,7 @@ public class ReminderResponseDTO {
 
     private Long reminderId; // 리마인더 고유 ID
     private Long user_id; // 리마인더를 소유한 사용자 ID
-    private Long userLibraryId; // 리마인더가 연결된 사용자 라이브러리 항목 ID
+    private Long summaryArchiveId; // 리마인더가 연결된 요약 저장소 항목 ID
     private ReminderType reminderType; // 리마인더 타입
     private Integer frequencyInterval; // 반복 간격
     private Integer dayOfWeek; // 주중 요일
@@ -32,7 +32,7 @@ public class ReminderResponseDTO {
     public ReminderResponseDTO(Reminder reminder) {
         this.reminderId = reminder.getId();
         this.user_id = reminder.getUser() != null ? reminder.getUser().getId() : null;
-        this.userLibraryId = reminder.getUserLibrary() != null ? reminder.getUserLibrary().getId() : null;
+        this.summaryArchiveId = reminder.getSummaryArchive() != null ? reminder.getSummaryArchive().getId() : null;
         this.reminderType = reminder.getReminderType();
         this.frequencyInterval = reminder.getFrequencyInterval();
         this.dayOfWeek = reminder.getDayOfWeek();

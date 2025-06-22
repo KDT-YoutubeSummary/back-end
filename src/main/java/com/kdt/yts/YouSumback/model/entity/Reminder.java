@@ -26,8 +26,8 @@ public class Reminder {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_library_id", nullable = false)
-    private UserLibrary userLibrary;
+    @JoinColumn(name = "summary_archive_id", nullable = false)
+    private SummaryArchive summaryArchive;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "reminder_type", nullable = false, length = 50) // 리마인더의 반복 타입 (예: ONE_TIME, DAILY, WEEKLY 등)

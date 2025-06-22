@@ -54,24 +54,25 @@ CREATE TABLE `summary`(
                      CONSTRAINT fk_summary_audio_transcript FOREIGN KEY (transcript_id) REFERENCES audio_transcript(transcript_id) ON DELETE CASCADE
 );
 
--- 사용자 라이브러리 (UserLibrary) 테이블
-CREATE TABLE `user_library` (
-                     user_library_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
-                     user_id INT NOT NULL, -- BIGINT -> INT
-                     summary_id INT NOT NULL, -- BIGINT -> INT
-                     saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+-- 요약 저장소 (SummaryArchive) 테이블 - 기존 user_library에서 변경
+CREATE TABLE `summary_archive` (
+                     summary_archive_id INT AUTO_INCREMENT PRIMARY KEY,
+                     user_id INT NOT NULL,
+                     summary_id INT NOT NULL,
                      user_notes TEXT,
                      last_viewed_at TIMESTAMP,
-                     CONSTRAINT fk_user_library_user FOREIGN KEY (user_id) REFERENCES `user`(user_id) ON DELETE CASCADE,
-                     CONSTRAINT fk_user_library_summary FOREIGN KEY (summary_id) REFERENCES summary(summary_id) ON DELETE CASCADE,
-                     CONSTRAINT uq_user_library_user_summary UNIQUE (user_id, summary_id)
+                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                     CONSTRAINT fk_summary_archive_user FOREIGN KEY (user_id) REFERENCES `user`(user_id) ON DELETE CASCADE,
+                     CONSTRAINT fk_summary_archive_summary FOREIGN KEY (summary_id) REFERENCES summary(summary_id) ON DELETE CASCADE,
+                     CONSTRAINT uq_summary_archive_user_summary UNIQUE (user_id, summary_id)
 );
 
--- 리마인더 (Reminder) 테이블
+-- 리마인더 (Reminder) 테이블 - summary_archive_id로 변경
 CREATE TABLE `reminder` (
-                          reminder_id INT AUTO_INCREMENT PRIMARY KEY, -- SERIAL -> INT AUTO_INCREMENT
-                          user_id INT NOT NULL, -- BIGINT -> INT
-                          user_library_id INT NOT NULL, -- BIGINT -> INT
+                          reminder_id INT AUTO_INCREMENT PRIMARY KEY,
+                          user_id INT NOT NULL,
+                          summary_archive_id INT NOT NULL,
                           reminder_type VARCHAR(50) NOT NULL,
                           frequency_interval INT DEFAULT 1,
                           day_of_week INT,
@@ -83,7 +84,7 @@ CREATE TABLE `reminder` (
                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                           last_sent_at TIMESTAMP,
                           CONSTRAINT fk_reminder_user FOREIGN KEY (user_id) REFERENCES `user`(user_id) ON DELETE CASCADE,
-                          CONSTRAINT fk_reminder_user_library FOREIGN KEY (user_library_id) REFERENCES user_library(user_library_id) ON DELETE CASCADE
+                          CONSTRAINT fk_reminder_summary_archive FOREIGN KEY (summary_archive_id) REFERENCES summary_archive(summary_archive_id) ON DELETE CASCADE
 );
 
 -- 퀴즈 (Quiz) 테이블
@@ -118,13 +119,13 @@ CREATE TABLE `answer_option` (
                               CONSTRAINT fk_answer_question FOREIGN KEY (question_id) REFERENCES question(question_id) ON DELETE CASCADE
 );
 
--- 사용자 라이브러리 태그 (UserLibraryTag) 연결 테이블
-CREATE TABLE `user_library_tag` (
-                                user_library_id INT NOT NULL, -- BIGINT -> INT
-                                tag_id INT NOT NULL, -- BIGINT -> INT
-                                PRIMARY KEY (user_library_id, tag_id),
-                                CONSTRAINT fk_user_library_tag_user_library FOREIGN KEY (user_library_id) REFERENCES user_library(user_library_id) ON DELETE CASCADE,
-                                CONSTRAINT fk_user_library_tag_tag FOREIGN KEY (tag_id) REFERENCES tag(tag_id) ON DELETE CASCADE
+-- 요약 저장소 태그 (SummaryArchiveTag) 연결 테이블 - 기존 user_library_tag에서 변경
+CREATE TABLE `summary_archive_tag` (
+                                summary_archive_id INT NOT NULL,
+                                tag_id INT NOT NULL,
+                                PRIMARY KEY (summary_archive_id, tag_id),
+                                CONSTRAINT fk_summary_archive_tag_archive FOREIGN KEY (summary_archive_id) REFERENCES summary_archive(summary_archive_id) ON DELETE CASCADE,
+                                CONSTRAINT fk_summary_archive_tag_tag FOREIGN KEY (tag_id) REFERENCES tag(tag_id) ON DELETE CASCADE
 );
 
 -- 영상 추천 (VideoRecommendation) 테이블
@@ -155,41 +156,31 @@ CREATE TABLE `user_activity_log` (
                                  details JSON, -- MySQL에서는 JSONB 대신 JSON
                                  CONSTRAINT fk_user_activity_log_user FOREIGN KEY (user_id) REFERENCES `user`(user_id) ON DELETE CASCADE
 );
-# SHOW DATABASES;
-#
-# USE yousum;
-#
-# SHOW TABLES;
-#
-# SELECT * FROM user;
-#
-# -- 더미 데이터 삽입
+
+-- 더미 데이터 삽입
 -- ✅ 1. 사용자
 INSERT INTO user (user_id, username, email, password_hash) VALUES
     (1, 'test_user', 'test@example.com', 'hashedpassword');
 
 -- ✅ 2. 비디오
 INSERT INTO video (video_id, youtube_id, title, original_url, uploader_name, thumbnail_url, view_count, published_at, duration_seconds, original_language_code) VALUES
-                                                                                                                                                                    (1, 'yt001', 'Test Video', 'https://youtu.be/yt001', 'Uploader A', 'https://img.url', 1000, '2025-06-05 06:33:59', 600, 'en'),
-                                                                                                                                                                    (2, 'yt002', '추천 영상 A', 'https://youtu.be/yt002', 'Uploader B', 'https://img.url/yt002', 2500, '2025-06-05 06:34:23', 300, 'en'),
-                                                                                                                                                                    (3, 'yt999', '강력 추천 영상', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'Uploader X', NULL, 9999, '2025-06-05 06:35:00', 200, 'ko');
+    (101, 'uEBOoH2z0VQ', 'Sample Video Title', 'https://www.youtube.com/watch?v=uEBOoH2z0VQ', 'Sample Channel', 'https://i.ytimg.com/vi/uEBOoH2z0VQ/maxresdefault.jpg', 1000, '2024-01-01 12:00:00', 600, 'ko');
 
--- ✅ 3. 트랜스크립트
+-- ✅ 3. 오디오 트랜스크립트
 INSERT INTO audio_transcript (transcript_id, video_id, youtube_id, transcript_path) VALUES
-    (1, 1, 'yt001', 'C:\workspace\back-end\src\main\resources\textfiles\CFIW0rgYF3Q.txt');
+    (151, 101, 'uEBOoH2z0VQ', 'src/main/resources/textfiles/uEBOoH2z0VQ.txt');
 
 -- ✅ 4. 요약
 INSERT INTO summary (summary_id, user_id, transcript_id, summary_text, user_prompt, language_code, summary_type) VALUES
-                                                                                                                     (1, 1, 1, 'Summary text here.', 'Summarize this', 'en', 'THREE_LINE'),
-                                                                                                                     (201, 1, 1, 'AI 요약 내용', '간단히 요약해줘', 'ko', 'KEYWORD');
+    (201, 1, 151, 'This is a sample summary of the video content.', 'Please summarize this video', 'ko', 'BASIC');
 
--- ✅ 5. 사용자 라이브러리
-INSERT INTO user_library (user_library_id, user_id, summary_id, user_notes, last_viewed_at) VALUES
-    (301, 1, 1, 'Sample note', '2025-06-05 06:33:59');
+-- ✅ 5. 요약 저장소 (기존 user_library)
+INSERT INTO summary_archive (summary_archive_id, user_id, summary_id, user_notes, last_viewed_at) VALUES
+    (301, 1, 201, 'Sample note', '2025-06-05 06:33:59');
 
--- ✅ 6. 리마인더
+-- ✅ 6. 리마인더 (summary_archive_id로 변경)
 INSERT INTO reminder (
-    user_id, user_library_id, reminder_type, frequency_interval, day_of_week, day_of_month,
+    user_id, summary_archive_id, reminder_type, frequency_interval, day_of_week, day_of_month,
     base_datetime_for_recurrence, next_notification_datetime, reminder_note, is_active, created_at, last_sent_at
 ) VALUES (
              1, 301, 'ONE_TIME', 1, NULL, NULL,
@@ -201,8 +192,8 @@ INSERT INTO reminder (
 INSERT INTO tag (tag_id, tag_name) VALUES
                                        (1, '교육'), (2, '기술');
 
--- ✅ 8. 사용자 라이브러리 태그 연결
-INSERT INTO user_library_tag (user_library_id, tag_id) VALUES
+-- ✅ 8. 요약 저장소 태그 연결 (기존 user_library_tag)
+INSERT INTO summary_archive_tag (summary_archive_id, tag_id) VALUES
                                                            (301, 1), (301, 2);
 
 -- ✅ 9. 퀴즈
@@ -219,65 +210,15 @@ INSERT INTO answer_option (
     answer_option_id, question_id, option_text, is_correct,
     transcript_id, summary_text, summary_type, created_at
 ) VALUES
-      (801, 701, '블록체인', FALSE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'THREE_LINE', NOW()),
-      (802, 701, '인공지능', TRUE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'THREE_LINE', NOW()),
-      (803, 701, '클라우드 컴퓨팅', FALSE, 1, 'AI는 데이터를 분석하여 미래를 예측할 수 있습니다.', 'THREE_LINE', NOW()),
-      (804, 702, '기계 학습', TRUE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'KEYWORD', NOW()),
-      (805, 702, '로봇 공학', FALSE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'KEYWORD', NOW()),
-      (806, 702, '양자 컴퓨팅', FALSE, 1, '기계 학습은 AI의 하위 분야로, 패턴 인식을 기반으로 합니다.', 'KEYWORD', NOW());
+      (801, 701, '인공지능', TRUE, 151, 'AI 기술 요약', 'THREE_LINE', '2025-06-05 06:33:59'),
+      (802, 701, '블록체인', FALSE, 151, 'AI 기술 요약', 'THREE_LINE', '2025-06-05 06:33:59'),
+      (803, 702, '머신러닝', TRUE, 151, 'AI 기술 요약', 'THREE_LINE', '2025-06-05 06:33:59'),
+      (804, 702, '웹 개발', FALSE, 151, 'AI 기술 요약', 'THREE_LINE', '2025-06-05 06:33:59');
 
--- ✅ 12. 사용자 활동 로그
-INSERT INTO user_activity_log (log_id, user_id, activity_type, target_entity_type, target_entity_id_str, target_entity_id_int, activity_detail, details) VALUES
-                                                                                                                                                             (1, 1, 'CREATE_SUMMARY', 'summary', NULL, 1, '사용자가 요약을 생성함', '{"summary_id": 1}'),
-                                                                                                                                                             (2, 1, 'SET_REMINDER', 'reminder', NULL, 1, '사용자가 리마인더를 설정함', '{"reminder_id": 1}');
+-- ✅ 12. 영상 추천
+INSERT INTO video_recommendation (recommendation_id, user_id, source_video_id, recommended_video_id, recommendation_reason, is_clicked) VALUES
+    (901, 1, 101, 101, 'Similar content based on AI technology', FALSE);
 
--- ✅ 13. 추천 영상
-INSERT INTO video_recommendation (recommendation_id, user_id, source_video_id, recommended_video_id, recommendation_reason, created_at, is_clicked, clicked_at) VALUES
-                                                                                                                                                                    (1, 1, 1, 2, '관련 주제 기반 추천', '2025-06-05 06:34:23', FALSE, NULL),
-                                                                                                                                                                    (2, 1, NULL, 3, '핵심 주제 기반 추천', '2025-06-05 06:35:00', FALSE, NULL);
-
-# -- 1. 새로운 일회성 리마인더 삽입
-# -- (reminder_id는 AUTO_INCREMENT이므로 명시하지 않거나, 적절히 큰 값을 지정하여 기존 더미와 충돌하지 않게 합니다.)
-# INSERT INTO Reminder (
-#     user_id,
-#     user_library_id,
-#     reminder_type,
-#     frequency_interval,
-#     day_of_week,
-#     day_of_month,
-#     base_datetime_for_recurrence,
-#     next_notification_datetime,
-#     reminder_note,
-#     is_active,
-#     created_at,
-#     last_sent_at
-# ) VALUES (
-#              1,                                   -- 사용자 ID (기존 더미 데이터 1번 사용자)
-#              301,                                 -- 사용자 라이브러리 ID (기존 더미 데이터 301번 라이브러리 항목)
-#              'ONE_TIME',                          -- 알림 타입: 일회성
-#              1,                                   -- 반복 간격: 일회성이므로 의미 없음 (기본값 1)
-#              NULL,                                -- 주간 반복 아님
-#              NULL,                                -- 월간 반복 아님
-#              '2025-06-03 22:30:00',               -- 기준 날짜/시간 (오늘 밤 10시 30분)
-#              '2025-06-03 22:30:00',               -- 다음 알림 예정 시간 (오늘 밤 10시 30분)
-#              '오늘 밤 10시 30분 일회성 테스트 알림', -- 리마인더 메모
-#              TRUE,                                -- 활성화 상태
-#              '2025-06-03 22:20:00',               -- 생성 일시 (현재 시간보다 이전)
-#              NULL                                 -- 마지막 알림 발송 시간 (아직 발송 안됨)
-#          );
-#
-# SELECT * FROM Reminder ORDER BY reminder_id;
-#
-# UPDATE Reminder
-# SET next_notification_datetime = '2025-06-03 22:37:59',
-#     is_active = TRUE,
-#     last_sent_at = NULL
-# WHERE reminder_id = 401;
-#
-# UPDATE Reminder
-# SET next_notification_datetime = DATE_ADD(NOW(), INTERVAL 2 MINUTE), -- NOW() 함수 사용 + 1분 추가
-#     is_active = TRUE,
-#     last_sent_at = NULL
-# WHERE reminder_id = 401;
-#
-# SELECT reminder_id, next_notification_datetime, is_active, last_sent_at FROM Reminder WHERE reminder_id = 401;
+-- ✅ 13. 사용자 활동 로그
+INSERT INTO user_activity_log (user_id, activity_type, target_entity_type, target_entity_id_int, activity_detail, details) VALUES
+    (1, 'SUMMARY_CREATED', 'SUMMARY', 201, '요약 생성 완료', '{"videoTitle": "Sample Video Title", "summaryType": "BASIC"}');

@@ -8,7 +8,7 @@ import com.kdt.yts.YouSumback.exception.ResourceNotFoundException;
 import com.kdt.yts.YouSumback.repository.ReminderRepository;
 import com.kdt.yts.YouSumback.repository.UserActivityLogRepository;
 import com.kdt.yts.YouSumback.repository.UserRepository;
-import com.kdt.yts.YouSumback.repository.UserLibraryRepository;
+import com.kdt.yts.YouSumback.repository.SummaryArchiveRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,7 +29,7 @@ public class ReminderService {
 
     private final ReminderRepository reminderRepository; // 의존성 주입
     private final UserRepository userRepository;
-    private final UserLibraryRepository userLibraryRepository;
+    private final SummaryArchiveRepository summaryArchiveRepository;
     private final EmailService emailService;
     private final UserActivityLogRepository userActivityLogRepository; // 활동 로그 저장소
 
@@ -37,15 +37,15 @@ public class ReminderService {
 
     @Transactional
     public ReminderResponseDTO createReminder(ReminderCreateRequestDTO request) {
-        // 사용자 및 사용자 라이브러리 존재 여부 확인
+        // 사용자 및 요약 저장소 존재 여부 확인
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + request.getUserId()));
-        UserLibrary userLibrary = userLibraryRepository.findById(request.getUserLibraryId())
-                .orElseThrow(() -> new ResourceNotFoundException("UserLibrary not found with ID: " + request.getUserLibraryId()));
+        SummaryArchive summaryArchive = summaryArchiveRepository.findById(request.getSummaryArchiveId())
+                .orElseThrow(() -> new ResourceNotFoundException("SummaryArchive not found with ID: " + request.getSummaryArchiveId()));
 
         Reminder reminder = new Reminder();
         reminder.setUser(user);
-        reminder.setUserLibrary(userLibrary);
+        reminder.setSummaryArchive(summaryArchive);
         reminder.setReminderType(request.getReminderType());
         reminder.setFrequencyInterval(request.getFrequencyInterval() != null ? request.getFrequencyInterval() : 1); // 기본값 1
         reminder.setDayOfWeek(request.getDayOfWeek());
@@ -69,7 +69,7 @@ public class ReminderService {
                 .targetEntityIdInt(savedReminder.getId())
                 .activityDetail("리마인더 생성 완료: " + savedReminder.getReminderType())
                 .details(String.format("{\"summaryTitle\": \"%s\"}",
-                        savedReminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle()))
+                        savedReminder.getSummaryArchive().getSummary().getAudioTranscript().getVideo().getTitle()))
                 .createdAt(LocalDateTime.now())
                 .build();
         userActivityLogRepository.save(logEntry);
@@ -140,7 +140,7 @@ public class ReminderService {
                 .targetEntityIdInt(updatedReminder.getId())
                 .activityDetail("리마인더 수정 완료: " + updatedReminder.getReminderType())
                 .details(String.format("{\"summaryTitle\": \"%s\"}",
-                        updatedReminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle()))
+                        updatedReminder.getSummaryArchive().getSummary().getAudioTranscript().getVideo().getTitle()))
                 .createdAt(LocalDateTime.now())
                 .build();
         userActivityLogRepository.save(logEntry);
@@ -176,7 +176,7 @@ public class ReminderService {
         // 이메일 발송
         for (Reminder reminder : remindersToNotify) {
             String recipientEmail = reminder.getUser().getEmail(); // 사용자 이메일 주소 가져오기
-            String summaryTitle = reminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle(); // 요약 영상 제목 가져오기
+            String summaryTitle = reminder.getSummaryArchive().getSummary().getAudioTranscript().getVideo().getTitle(); // 요약 영상 제목 가져오기
             String reminderNote = reminder.getReminderNote(); // 리마인더 메모 가져오기
 
             String subject = "[YouSum] 리마인더 알림: " + summaryTitle; // 이메일 제목 구성
@@ -216,7 +216,7 @@ public class ReminderService {
         StringBuilder content = new StringBuilder();
         content.append("안녕하세요, ").append(reminder.getUser().getUserName()).append("님!\n\n");
         content.append("설정하신 리마인더 알림이 도착했습니다.\n\n");
-        content.append("영상 제목: ").append(reminder.getUserLibrary().getSummary().getAudioTranscript().getVideo().getTitle()).append("\n");
+        content.append("영상 제목: ").append(reminder.getSummaryArchive().getSummary().getAudioTranscript().getVideo().getTitle()).append("\n");
         content.append("리마인더 메모: ").append(reminder.getReminderNote()).append("\n");
         content.append("알림 시간: ").append(reminder.getNextNotificationDatetime().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH시 mm분"))).append("\n\n");
         content.append("지금 바로 YouSum에서 요약 내용을 확인해보세요!\n");

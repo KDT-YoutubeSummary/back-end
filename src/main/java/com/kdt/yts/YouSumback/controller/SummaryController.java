@@ -43,16 +43,15 @@ public class SummaryController {
                     var transcript = summary.getAudioTranscript();
                     var video = transcript.getVideo();
 
-                    // ✅ UserLibrary 조회
-                    var libraryOpt = summaryService.findUserLibraryByUserAndSummary(userId, summary);
-
-                    List<String> tagNames = libraryOpt
-                            .map(lib -> lib.getUserLibraryTag() != null
-                                    ? lib.getUserLibraryTag().stream()
-                                    .map(ult -> ult.getTag().getTagName())
-                                    .toList()
-                                    : List.<String>of())
-                            .orElse(List.of());
+                                         // ✅ SummaryArchive 조회
+                     var archiveOpt = summaryService.findSummaryArchiveByUserAndSummary(userId, summary);
+                     List<String> existingTags = archiveOpt
+                             .map(archive -> archive.getSummaryArchiveTags() != null
+                                     ? archive.getSummaryArchiveTags().stream()
+                                     .map(ult -> ult.getTag().getTagName())
+                                     .toList()
+                                     : List.<String>of())
+                             .orElse(List.of());
 
                     // ✅ DTO 구성
                     SummaryResponseDTO dto = SummaryResponseDTO.builder()
@@ -60,7 +59,7 @@ public class SummaryController {
                             .transcriptId(transcript.getId())
                             .videoId(video.getId())
                             .summary(summary.getSummaryText())
-                            .tags(tagNames)
+                            .tags(existingTags)
                             .title(video.getTitle())
                             .thumbnailUrl(video.getThumbnailUrl())
                             .uploaderName(video.getUploaderName())

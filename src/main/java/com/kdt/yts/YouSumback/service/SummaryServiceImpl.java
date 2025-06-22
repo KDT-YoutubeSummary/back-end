@@ -28,8 +28,8 @@ public class SummaryServiceImpl implements SummaryService {
     private final OpenAIClient openAIClient;
     private final AnswerOptionRepository answerOptionRepository;
     private final TagRepository tagRepository;
-    private final UserLibraryRepository userLibraryRepository;
-    private final UserLibraryTagRepository userLibraryTagRepository;
+    private final SummaryArchiveRepository summaryArchiveRepository;
+    private final SummaryArchiveTagRepository summaryArchiveTagRepository;
     private final UserRepository userRepository;
     private final AudioTranscriptRepository audioTranscriptRepository;
     private final SummaryRepository summaryRepository;
@@ -122,13 +122,12 @@ public class SummaryServiceImpl implements SummaryService {
         Summary saved = summaryRepository.save(summary);
         System.out.println("✅ Summary Saved. ID: " + saved.getId());
 
-        UserLibrary library = UserLibrary.builder()
-                .user(user)
-                .summary(saved)
-                .lastViewedAt(LocalDateTime.now())
-                .build();
-        userLibraryRepository.save(library);
-        System.out.println("✅ UserLibrary Saved. User ID: " + user.getId() + ", Summary ID: " + saved.getId());
+        SummaryArchive archive = new SummaryArchive();
+        archive.setUser(user);
+        archive.setSummary(saved);
+        archive.setLastViewedAt(LocalDateTime.now());
+        summaryArchiveRepository.save(archive);
+        System.out.println("✅ SummaryArchive Saved. User ID: " + user.getId() + ", Summary ID: " + saved.getId());
 
         List<String> hashtags = extractTagsWithLLM(finalSummary).stream().distinct().toList();
         System.out.println("✅ Hashtags Extracted: " + hashtags);
@@ -136,18 +135,8 @@ public class SummaryServiceImpl implements SummaryService {
         for (String keyword : hashtags) {
             Tag tag = findOrCreateTag(keyword);
 
-            boolean exists = userLibraryTagRepository
-                    .findByUserLibraryAndTag(library, tag)
-                    .isPresent();
-
-            if (!exists) {
-                UserLibraryTag userLibraryTag = UserLibraryTag.builder()
-                        .id(new UserLibraryTagId(library.getId(), tag.getId()))
-                        .userLibrary(library)
-                        .tag(tag)
-                        .build();
-                userLibraryTagRepository.save(userLibraryTag);
-            }
+            SummaryArchiveTag summaryArchiveTag = new SummaryArchiveTag(archive.getId(), tag.getId());
+            summaryArchiveTagRepository.save(summaryArchiveTag);
         }
         System.out.println("✅ Tags Processed.");
 
@@ -270,8 +259,8 @@ public class SummaryServiceImpl implements SummaryService {
                 .toList();
     }
 
-    public Optional<UserLibrary> findUserLibraryByUserAndSummary(Long userId, Summary summary) {
-        return userLibraryRepository.findByUser_IdAndSummary(userId, summary);
+    public Optional<SummaryArchive> findSummaryArchiveByUserAndSummary(Long userId, Summary summary) {
+        return summaryArchiveRepository.findByUserIdAndSummaryId(userId, summary.getId());
     }
 
     @Transactional

@@ -11,12 +11,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/recommendations")
 @Tag(name = "영상 추천", description = "영상 추천 관리 API")
+@Slf4j
 public class VideoRecommendationController {
     @Autowired
     private VideoRecommendationService videoRecommendationService;
@@ -40,11 +42,25 @@ public class VideoRecommendationController {
             @ApiResponse(responseCode = "200", description = "추천 목록 조회 성공"),
             @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
     })
-    @GetMapping("{userId}")
+    @GetMapping("/{userId}")
     public List<VideoRecommendation> getRecommendationsByUserId(
             @PathVariable Long userId
     ) {
         return videoRecommendationService.getRecommendationsByUserId(userId);
+    }
+
+    // 사용자 ID로 영상 추천 목록 찾기 (DTO 형식)
+    @Operation(summary = "사용자별 추천 목록 조회 (DTO)", description = "특정 사용자의 추천 영상 목록을 DTO 형식으로 조회합니다")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "추천 목록 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+    })
+    @GetMapping("/{userId}/dto")
+    public List<VideoAiRecommendationResponseDTO> getRecommendationsByUserIdAsDTO(
+            @PathVariable Long userId
+    ) {
+        List<VideoRecommendation> recommendations = videoRecommendationService.getRecommendationsByUserId(userId);
+        return videoRecommendationService.toResponseDTO(recommendations);
     }
 
     // 영상 추천 삭제
@@ -61,84 +77,52 @@ public class VideoRecommendationController {
         return ResponseEntity.ok().build();
     }
 
-    // userLibraryId 기반 AI 영상 추천 및 저장 (POST)
-    @Operation(summary = "AI 영상 추천", description = "사용자 라이브러리 ID를 기반으로 AI가 영상을 추천하고 저장합니다")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "AI 추천 성공"),
-            @ApiResponse(responseCode = "204", description = "추천할 컨텐츠 없음"),
-            @ApiResponse(responseCode = "404", description = "라이브러리를 찾을 수 없음"),
-            @ApiResponse(responseCode = "500", description = "서버 오류")
+    // summaryArchiveId 기반 AI 영상 추천 및 저장 (POST)
+    @Operation(summary = "AI 영상 추천", description = "요약 저장소 ID를 기반으로 AI가 영상을 추천하고 저장합니다")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "AI 영상 추천 성공"),
+            @ApiResponse(responseCode = "404", description = "요약 저장소를 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    @PostMapping("/ai/{userLibraryId}")
-    public ResponseEntity<List<VideoAiRecommendationResponseDTO>> aiRecommendAndSave(
-            @PathVariable Long userLibraryId
+    @PostMapping("/ai/{summaryArchiveId}")
+    public Mono<ResponseEntity<List<VideoAiRecommendationResponseDTO>>> getAiRecommendation(
+            @PathVariable Long summaryArchiveId
     ) {
-        try {
-            // 1. Youtube API로 영상 검색 후 AI가 추천 목록 생성
-            List<VideoAiRecommendationResponseDTO> recommendationResponses =
-                    videoRecommendationService.getAiRecommendationByUserLibraryId(userLibraryId)
-                            .block(); // 비동기 → 동기 처리
+        log.info("AI 영상 추천 요청 - summaryArchiveId: {}", summaryArchiveId);
 
-            if (recommendationResponses == null || recommendationResponses.isEmpty()) {
-                return ResponseEntity.noContent().build();
-            }
+        return videoRecommendationService.getAiRecommendationBySummaryArchiveId(summaryArchiveId)
+                .map(recommendationResponses -> {
+                    log.info("AI 추천 완료 - 추천 개수: {}", recommendationResponses.size());
 
-            // 2. 추천 영상과 이유를 DB에 저장
-            List<VideoRecommendation> savedRecommendations =
-                    videoRecommendationService.saveAiRecommendation(userLibraryId, recommendationResponses);
+                    // 추천 결과를 데이터베이스에 저장
+                    videoRecommendationService.saveAiRecommendation(summaryArchiveId, recommendationResponses);
 
-            if (savedRecommendations.isEmpty()) {
-                return ResponseEntity.noContent().build();
-            }
-
-            // 3. 저장된 엔티티를 DTO로 변환하여 반환
-            List<VideoAiRecommendationResponseDTO> responseDTOs =
-                    videoRecommendationService.toResponseDTO(savedRecommendations);
-
-            return ResponseEntity.ok(responseDTOs);
-
-        } catch (IllegalArgumentException e) {
-            System.err.println("AI 추천 생성 중 오류: " + e.getMessage());
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            System.err.println("AI 추천 생성 중 예기치 않은 오류: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
-        }
+                    return ResponseEntity.ok(recommendationResponses);
+                })
+                .doOnError(error -> log.error("AI 영상 추천 실패 - summaryArchiveId: {}, 오류: {}", summaryArchiveId, error.getMessage()));
     }
 
-//    // userLibraryId 기반 AI 영상 추천 및 저장 (POST)
-//    @PostMapping("/ai/{userLibraryId}")
-//    public ResponseEntity<List<VideoRecommendation>> aiRecommendAndSave(
-//            @PathVariable Long userLibraryId
-//    ) {
-//        try {
-//            // 1. Youtube API로 영상 검색 후 AI가 추천 목록 생성
-//            List<VideoAiRecommendationResponseDTO> recommendationResponses =
-//                    videoRecommendationService.getAiRecommendationByUserLibraryId(userLibraryId)
-//                            .block(); // 비동기 -> 동기 처리
-//
-//            if (recommendationResponses == null || recommendationResponses.isEmpty()) {
-//                return ResponseEntity.noContent().build();
-//            }
-//
-//            // 2. 추천 영상과 이유를 DB에 저장
-//            List<VideoRecommendation> savedRecommendations =
-//                    videoRecommendationService.saveAiRecommendation(userLibraryId, recommendationResponses);
-//
-//            if (savedRecommendations.isEmpty()) {
-//                return ResponseEntity.noContent().build();
-//            }
-//
-//            return ResponseEntity.ok(savedRecommendations);
-//        } catch (IllegalArgumentException e) {
-//            System.err.println("AI 추천 생성 중 오류: " + e.getMessage());
-//            return ResponseEntity.notFound().build();
-//        } catch (Exception e) {
-//            System.err.println("AI 추천 생성 중 예기치 않은 오류: " + e.getMessage());
-//            e.printStackTrace();
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
+    // 주석 처리된 기존 코드도 업데이트
+    //    // summaryArchiveId 기반 AI 영상 추천 및 저장 (POST)
+    //    @PostMapping("/ai/{summaryArchiveId}")
+    //    public ResponseEntity<List<VideoAiRecommendationResponseDTO>> getAiRecommendation(
+    //            @PathVariable Long summaryArchiveId
+    //    ) {
+    //        try {
+    //            List<VideoAiRecommendationResponseDTO> recommendationResponses =
+    //                    videoRecommendationService.getAiRecommendationBySummaryArchiveId(summaryArchiveId)
+    //                            .block(); // 동기적으로 처리
+    //
+    //            log.info("AI 추천 완료 - 추천 개수: {}", recommendationResponses.size());
+    //
+    //            // 추천 결과를 데이터베이스에 저장
+    //            videoRecommendationService.saveAiRecommendation(summaryArchiveId, recommendationResponses);
+    //
+    //            return ResponseEntity.ok(recommendationResponses);
+    //        } catch (Exception e) {
+    //            log.error("AI 영상 추천 실패", e);
+    //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    //        }
+    //    }
 
 }

@@ -18,25 +18,48 @@ import java.util.Map;
 public class CustomErrorController implements ErrorController {
 
     @RequestMapping("/error")
-    public void handleError(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String errorMessage = "OAuth2 login failed";
+    public ResponseEntity<Map<String, Object>> handleError(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        // 에러 정보 수집 (표준 속성명 사용)
+        Object status = request.getAttribute("jakarta.servlet.error.status_code");
+        Object error = request.getAttribute("jakarta.servlet.error.message"); 
+        Object exception = request.getAttribute("jakarta.servlet.error.exception");
+        String requestUri = (String) request.getAttribute("jakarta.servlet.error.request_uri");
         
-        // 에러 정보 로깅
-        Object status = request.getAttribute("javax.servlet.error.status_code");
-        Object error = request.getAttribute("javax.servlet.error.message");
-        Object exception = request.getAttribute("javax.servlet.error.exception");
+        // 기본값 설정
+        int statusCode = (status != null) ? (Integer) status : 500;
+        String errorMessage = (error != null) ? error.toString() : "Internal Server Error";
         
-        log.error("Error occurred - Status: {}, Message: {}, Exception: {}", status, error, exception);
+        log.error("Error occurred - Status: {}, Message: {}, Exception: {}, URI: {}", 
+                  statusCode, errorMessage, exception, requestUri);
         
-        // 프론트엔드로 리다이렉트 (영어 메시지로 변경하여 인코딩 문제 해결)
-        String redirectUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/login")
-                .queryParam("error", "oauth_failed")
-                .queryParam("message", errorMessage)
-                .build()
-                .encode() // URL 인코딩 추가
-                .toUriString();
-                
-        log.info("Redirecting to frontend with error: {}", redirectUrl);
-        response.sendRedirect(redirectUrl);
+        // API 요청인지 확인 (Accept 헤더나 Content-Type으로 판단)
+        String acceptHeader = request.getHeader("Accept");
+        boolean isApiRequest = acceptHeader != null && 
+                               (acceptHeader.contains("application/json") || 
+                                requestUri != null && requestUri.startsWith("/api"));
+        
+        if (isApiRequest) {
+            // API 요청의 경우 JSON 응답 반환
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", true);
+            errorResponse.put("status", statusCode);
+            errorResponse.put("message", errorMessage);
+            errorResponse.put("path", requestUri);
+            errorResponse.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.status(statusCode).body(errorResponse);
+        } else {
+            // 웹 요청의 경우 프론트엔드로 리다이렉트
+            String redirectUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/login")
+                    .queryParam("error", "oauth_failed")
+                    .queryParam("message", "OAuth2 login failed")
+                    .build()
+                    .encode()
+                    .toUriString();
+                    
+            log.info("Redirecting to frontend with error: {}", redirectUrl);
+            response.sendRedirect(redirectUrl);
+            return null;
+        }
     }
 } 

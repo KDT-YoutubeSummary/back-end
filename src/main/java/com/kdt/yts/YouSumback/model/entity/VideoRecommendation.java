@@ -23,11 +23,11 @@ public class VideoRecommendation{
 
     @ManyToOne
     @JoinColumn(name = "source_video_id")
-    private Video sourceVideo; // 추천되는 영상
+    private Video sourceVideo; // 추천의 계기가 된 원본 영상
 
     @ManyToOne
     @JoinColumn(name = "recommended_video_id", nullable = false)
-    private Video recommendedVideo; // 추천의 계기가 된 영상
+    private Video recommendedVideo; // AI가 추천하는 영상
 
     @Column(name = "recommendation_reason", columnDefinition = "TEXT")
     private String recommendationReason; // 추천 이유

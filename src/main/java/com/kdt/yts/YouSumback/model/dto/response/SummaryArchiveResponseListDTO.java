@@ -2,7 +2,7 @@ package com.kdt.yts.YouSumback.model.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kdt.yts.YouSumback.model.entity.UserLibrary;
+import com.kdt.yts.YouSumback.model.entity.SummaryArchive;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -13,11 +13,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-// UserLibraryResponseListDTO는 사용자의 라이브러리 정보 목록을 응답하기 위한 DTO 클래스입니다.
-public class UserLibraryResponseListDTO {
+// SummaryArchiveResponseListDTO는 사용자의 요약 저장소 정보 목록을 응답하기 위한 DTO 클래스입니다.
+public class SummaryArchiveResponseListDTO {
 
-    @JsonProperty("library_id")
-    private Long userLibraryId;
+    @JsonProperty("archive_id")
+    private Long summaryArchiveId;
 
     @JsonProperty("summary_id")
     private Long summaryId;
@@ -28,9 +28,9 @@ public class UserLibraryResponseListDTO {
     @JsonProperty("tags")
     private List<String> tags;
 
-    @JsonProperty("saved_at")
+    @JsonProperty("created_at")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime savedAt;
+    private LocalDateTime createdAt;
 
     @JsonProperty("last_viewed_at")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
@@ -43,13 +43,13 @@ public class UserLibraryResponseListDTO {
     @JsonProperty("original_url")
     private String originalUrl;
 
-    public static UserLibraryResponseListDTO fromEntity(UserLibrary entity, List<String> tags) {
-        return UserLibraryResponseListDTO.builder()
-                .userLibraryId(entity.getId())
+    public static SummaryArchiveResponseListDTO fromEntity(SummaryArchive entity, List<String> tags) {
+        return SummaryArchiveResponseListDTO.builder()
+                .summaryArchiveId(entity.getId())
                 .summaryId(entity.getSummary().getId())
                 .videoTitle(entity.getSummary().getAudioTranscript().getVideo().getTitle())
                 .tags(tags)
-                .savedAt(entity.getSavedAt())
+                .createdAt(entity.getCreatedAt())
                 .lastViewedAt(entity.getLastViewedAt())
                 .userNotes(entity.getUserNotes())
                 .originalUrl(entity.getSummary().getAudioTranscript().getVideo().getOriginalUrl()) // 유튜브 URL 추가

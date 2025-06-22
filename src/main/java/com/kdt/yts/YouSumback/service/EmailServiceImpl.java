@@ -46,7 +46,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public String createSummaryPageUrl(Reminder reminder) {
 
-        Long summaryId = reminder.getUserLibrary().getSummary().getId();
+        Long summaryId = reminder.getSummaryArchive().getSummary().getId();
 
         return yousumFrontendBaseUrl + "/summary/" + summaryId;
     }
