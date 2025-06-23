@@ -99,14 +99,7 @@ public class SecurityConfig {
                                 "/webjars/**",                // Swagger Webjars
                                 "/actuator/**",               // Spring Boot Actuator
                                 "/error",                     // 에러 페이지
-                                "/favicon.ico"                // 파비콘
-                                "/api/auth/login",
-                                "/api/auth/register",
-                                "/oauth2/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/swagger-resources/**",
-                                "/webjars/**"
+                                "/favicon.ico"               // 파비콘
                         ).permitAll()
                         .requestMatchers("/api/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
                         .requestMatchers("/api/summary-archives/**").authenticated() // 요약 저장소는 인증 필요
