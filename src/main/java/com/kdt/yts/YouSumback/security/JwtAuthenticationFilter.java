@@ -17,7 +17,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
-    private final CustomUserDetailService customUserDetailService; // ✅ 변경된 부분
+    private final CustomUserDetailService customUserDetailService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -27,14 +27,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // ✅ 인증 예외 처리할 경로들
-        if (path.startsWith("/api/auth")
-                || path.startsWith("/api-docs/swagger-config")
-                || path.startsWith("/oauth2")
-                || path.startsWith("/swagger-ui")
-                || path.startsWith("/v3/api-docs")
-                || path.startsWith("/swagger-resources")
-                || path.startsWith("/webjars")) {
+        // 인증 제외 경로 처리
+        if (isExcludedPath(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -43,7 +37,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token != null && jwtProvider.validateToken(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
-
             try {
                 Long userId = jwtProvider.extractUserId(token);
                 UserDetails userDetails = customUserDetailService.loadUserByUserId(userId);
@@ -67,5 +60,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearer.substring(7);
         }
         return null;
+    }
+
+    private boolean isExcludedPath(String path) {
+        return path.startsWith("/api/auth")
+                || path.startsWith("/oauth2")
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-resources")
+                || path.startsWith("/webjars")
+                || path.startsWith("/api-docs");
     }
 }
