@@ -13,7 +13,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @RequiredArgsConstructor
-// JWT 토큰을 검증하고 인증 정보를 설정하는 필터
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
@@ -24,14 +23,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
-
-        String path = request.getRequestURI();
-
-        // 인증 제외 경로 처리
-        if (isExcludedPath(path)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         String token = resolveToken(request);
 
@@ -62,7 +53,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    private boolean isExcludedPath(String path) {
+    // 이 부분 새로 추가!! 이걸로 예외 경로 처리
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
         return path.startsWith("/api/auth")
                 || path.startsWith("/oauth2")
                 || path.startsWith("/swagger-ui")
