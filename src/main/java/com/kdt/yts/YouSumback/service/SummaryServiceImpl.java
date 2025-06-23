@@ -110,6 +110,7 @@ public class SummaryServiceImpl implements SummaryService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found for ID: " + userId));
 
+        String videoLanguageCode = transcript.getVideo().getOriginalLanguageCode();
         Summary summary = Summary.builder()
                 .user(user)
                 .audioTranscript(transcript)
@@ -117,7 +118,7 @@ public class SummaryServiceImpl implements SummaryService {
                 .summaryType(summaryType)
                 .userPrompt(userPrompt)
                 .createdAt(LocalDateTime.now())
-                .languageCode(transcript.getVideo().getOriginalLanguageCode())
+                .languageCode(videoLanguageCode != null ? videoLanguageCode : "ko")
                 .build();
         Summary saved = summaryRepository.save(summary);
         System.out.println("✅ Summary Saved. ID: " + saved.getId());
