@@ -35,6 +35,7 @@ public class SummaryServiceImpl implements SummaryService {
     private final SummaryRepository summaryRepository;
     private final QuizRepository quizRepository;
     private final UserActivityLogRepository userActivityLogRepository;
+    private final VideoRepository videoRepository;
 
     @Override
     @Transactional
@@ -46,10 +47,7 @@ public class SummaryServiceImpl implements SummaryService {
         System.out.println(">>> SummaryServiceImpl.summarize 진입 - URL: " + originalUrl + ", User ID: " + userId);
 
         AudioTranscript transcript = audioTranscriptRepository.findByVideo_OriginalUrl(originalUrl)
-                .orElseThrow(() -> {
-                    System.err.println("❌ Transcript not found for URL: " + originalUrl + ". YouTube API 호출 로직 및 저장 필요.");
-                    return new RuntimeException("YouTube video transcript not found or not processed for URL: " + originalUrl);
-                });
+                .orElseThrow(() -> new RuntimeException("AudioTranscript not found for URL: " + originalUrl));
 
         String text;
         if (summaryType == SummaryType.TIMELINE) {
@@ -456,4 +454,6 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
         return tagRepository.findByTagName(tagName)
                 .orElseGet(() -> tagRepository.save(Tag.builder().tagName(tagName).build()));
     }
+
+
 }
