@@ -34,8 +34,9 @@ public class TranscriptService {
     private final S3Client s3Client;
 
     // [수정] application.properties 등에서 S3 버킷 이름 주입
-    @Value("${yousum-s3}")
+    @Value("${aws.s3.bucket-name}")
     private String s3BucketName;
+
 
     public Long extractYoutubeIdAndRunWhisper(String originalUrl, String purpose) throws Exception {
         // 1. 유튜브 ID 추출
