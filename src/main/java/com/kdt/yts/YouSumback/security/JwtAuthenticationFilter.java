@@ -54,7 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             log.debug("🔍 Validating JWT token...");
-            
+
             if (!jwtProvider.validateToken(token)) {
                 log.warn("❌ Invalid JWT token for path: {}", path);
                 filterChain.doFilter(request, response);
@@ -84,7 +84,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             log.error("❌ JWT authentication failed for path {}: {}", path, e.getMessage());
             SecurityContextHolder.clearContext();
-            
+
             // ✅ 인증 실패 시 401 응답 반환
             response.setContentType("application/json;charset=UTF-8");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -98,7 +98,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean isPublicPath(String path) {
         return path.startsWith("/api/auth/login")
                 || path.startsWith("/api/auth/register")
-                || path.startsWith("/api/recommendations")  
+                || path.startsWith("/api/recommendations")
                 || path.startsWith("/api-docs/swagger-config")
                 || path.startsWith("/oauth2")
                 || path.startsWith("/swagger-ui")
@@ -117,5 +117,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return token;
         }
         return null;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/api/auth")
+                || path.startsWith("/oauth2")
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-resources")
+                || path.startsWith("/webjars")
+                || path.startsWith("/api-docs");
     }
 }

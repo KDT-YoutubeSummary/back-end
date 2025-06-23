@@ -13,9 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-// 추가 import
-import jakarta.servlet.http.HttpServletResponse; // HttpServletResponse import
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -64,7 +62,7 @@ public class SecurityConfig {
         configuration.setMaxAge(3600L); // Pre-flight 캐싱 시간 (Optional)
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // 모든 경로에 대해 적용
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
@@ -102,6 +100,13 @@ public class SecurityConfig {
                                 "/actuator/**",               // Spring Boot Actuator
                                 "/error",                     // 에러 페이지
                                 "/favicon.ico"                // 파비콘
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/oauth2/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
                         ).permitAll()
                         .requestMatchers("/api/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
                         .requestMatchers("/api/summary-archives/**").authenticated() // 요약 저장소는 인증 필요
@@ -114,11 +119,11 @@ public class SecurityConfig {
                 .authenticationEntryPoint((request, response, authException) -> {
                     String requestURI = request.getRequestURI();
                     String authHeader = request.getHeader("Authorization");
-                    
+
                     System.err.println("❌ Authentication failed for URI: " + requestURI);
                     System.err.println("❌ Authorization header: " + (authHeader != null ? "Present" : "Missing"));
                     System.err.println("❌ Error: " + authException.getMessage());
-                    
+
                     response.setContentType("application/json;charset=UTF-8");
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.getWriter().write("{\"error\":\"Authentication required\",\"message\":\"" + authException.getMessage() + "\"}");
@@ -126,7 +131,7 @@ public class SecurityConfig {
                 // 인증은 되었지만 권한이 없는 사용자가 접근할 때
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
                     System.err.println("❌ Access denied: " + accessDeniedException.getMessage());
-                    
+
                     response.setContentType("application/json;charset=UTF-8");
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.getWriter().write("{\"error\":\"Access denied\",\"message\":\"" + accessDeniedException.getMessage() + "\"}");
