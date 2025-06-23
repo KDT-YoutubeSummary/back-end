@@ -1,6 +1,5 @@
 package com.kdt.yts.YouSumback.security;
 
-import com.kdt.yts.YouSumback.model.entity.User;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -14,7 +13,6 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 
 import java.io.IOException;
 
-// JWT 인가 필터 (토큰 유효성 검사 + SecurityContext에 인증 객체 설정)
 public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 
     private final JwtProvider jwtProvider;
@@ -34,16 +32,23 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
                                     FilterChain chain) throws IOException, ServletException {
 
         String header = request.getHeader("Authorization");
+
+        // 1️⃣ Authorization 헤더가 아예 없는 경우 → 다음 필터로 넘김
         if (header == null || !header.startsWith("Bearer ")) {
             chain.doFilter(request, response);
             return;
         }
 
-        String token = header.replace("Bearer ", "");
+        // 2️⃣ Bearer 토큰 추출
+        String token = header.substring(7);
+
         try {
-            Claims claims = jwtProvider.validateAndGetClaims(token);
-            if (claims != null) {
-                Long userId = claims.get("userId", Long.class);  // ✅ userId 기반 조회
+            // 3️⃣ 토큰 유효성 검사
+            if (jwtProvider.validateToken(token)) {
+                Claims claims = jwtProvider.validateAndGetClaims(token);
+                Long userId = claims.get("userId", Long.class);
+
+                // 4️⃣ User 조회 및 인증 객체 생성
                 CustomUserDetails userDetails =
                         (CustomUserDetails) userDetailService.loadUserByUserId(userId);
 
@@ -53,6 +58,7 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }
         } catch (Exception e) {
+            // 5️⃣ 만약 에러나면 인증을 세팅하지 않고 그냥 다음 필터 진행 (익명 처리)
             SecurityContextHolder.clearContext();
         }
 
