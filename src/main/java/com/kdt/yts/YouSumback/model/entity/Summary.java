@@ -32,10 +32,12 @@ public class Summary {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private AudioTranscript audioTranscript;
 
-    @Column(name = "summary_text", nullable = false)
+    @Lob
+    @Column(name = "summary_text", nullable = false, columnDefinition = "LONGTEXT")
     private String summaryText;
 
-    @Column(name = "user_prompt", columnDefinition = "TEXT")
+    @Lob
+    @Column(name = "user_prompt", columnDefinition = "LONGTEXT")
     private String userPrompt;
 
     @Column(name = "language_code", length = 10, nullable = true)

@@ -74,9 +74,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sess -> sess
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // OAuth2를 위해 필요시 세션 생성 허용
-                        .maximumSessions(1) // 동시 세션 1개로 제한
-                        .maxSessionsPreventsLogin(false) // 새 로그인 시 기존 세션 무효화
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // ✅ JWT만 사용하므로 STATELESS로 변경
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
@@ -106,20 +104,32 @@ public class SecurityConfig {
                                 "/favicon.ico"                // 파비콘
                         ).permitAll()
                         .requestMatchers("/api/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
+                        .requestMatchers("/api/summary-archives/**").authenticated() // 요약 저장소는 인증 필요
                         .anyRequest().authenticated()
         );
 
-        // ✅ 인증/인가 실패 시 처리 방식 정의
+        // ✅ 개선된 인증/인가 실패 처리
         http.exceptionHandling(exceptions -> exceptions
                 // 인증되지 않은 사용자가 보호된 리소스에 접근할 때
                 .authenticationEntryPoint((request, response, authException) -> {
-                    System.err.println("❌ Authentication failed: " + authException.getMessage());
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"); // 401 응답
+                    String requestURI = request.getRequestURI();
+                    String authHeader = request.getHeader("Authorization");
+                    
+                    System.err.println("❌ Authentication failed for URI: " + requestURI);
+                    System.err.println("❌ Authorization header: " + (authHeader != null ? "Present" : "Missing"));
+                    System.err.println("❌ Error: " + authException.getMessage());
+                    
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("{\"error\":\"Authentication required\",\"message\":\"" + authException.getMessage() + "\"}");
                 })
                 // 인증은 되었지만 권한이 없는 사용자가 접근할 때
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
                     System.err.println("❌ Access denied: " + accessDeniedException.getMessage());
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"); // 403 응답
+                    
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write("{\"error\":\"Access denied\",\"message\":\"" + accessDeniedException.getMessage() + "\"}");
                 })
         );
 
@@ -136,7 +146,7 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
         );
 
-        // 기존의 JWT 관련 필터들을 추가합니다.
+        // ✅ JWT 필터 추가 (JwtAuthorizationFilter 제거, JwtAuthenticationFilter만 사용)
         http.addFilter(jwtLoginAuthenticationFilter(authManager));
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 

@@ -14,6 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/youtube")
 @Tag(name = "유튜브 영상 업로드", description = "유튜브 영상 메타데이터 관리 및 요약 요청 API")
@@ -76,12 +79,26 @@ public class YouTubeMetadataController {
                     userId
             );
 
-            return ResponseEntity.ok(responseDTO); // ✅ 결과 DTO 응답
+            // ✅ 표준화된 성공 응답
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", 200);
+            response.put("message", "요약 생성 완료");
+            response.put("data", responseDTO);
+            
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             System.err.println("❌ Controller: Error processing request: " + e.getMessage());
-            e.printStackTrace(); // ✅ 여기에 스택 트레이스 강제 출력
-            return ResponseEntity.status(500).body("❌ 처리 중 오류: " + e.getMessage());
+            e.printStackTrace();
+            
+            // ✅ 표준화된 오류 응답
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("code", 500);
+            errorResponse.put("message", "요약 생성 중 오류가 발생했습니다");
+            errorResponse.put("error", e.getMessage());
+            errorResponse.put("data", null);
+            
+            return ResponseEntity.status(500).body(errorResponse);
         }
     }
 }
