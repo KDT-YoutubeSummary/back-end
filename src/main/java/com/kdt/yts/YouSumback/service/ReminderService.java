@@ -87,7 +87,7 @@ public class ReminderService {
 
     @Transactional(readOnly = true) // 읽기 전용 트랜잭션
     public List<ReminderResponseDTO> getRemindersByUserId(Long userId) {
-        List<Reminder> reminders = reminderRepository.findByUserId(userId);
+        List<Reminder> reminders = reminderRepository.findByUser_Id(userId);
         return reminders.stream()
                 .map(ReminderResponseDTO::new) // 각 Reminder 엔티티를 ReminderResponse DTO로 매핑
                 .collect(Collectors.toList());

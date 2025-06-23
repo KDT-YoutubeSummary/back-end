@@ -38,7 +38,7 @@ public class SummaryController {
                                                     @AuthenticationPrincipal CustomUserDetails userDetails) {
         Long userId = userDetails.getUserId();
 
-        return summaryRepository.findByUserIdAndAudioTranscriptId(transcriptId, userId)
+        return summaryRepository.findByUser_IdAndAudioTranscript_Id(transcriptId, userId)
                 .map(summary -> {
                     var transcript = summary.getAudioTranscript();
                     var video = transcript.getVideo();

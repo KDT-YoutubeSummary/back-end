@@ -261,7 +261,7 @@ public class SummaryServiceImpl implements SummaryService {
     }
 
     public Optional<SummaryArchive> findSummaryArchiveByUserAndSummary(Long userId, Summary summary) {
-        return summaryArchiveRepository.findByUserIdAndSummaryId(userId, summary.getId());
+        return summaryArchiveRepository.findByUser_IdAndSummary_Id(userId, summary.getId());
     }
 
     @Transactional

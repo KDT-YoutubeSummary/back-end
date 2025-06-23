@@ -67,7 +67,7 @@ public class VideoRecommendationService {
         
         return Mono.fromCallable(() -> {
             log.info("태그 조회 시작 - summaryArchiveId: {}", summaryArchiveId);
-            List<com.kdt.yts.YouSumback.model.entity.SummaryArchiveTag> tags = summaryArchiveTagRepository.findBySummaryArchiveId(summaryArchiveId);
+            List<com.kdt.yts.YouSumback.model.entity.SummaryArchiveTag> tags = summaryArchiveTagRepository.findBySummaryArchive_Id(summaryArchiveId);
             log.info("찾은 태그 개수: {}", tags.size());
             return tags;
         })
