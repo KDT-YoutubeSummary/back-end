@@ -115,6 +115,10 @@ dependencies {
 	implementation 'com.google.oauth-client:google-oauth-client-jetty:1.32.1'
 	implementation 'com.google.apis:google-api-services-youtube:v3-rev222-1.25.0' // YouTube 라이브러리
 	implementation 'com.google.http-client:google-http-client-jackson2:1.41.5'
+
+	//S3
+	implementation platform('software.amazon.awssdk:bom:2.20.27')
+	implementation 'software.amazon.awssdk:s3'
 }
 
 tasks.named('test') {

@@ -1,472 +1,120 @@
-# import sys
-# import os
-# import subprocess
-# from faster_whisper import WhisperModel
-#
-# # ✅ ffmpeg 경로 명시
-# os.environ["PATH"] += os.pathsep + r"C:\\ffmpeg\\bin"
-#
-# # ✅ 유튜브 ID 추출
-# def extract_youtube_id(link):
-#     if "v=" in link:
-#         return link.split("v=")[1].split("&")[0]
-#     elif "youtu.be/" in link:
-#         return link.split("youtu.be/")[1].split("?")[0]
-#     else:
-#         return None
-#
-# YTDLP_PATH = r"C:\\Users\\yes36\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\yt-dlp.exe"
-#
-# # ✅ 자막 여부 확인
-# def has_korean_subtitles(youtube_url):
-#     result = subprocess.run([
-#         YTDLP_PATH, "--list-subs", "--write-auto-sub", youtube_url
-#     ], capture_output=True, text=True)
-#     lines = result.stdout.splitlines()
-#     for line in lines:
-#         if "ko" in line or "a.ko" in line:
-#             return True
-#     return False
-#
-# # ✅ 자막 다운로드
-# def download_subtitles(youtube_url, youtube_id, text_dir):
-#     output_path = os.path.join(text_dir, f"{youtube_id}.ko.vtt")
-#     try:
-#         subprocess.run([
-#             YTDLP_PATH,
-#             "--write-auto-sub",
-#             "--sub-lang", "ko",
-#             "--skip-download",
-#             "--ffmpeg-location", r"C:\\ffmpeg\\bin",
-#             "-o", os.path.join(text_dir, f"{youtube_id}"),
-#             youtube_url
-#         ], check=True)
-#         return output_path if os.path.exists(output_path) else None
-#     except subprocess.CalledProcessError as e:
-#         print(f"[WHISPER] ❌ 자막 다운로드 실패: {e}")
-#         return None
-#
-# # ✅ Whisper로 변환
-# def transcribe_with_whisper(audio_path, youtube_id, text_dir):
-#     print(f"[WHISPER] [INFO] Whisper로 텍스트 변환 중...")
-#
-#     if not os.path.exists(audio_path):
-#         print(f"❌ 오디오 파일이 존재하지 않아 Whisper 실행 중단: {audio_path}")
-#         sys.exit(10)
-#
-#     model = WhisperModel("small", device="cuda" if os.environ.get("USE_CUDA", "0") == "1" else "cpu")
-#     segments, _ = model.transcribe(audio_path, language="ko")
-#
-#     output_txt_path = os.path.join(text_dir, f"{youtube_id}.txt")
-#     try:
-#         with open(output_txt_path, "w", encoding="utf-8") as f:
-#             for segment in segments:
-#                 f.write(f"[{segment.start:.2f} --> {segment.end:.2f}] {segment.text.strip()}\n")
-#     except Exception as e:
-#         print(f"❌ 처리 중 오류: {output_txt_path}, {e}")
-#         sys.exit(11)
-#
-#     return output_txt_path
-#
-# # ✅ 메인 실행 흐름
-# if len(sys.argv) < 2:
-#     print("❌ 사용법: python yt_whisper.py <YouTube_URL>")
-#     sys.exit(1)
-#
-# youtube_url = sys.argv[1]
-# youtube_id = extract_youtube_id(youtube_url)
-# if not youtube_id:
-#     print("❌ 유효한 YouTube URL이 아닙니다.")
-#     sys.exit(10)
-#
-# # ✅ 경로 설정
-# audio_dir = "src/main/resources/audiofiles"
-# text_dir = "src/main/resources/textfiles"
-# os.makedirs(audio_dir, exist_ok=True)
-# os.makedirs(text_dir, exist_ok=True)
-#
-# audio_path = os.path.join(audio_dir, f"{youtube_id}.wav")
-#
-# # ✅ 자막이 있으면 자막 다운로드 → 없으면 Whisper 실행
-# if has_korean_subtitles(youtube_url):
-#     print(f"[WHISPER] [INFO] 한국어 자막이 있어 자막 다운로드로 진행합니다.")
-#     subtitle_path = download_subtitles(youtube_url, youtube_id, text_dir)
-#     if subtitle_path:
-#         print(f"[WHISPER] [완료] 자막 파일 저장 완료: {subtitle_path}")
-#         sys.exit(0)
-#     else:
-#         print(f"[WHISPER] ❌ 자막 파일 저장 실패. Whisper로 전환합니다.")
-#
-# print(f"[WHISPER] [INFO] 자막 없음 → Whisper로 오디오 변환 시작")
-# print(f"[WHISPER] [INFO] YouTube 오디오 다운로드 중: {youtube_url}")
-# try:
-#     subprocess.run([
-#         YTDLP_PATH,
-#         "--ffmpeg-location", r"C:\\ffmpeg\\bin",
-#         "--no-check-certificate",
-#         "--force-ipv4",
-#         "--user-agent", "Mozilla/5.0",
-#         "--referer", "https://www.youtube.com",
-#         "-x", "--audio-format", "wav",
-#         "-f", "bestaudio[ext=m4a]/bestaudio/best",
-#         "-o", os.path.join(audio_dir, f"{youtube_id}.%(ext)s"),
-#         youtube_url
-#     ], check=True)
-# except subprocess.CalledProcessError as e:
-#     print(f"[WHISPER] ❌ yt-dlp 다운로드 실패: {e}")
-#     sys.exit(10)
-#
-# transcribe_with_whisper(audio_path, youtube_id, text_dir)
-# print(f"[WHISPER] [완료] Whisper로 텍스트 파일 저장 완료")
-#
-#
-#
-# # import sys
-# # import os
-# # import subprocess
-# # from faster_whisper import WhisperModel
-# #
-# # # ✅ ffmpeg 경로 명시 (Windows에서 환경변수 등록 없이 사용할 수 있게)
-# # os.environ["PATH"] += os.pathsep + r"C:\ffmpeg\bin"
-# # # os.environ["PATH"] += os.pathsep + "/usr/local/bin"  # Linux/Mac에서 ffmpeg 경로 설정
-# #
-# # # ✅ 유튜브 ID 추출
-# # def extract_youtube_id(link):
-# #     if "v=" in link:
-# #         return link.split("v=")[1].split("&")[0]
-# #     elif "youtu.be/" in link:
-# #         return link.split("youtu.be/")[1].split("?")[0]
-# #     else:
-# #         return None
-# #
-# # YTDLP_PATH = r"C:\Users\yes36\AppData\Local\Programs\Python\Python311\Scripts\yt-dlp.exe"
-# #
-# # # ✅ 유튜브 자막 리스트 가져오기
-# # def has_korean_subtitles(youtube_url):
-# #     result = subprocess.run(
-# #         [YTDLP_PATH, "--list-subs", youtube_url],
-# #         capture_output=True, text=True
-# #     )
-# #     return "ko" in result.stdout or "a.ko" in result.stdout
-# #
-# # # ✅ 자막 다운로드
-# # def download_subtitles(youtube_url, youtube_id, text_dir):
-# #     output_path = os.path.join(text_dir, f"{youtube_id}.ko.vtt")
-# #     try:
-# #         subprocess.run([
-# #             "yt-dlp",
-# #             "--write-subs", "--sub-lang", "ko",
-# #             "--skip-download",
-# #             "--ffmpeg-location", r"C:\ffmpeg\bin",  # ✅ 명시적 경로 설정
-# #             "-o", os.path.join(text_dir, f"{youtube_id}"),
-# #             youtube_url
-# #         ], check=True)
-# #         return output_path
-# #     except subprocess.CalledProcessError as e:
-# #         print(f"[WHISPER] ❌ 자막 다운로드 실패: {e}")
-# #         return None
-# #
-# # # ✅ Whisper로 변환
-# # def transcribe_with_whisper(audio_path, youtube_id, text_dir):
-# #     print(f"[WHISPER] [INFO] Whisper로 텍스트 변환 중...")
-# #     model = WhisperModel("small", device="cuda" if os.environ.get("USE_CUDA", "0") == "1" else "cpu")
-# #     segments, _ = model.transcribe(audio_path, language="ko")
-# #
-# #     output_txt_path = os.path.join(text_dir, f"{youtube_id}.txt")
-# #     with open(output_txt_path, "w", encoding="utf-8") as f:
-# #         for segment in segments:
-# #             f.write(f"[{segment.start:.2f} --> {segment.end:.2f}] {segment.text.strip()}\n")
-# #     return output_txt_path
-# #
-# # # ✅ 메인 실행 흐름
-# # if len(sys.argv) < 2:
-# #     print("❌ 사용법: python yt_whisper.py <YouTube_URL>")
-# #     sys.exit(1)
-# #
-# # youtube_url = sys.argv[1]
-# # youtube_id = extract_youtube_id(youtube_url)
-# # if not youtube_id:
-# #     print("❌ 유효한 YouTube URL이 아닙니다.")
-# #     sys.exit(10)
-# #
-# # # ✅ 경로 설정
-# # audio_dir = "src/main/resources/audiofiles"
-# # text_dir = "src/main/resources/textfiles"
-# # os.makedirs(audio_dir, exist_ok=True)
-# # os.makedirs(text_dir, exist_ok=True)
-# #
-# # audio_path = os.path.join(audio_dir, f"{youtube_id}.wav")
-# #
-# # # ✅ 자막이 있으면 자막 다운로드 → 없으면 Whisper 실행
-# # if has_korean_subtitles(youtube_url):
-# #     print(f"[WHISPER] [INFO] 한국어 자막이 있어 자막 다운로드로 진행합니다.")
-# #     download_subtitles(youtube_url, youtube_id, text_dir)
-# #     print(f"[WHISPER] [완료] 자막 파일 저장 완료")
-# # else:
-# #     print(f"[WHISPER] [INFO] 자막 없음 → Whisper로 오디오 변환 시작")
-# #
-# #     print(f"[WHISPER] [INFO] YouTube 오디오 다운로드 중: {youtube_url}")
-# #     try:
-# #         subprocess.run([
-# #             YTDLP_PATH,
-# #             "--user-agent", "Mozilla/5.0",
-# #             "--ffmpeg-location", r"C:\\ffmpeg\\bin",
-# #             "-x", "--audio-format", "wav",
-# #             "-o", os.path.join(audio_dir, f"{youtube_id}.%(ext)s"),
-# #             youtube_url
-# #         ], check=True)
-# #     except subprocess.CalledProcessError as e:
-# #         print(f"[WHISPER] ❌ yt-dlp 다운로드 실패: {e}")
-# #         sys.exit(10)
-# #
-# #     transcribe_with_whisper(audio_path, youtube_id, text_dir)
-# #     print(f"[WHISPER] [완료] Whisper로 텍스트 파일 저장 완료")
-#
-#
-# # # ✅ 자막이 있으면 자막 다운로드 → 없으면 Whisper 실행
-# # if has_korean_subtitles(youtube_url):
-# #     print(f"[WHISPER] [INFO] 한국어 자막이 있어 자막 다운로드로 진행합니다.")
-# #     download_subtitles(youtube_url, youtube_id, text_dir)
-# #     print(f"[WHISPER] [완료] 자막 파일 저장 완료")
-# # else:
-# #     print(f"[WHISPER] [INFO] 자막 없음 → Whisper로 오디오 변환 시작")
-# #
-# #     # yt-dlp로 오디오 다운로드
-# #     print(f"[WHISPER] [INFO] YouTube 오디오 다운로드 중: {youtube_url}")
-# #     try:
-# #         subprocess.run([
-# #             "yt-dlp",
-# #             "--ffmpeg-location", r"C:\ffmpeg\bin",  # ✅ 여기도 경로 추가
-# #             "-x", "--audio-format", "wav",
-# #             "-o", os.path.join(audio_dir, f"{youtube_id}.%(ext)s"),
-# #             youtube_url
-# #         ], check=True)
-# #     except subprocess.CalledProcessError as e:
-# #         print(f"[WHISPER] ❌ yt-dlp 다운로드 실패: {e}")
-# #         sys.exit(10)
-# #
-# #     # Whisper STT 실행
-# #     transcribe_with_whisper(audio_path, youtube_id, text_dir)
-# #     print(f"[WHISPER] [완료] Whisper로 텍스트 파일 저장 완료")
-#
-#
-# # import sys
-# # import os
-# # import subprocess
-# # # import whisper
-# # # from concurrent.futures import ThreadPoolExecutor
-# #
-# # os.environ["PATH"] += os.pathsep + r"C:\ffmpeg\bin"
-# #
-# # # ✅ 유튜브 ID 추출 함수
-# # def extract_youtube_id(link):
-# #     if "v=" in link:
-# #         return link.split("v=")[1].split("&")[0]
-# #     elif "youtu.be/" in link:
-# #         return link.split("youtu.be/")[1].split("?")[0]
-# #     else:
-# #         return None
-# #
-# # # ✅ 1. 입력 URL 확인
-# # if len(sys.argv) < 2:
-# #     print("❌ 사용법: python yt_whisper.py <YouTube_URL>")
-# #     sys.exit(1)
-# #
-# # youtube_url = sys.argv[1]
-# # youtube_id = extract_youtube_id(youtube_url)
-# # if not youtube_id:
-# #     print("❌ 유효한 YouTube URL이 아닙니다.")
-# #     sys.exit(10)
-# #
-# # # ✅ 2. 경로 설정
-# # audio_dir = "src/main/resources/audiofiles"
-# # text_dir = "src/main/resources/textfiles"
-# # os.makedirs(audio_dir, exist_ok=True)
-# # os.makedirs(text_dir, exist_ok=True)
-# #
-# # output_wav_path = os.path.join(audio_dir, f"{youtube_id}.wav")
-# #
-# # # ✅ 3. yt-dlp로 .wav 다운로드
-# # print(f"[INFO] YouTube 오디오 다운로드 중: {youtube_url}")
-# # # download_cmd = [
-# # #     "yt-dlp",
-# # #     "-x", "--audio-format", "wav",
-# # #     "-o", os.path.join(audio_dir, f"{youtube_id}.%(ext)s"),
-# # #     youtube_url
-# # # ]
-# # download_cmd = [
-# #     "yt-dlp",
-# #     "--ffmpeg-location", "C:\\ffmpeg\\bin",  # ✅ 여기에 직접 경로 설정
-# #     "-x", "--audio-format", "wav",
-# #     "-o", os.path.join(audio_dir, f"{youtube_id}.%(ext)s"),
-# #     youtube_url
-# # ]
-# #
-# # try:
-# #     subprocess.run(download_cmd, check=True)
-# # except subprocess.CalledProcessError as e:
-# #     print(f"❌ yt-dlp 다운로드 실패: {e}")
-# #     sys.exit(10)
-# #
-# # # ✅ 3.5 영상 길이 추출 (ffprobe 사용)
-# # print(f"[INFO] 영상 길이 추출 중 (ffprobe 사용): {output_wav_path}")
-# # duration_cmd = [
-# #     "ffprobe",
-# #     "-v", "error",
-# #     "-show_entries", "format=duration",
-# #     "-of", "default=noprint_wrappers=1:nokey=1",
-# #     output_wav_path
-# # ]
-# # duration_seconds = 0  # 기본값 선언
-# #
-# # try:
-# #     result = subprocess.run(duration_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-# #     duration_seconds = int(float(result.stdout.strip()))
-# #     print(f"[INFO] 추출된 영상 길이: {duration_seconds}초")
-# # except subprocess.CalledProcessError as e:
-# #     print(f"[WARNING] 영상 길이 추출 실패: {e}")
-# # except ValueError:
-# #     print(f"[WARNING] 영상 길이 변환 실패: {result.stdout.strip()}")
-# #
-# # # ✅ 여기서 print
-# # print(f"[DURATION_RESULT]{duration_seconds}")
-# #
-# #
-# # # ✅ 4. Whisper로 텍스트 변환
-# # print(f"[INFO] Whisper로 텍스트 변환 시작: {output_wav_path}")
-# # whisper_cmd = [
-# #     "whisper",
-# #     output_wav_path,
-# #     "--model", "small",
-# #     "--language", "ko",
-# #     "--output_format", "txt",
-# #     "--output_dir", text_dir              # ✅ 텍스트 파일 저장 경로 변경
-# # ]
-# #
-# # try:
-# #     subprocess.run(whisper_cmd, check=True)
-# # except subprocess.CalledProcessError as e:
-# #     print(f"❌ Whisper 실행 실패: {e}")
-# #     sys.exit(10)
-# #
-# # # ✅ 5. 결과 안내
-# # print(f"[완료] 변환된 텍스트 파일: {os.path.join(text_dir, youtube_id + '.txt')}")
 import sys
 import os
-import subprocess
+import boto3
+import yt_dlp
 from faster_whisper import WhisperModel
 
-# ✅ ffmpeg 경로 (리눅스용)
-os.environ["PATH"] += os.pathsep + "/usr/bin"
+# --- AWS 및 S3 설정 ---
+S3_BUCKET_NAME = "yousum-s3"
+AWS_REGION = "ap-northeast-2"
+s3_client = boto3.client('s3', region_name=AWS_REGION)
+TEMP_DIR = "/tmp"
 
-# ✅ 유튜브 ID 추출
+# --- 유튜브 관련 함수 ---
 def extract_youtube_id(link):
-    if "v=" in link:
-        return link.split("v=")[1].split("&")[0]
-    elif "youtu.be/" in link:
-        return link.split("youtu.be/")[1].split("?")[0]
-    else:
-        return None
+    if "v=" in link: return link.split("v=")[1].split("&")[0]
+    elif "youtu.be/" in link: return link.split("youtu.be/")[1].split("?")[0]
+    return None
 
-# ✅ yt-dlp 경로 (리눅스에선 그냥 명령어)
-YTDLP_PATH = "yt-dlp"
+# [수정] 영상 길이를 먼저 추출하는 함수 추가
+def get_video_duration(youtube_url):
+    try:
+        ydl_opts = {'quiet': True, 'extract_flat': True}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(youtube_url, download=False)
+            duration = info.get('duration', 0)
+            return int(duration)
+    except Exception as e:
+        print(f"[WARN] 영상 길이 추출 실패: {e}")
+        return -1
 
-# ✅ 자막 여부 확인
 def has_korean_subtitles(youtube_url):
-    result = subprocess.run([
-        YTDLP_PATH, "--list-subs", "--write-auto-sub", youtube_url
-    ], capture_output=True, text=True)
-    lines = result.stdout.splitlines()
-    for line in lines:
-        if "ko" in line or "a.ko" in line:
-            return True
+    print("[INFO] 한국어 자막 존재 여부를 확인합니다...")
+    try:
+        ydl_opts = {'listsubtitles': True, 'quiet': True}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(youtube_url, download=False)
+            subtitles = info.get('subtitles', {})
+            auto_captions = info.get('automatic_captions', {})
+            if 'ko' in subtitles or 'ko' in auto_captions:
+                print("[INFO] ✅ 한국어 자막을 발견했습니다.")
+                return True
+    except Exception as e:
+        print(f"[WARN] 자막 확인 중 오류: {e}")
+    print("[INFO] ❌ 한국어 자막이 없습니다.")
     return False
 
-# ✅ 자막 다운로드
-def download_subtitles(youtube_url, youtube_id, text_dir):
-    output_path = os.path.join(text_dir, f"{youtube_id}.ko.vtt")
+def download_subtitle_and_upload_to_s3(youtube_url, youtube_id):
+    local_subtitle_path = os.path.join(TEMP_DIR, f"{youtube_id}.ko.vtt")
     try:
-        subprocess.run([
-            YTDLP_PATH,
-            "--write-auto-sub",
-            "--sub-lang", "ko",
-            "--skip-download",
-            "-o", os.path.join(text_dir, f"{youtube_id}"),
-            youtube_url
-        ], check=True)
-        return output_path if os.path.exists(output_path) else None
-    except subprocess.CalledProcessError as e:
-        print(f"[WHISPER] ❌ 자림 다운로드 실패: {e}")
-        return None
-
-# ✅ Whisper로 변환
-def transcribe_with_whisper(audio_path, youtube_id, text_dir):
-    print(f"[WHISPER] [INFO] Whisper로 텍스트 변환 중...")
-
-    if not os.path.exists(audio_path):
-        print(f"❌ 오디오 파일이 존재하지 않아 Whisper 실행 중단: {audio_path}")
-        sys.exit(10)
-
-    model = WhisperModel("small", device="cuda" if os.environ.get("USE_CUDA", "0") == "1" else "cpu")
-    segments, _ = model.transcribe(audio_path, language="ko")
-
-    output_txt_path = os.path.join(text_dir, f"{youtube_id}.txt")
-    try:
-        with open(output_txt_path, "w", encoding="utf-8") as f:
-            for segment in segments:
-                f.write(f"[{segment.start:.2f} --> {segment.end:.2f}] {segment.text.strip()}\n")
+        print("[PROCESS] 자막 다운로드를 시작합니다...")
+        ydl_opts = {'writeautomaticsub': True, 'subtitleslangs': ['ko'], 'skip_download': True, 'outtmpl': os.path.join(TEMP_DIR, youtube_id)}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl: ydl.download([youtube_url])
+        if not os.path.exists(local_subtitle_path): raise FileNotFoundError("자막 파일이 생성되지 않았습니다.")
+        s3_key = f"subtitles/{youtube_id}.vtt"
+        s3_client.upload_file(local_subtitle_path, S3_BUCKET_NAME, s3_key)
+        print(f"[SUCCESS] 자막을 S3에 업로드했습니다: s3://{S3_BUCKET_NAME}/{s3_key}")
+        return s3_key
     except Exception as e:
-        print(f"❌ 처리 중 오류: {output_txt_path}, {e}")
-        sys.exit(11)
+        print(f"[ERROR] 자막 처리 중 오류 발생: {e}")
+        return None
+    finally:
+        if os.path.exists(local_subtitle_path): os.remove(local_subtitle_path)
 
-    return output_txt_path
+def process_audio_with_whisper(youtube_url, youtube_id):
+    local_audio_path, local_text_path = "", ""
+    try:
+        print("[PROCESS] 음성 파일 다운로드를 시작합니다...")
+        audio_filename_template = os.path.join(TEMP_DIR, f"{youtube_id}.%(ext)s")
+        ydl_opts = {'format': 'bestaudio/best', 'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}], 'outtmpl': audio_filename_template}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl: ydl.download([youtube_url])
+        local_audio_path = os.path.join(TEMP_DIR, f"{youtube_id}.mp3")
+        audio_s3_key = f"audios/{youtube_id}.mp3"
+        s3_client.upload_file(local_audio_path, S3_BUCKET_NAME, audio_s3_key)
+        print(f"[INFO] 음성 파일을 S3에 업로드했습니다: s3://{S3_BUCKET_NAME}/{audio_s3_key}")
+        print("[PROCESS] Whisper 변환을 시작합니다...")
+        model = WhisperModel("small", device="cuda" if os.environ.get("USE_CUDA", "0") == "1" else "cpu")
+        segments, _ = model.transcribe(local_audio_path, language="ko")
+        local_text_path = os.path.join(TEMP_DIR, f"{youtube_id}.txt")
+        with open(local_text_path, "w", encoding="utf-8") as f:
+            for segment in segments: f.write(f"[{segment.start:.2f} --> {segment.end:.2f}] {segment.text.strip()}\n")
+        text_s3_key = f"transcripts/{youtube_id}.txt"
+        s3_client.upload_file(local_text_path, S3_BUCKET_NAME, text_s3_key)
+        print(f"[SUCCESS] 변환된 텍스트를 S3에 업로드했습니다: s3://{S3_BUCKET_NAME}/{text_s3_key}")
+        return text_s3_key
+    except Exception as e:
+        print(f"[ERROR] 음성 처리 중 오류 발생: {e}")
+        return None
+    finally:
+        if os.path.exists(local_audio_path): os.remove(local_audio_path)
+        if os.path.exists(local_text_path): os.remove(local_text_path)
 
-# ✅ 메인 실행 흐름
-if len(sys.argv) < 2:
-    print("❌ 사용법: python yt_whisper.py <YouTube_URL>")
-    sys.exit(1)
+# --- 메인 실행 흐름 ---
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("❌ 사용법: python3 yt_whisper.py <YouTube_URL>")
+        sys.exit(1)
+    youtube_url = sys.argv[1]
+    youtube_id = extract_youtube_id(youtube_url)
+    if not youtube_id:
+        print("❌ 유효한 YouTube URL이 아닙니다."); sys.exit(10)
 
-youtube_url = sys.argv[1]
-youtube_id = extract_youtube_id(youtube_url)
-if not youtube_id:
-    print("❌ 유효한 YouTube URL이 아닙니다.")
-    sys.exit(10)
+    # [수정] 영상 길이를 먼저 가져와서 출력
+    duration = get_video_duration(youtube_url)
+    print(f"[DURATION_RESULT]{duration}")
 
-# ✅ 경로 설정
-audio_dir = "src/main/resources/audiofiles"
-text_dir = "src/main/resources/textfiles"
-os.makedirs(audio_dir, exist_ok=True)
-os.makedirs(text_dir, exist_ok=True)
+    print("="*50); print(f"작업 시작: (ID: {youtube_id})"); print("="*50)
 
-audio_path = os.path.join(audio_dir, f"{youtube_id}.wav")
-
-# ✅ 자막이 있으면 자막 다운로드 → 없으면 Whisper 실행
-if has_korean_subtitles(youtube_url):
-    print(f"[WHISPER] [INFO] 한국어 자막이 있어 자막 다운로드로 진행합니다.")
-    subtitle_path = download_subtitles(youtube_url, youtube_id, text_dir)
-    if subtitle_path:
-        print(f"[WHISPER] [완료] 자막 파일 저장 완료: {subtitle_path}")
-        sys.exit(0)
+    if has_korean_subtitles(youtube_url):
+        final_s3_path = download_subtitle_and_upload_to_s3(youtube_url, youtube_id)
     else:
-        print(f"[WHISPER] ❌ 자막 파일 저장 실패. Whisper로 전환합니다.")
+        final_s3_path = process_audio_with_whisper(youtube_url, youtube_id)
 
-print(f"[WHISPER] [INFO] 자막 없음 → Whisper로 오디오 변환 시작")
-print(f"[WHISPER] [INFO] YouTube 오디오 다운로드 중: {youtube_url}")
-try:
-    subprocess.run([
-        YTDLP_PATH,
-        "--no-check-certificate",
-        "--force-ipv4",
-        "--user-agent", "Mozilla/5.0",
-        "--referer", "https://www.youtube.com",
-        "-x", "--audio-format", "wav",
-        "-f", "bestaudio[ext=m4a]/bestaudio/best",
-        "-o", os.path.join(audio_dir, f"{youtube_id}.%(ext)s"),
-        youtube_url
-    ], check=True)
-except subprocess.CalledProcessError as e:
-    print(f"[WHISPER] ❌ yt-dlp 다운로드 실패: {e}")
-    sys.exit(10)
-
-transcribe_with_whisper(audio_path, youtube_id, text_dir)
-print(f"[WHISPER] [완료] Whisper로 텍스트 파일 저장 완료")
+    print("\n" + "="*50)
+    if final_s3_path:
+        print(f"✅ 작업 완료. 최종 결과물은 S3에 저장되었습니다.")
+        # [수정] 최종 S3 경로를 표준 출력으로 명확하게 전달
+        print(f"[S3_PATH_RESULT]{final_s3_path}")
+    else:
+        print("❌ 작업 실패. 로그를 확인해주세요.")
+    print("="*50)
