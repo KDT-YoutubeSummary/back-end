@@ -17,7 +17,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -72,7 +71,8 @@ public class SecurityConfig {
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/auth/**",  // 로그인, 회원가입 허용
+                                "/api/auth/login",    // 로그인 허용
+                                "/api/auth/register", // 회원가입 허용
                                 "/oauth2/**", "/swagger-ui/**", "/v3/api-docs/**",
                                 "/swagger-resources/**", "/webjars/**"
                         ).permitAll()
@@ -87,9 +87,7 @@ public class SecurityConfig {
                         })
                 );
 
-        // JWT 로그인 필터 먼저 추가
         http.addFilter(jwtLoginAuthenticationFilter(authManager));
-        // 일반 JWT 인증 필터 추가
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
