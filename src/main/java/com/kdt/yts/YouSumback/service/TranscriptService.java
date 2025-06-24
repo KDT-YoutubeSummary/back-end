@@ -7,17 +7,13 @@ import com.kdt.yts.YouSumback.repository.AudioTranscriptRepository;
 import com.kdt.yts.YouSumback.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -37,9 +33,6 @@ public class TranscriptService {
     @Value("${aws.s3.bucket-name}")
     private String s3BucketName;
 
-    @Value("${whisper.server.url}")
-    private String whisperServerUrl;  // 예: http://whisper:8000
-
     public Long extractYoutubeIdAndRunWhisper(String originalUrl, String purpose) throws Exception {
         String youtubeId = extractYoutubeId(originalUrl);
         if (youtubeId == null || youtubeId.isEmpty()) {
@@ -57,11 +50,11 @@ public class TranscriptService {
             return videoRepository.save(newVideo);
         });
 
-        // 2. Whisper 서버 호출
-        callWhisperServer(originalUrl);
+        // 2. Whisper 스크립트 실행 (도커 컨테이너 내부 실행)
+        runWhisperPythonScript(originalUrl);
 
         // 3. Whisper가 S3에 결과 올려놨다고 가정 -> S3에서 가져오기
-        String s3Key = "whisper-results/" + youtubeId + ".txt";  // whisper-server가 이 패턴으로 저장하도록 합의
+        String s3Key = "whisper-results/" + youtubeId + ".txt";
         String rawText = getObjectContentFromS3(s3Key);
 
         // 4. 텍스트 정제
@@ -84,25 +77,25 @@ public class TranscriptService {
         return video.getId();
     }
 
-    // Whisper 서버 호출 (HTTP POST)
-    private void callWhisperServer(String youtubeUrl) {
-        RestTemplate restTemplate = new RestTemplate();
-        String url = whisperServerUrl + "/run_whisper/";
+    // Python 스크립트 직접 실행
+    private void runWhisperPythonScript(String youtubeUrl) throws IOException, InterruptedException {
+        String scriptPath = "/app/yt_whisper.py";  // Docker 컨테이너 내부 경로
+        ProcessBuilder pb = new ProcessBuilder("python3", scriptPath, youtubeUrl);
+        pb.redirectErrorStream(true);
 
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("youtube_url", youtubeUrl);
+        Process process = pb.start();
 
-        try {
-            ResponseEntity<String> response = restTemplate.postForEntity(url, requestBody, String.class);
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new RuntimeException("Whisper 호출 실패: " + response.getBody());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Whisper 서버 호출 중 예외 발생", e);
+        // 로그 출력 (디버깅용)
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            reader.lines().forEach(System.out::println);
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException("Whisper 스크립트 실행 실패 (exitCode=" + exitCode + ")");
         }
     }
 
-    // 유튜브 ID 추출 (기존 유지)
     private String extractYoutubeId(String url) {
         if (url == null || url.trim().isEmpty()) {
             return null;
@@ -127,7 +120,6 @@ public class TranscriptService {
         return null;
     }
 
-    // S3에서 텍스트 읽기
     private String getObjectContentFromS3(String key) throws IOException {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(s3BucketName)
@@ -140,7 +132,6 @@ public class TranscriptService {
         }
     }
 
-    // 정제된 텍스트 읽기 (기존 유지)
     public String readTranscriptText(Long videoId) throws IOException {
         AudioTranscript transcript = transcriptRepository.findByVideoId(videoId)
                 .orElseThrow(() -> new NoSuchElementException("Transcript not found"));
