@@ -13,18 +13,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +51,7 @@ public class TranscriptService {
             return videoRepository.save(newVideo);
         });
 
-        // 2. whisper-server REST API 호출
+        // 2. Whisper 서버 REST 호출
         RestTemplate restTemplate = new RestTemplate();
         String whisperServerUrl = "http://whisper-server:8000/transcribe";
 
@@ -68,13 +64,18 @@ public class TranscriptService {
         HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
 
         ResponseEntity<String> response = restTemplate.postForEntity(whisperServerUrl, requestEntity, String.class);
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Whisper 서버 호출 실패: " + response.getStatusCode());
+        }
 
-        // 3. Whisper가 S3에 결과 올려놨다고 가정 -> S3에서 가져오기
-        String s3Key = "whisper-results/" + youtubeId + ".txt";
-        String rawText = getObjectContentFromS3(s3Key);
+        String rawText = response.getBody();
 
-        // 4. 텍스트 정제
+        // 3. 텍스트 정제
         String cleanedText = textCleaner.clean(rawText);
+
+        // 4. S3 업로드
+        String s3Key = "whisper-results/" + youtubeId + ".txt";
+        uploadTextToS3(s3Key, cleanedText);
 
         // 5. DB 저장
         AudioTranscript transcript = transcriptRepository.findByVideoId(video.getId())
@@ -93,6 +94,7 @@ public class TranscriptService {
         return video.getId();
     }
 
+    // 유튜브 ID 추출 유틸
     private String extractYoutubeId(String url) {
         if (url == null || url.trim().isEmpty()) {
             return null;
@@ -117,21 +119,14 @@ public class TranscriptService {
         return null;
     }
 
-    private String getObjectContentFromS3(String key) throws IOException {
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+    // S3 업로드 함수
+    private void uploadTextToS3(String key, String text) {
+        PutObjectRequest putRequest = PutObjectRequest.builder()
                 .bucket(s3BucketName)
                 .key(key)
+                .contentType("text/plain")
                 .build();
 
-        ResponseInputStream<GetObjectResponse> s3is = s3Client.getObject(getObjectRequest);
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(s3is, StandardCharsets.UTF_8))) {
-            return reader.lines().collect(Collectors.joining("\n"));
-        }
-    }
-
-    public String readTranscriptText(Long videoId) throws IOException {
-        AudioTranscript transcript = transcriptRepository.findByVideoId(videoId)
-                .orElseThrow(() -> new NoSuchElementException("Transcript not found"));
-        return getObjectContentFromS3(transcript.getTranscriptPath());
+        s3Client.putObject(putRequest, RequestBody.fromString(text, StandardCharsets.UTF_8));
     }
 }

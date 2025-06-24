@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/scripts")
 @RequiredArgsConstructor
 @Tag(name = "대본", description = "음성 및 영상 대본 관리 API")
-// Whisper만 별도 테스트하는 컨트롤러
 public class TranscriptController {
 
     private final TranscriptService transcriptService;
@@ -34,3 +33,4 @@ public class TranscriptController {
         }
     }
 }
+
