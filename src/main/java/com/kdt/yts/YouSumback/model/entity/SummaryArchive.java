@@ -15,7 +15,7 @@ public class SummaryArchive {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "summary_archive_id")
+    @Column(name = "archive_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
