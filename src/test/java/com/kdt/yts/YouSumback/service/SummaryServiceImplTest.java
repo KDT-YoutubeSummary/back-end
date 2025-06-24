@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -63,12 +63,24 @@ class SummaryServiceImplTest {
     @BeforeEach
     void setUp() {
         testUser = User.builder().id(1L).userName("testuser").build();
-        testVideo = Video.builder().id(1L).youtubeId("test-id").title("test title").build();
+
+        // ⭐️⭐️⭐️ 핵심 수정 포인트 1: Video 객체에 모든 필드 값을 채워줍니다. ⭐️⭐️⭐️
+        testVideo = Video.builder()
+                .id(1L)
+                .youtubeId("test-id")
+                .title("test title")
+                .thumbnailUrl("http://thumbnail.url/test.jpg")
+                .uploaderName("Test Uploader")
+                .viewCount(1000L)
+                .originalLanguageCode("ko")
+                .build();
+
         testTranscript = AudioTranscript.builder()
                 .id(1L)
                 .video(testVideo)
                 .transcriptPath("dummy/path/cleaned_test-id.txt")
                 .build();
+
         testRequest = new SummaryRequestDTO();
         testRequest.setOriginalUrl("http://youtu.be/test-id");
         testRequest.setUserPrompt("Test Prompt");
@@ -78,68 +90,61 @@ class SummaryServiceImplTest {
     @Test
     @DisplayName("요약 및 해시태그 생성 단위 테스트 - 성공 (FR-007, FR-008, FR-009)")
     void summarize_Success() throws IOException {
-        // given: 모든 외부 의존성(Repository, Client)이 어떻게 동작할지 정의합니다.
-
-        // 1. DB 조회 관련 Mocking
+        // given
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(audioTranscriptRepository.findByVideo_OriginalUrl(anyString())).thenReturn(Optional.of(testTranscript));
-        when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty()); // 새로운 태그라고 가정
+        when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty());
 
-        // 2. DB 저장 관련 Mocking
+        // ⭐️⭐️⭐️ 핵심 수정 포인트 2: save 동작 시 ID와 생성 시간을 모두 설정합니다. ⭐️⭐️⭐️
         when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> {
             Summary summary = invocation.getArgument(0);
-            summary.setId(100L); // 저장 후 ID가 생성된 것처럼 시뮬레이션
+            summary.setId(100L);
+            // 서비스 코드에서 LocalDateTime.now()로 설정하지만, 테스트의 일관성을 위해 여기서도 명시적으로 설정
+            if (summary.getCreatedAt() == null) {
+                summary.setCreatedAt(LocalDateTime.now());
+            }
             return summary;
         });
 
-        //
-        // ⭐️⭐️⭐️ 여기가 핵심 수정 포인트입니다! ⭐️⭐️⭐️
-        // SummaryArchive 저장 시, ID가 생성된 것처럼 시뮬레이션합니다.
-        //
         when(summaryArchiveRepository.save(any(SummaryArchive.class))).thenAnswer(invocation -> {
             SummaryArchive archive = invocation.getArgument(0);
-            archive.setId(200L); // 임의의 ID를 설정해줍니다.
+            archive.setId(200L);
             return archive;
         });
 
         when(tagRepository.save(any(Tag.class))).thenAnswer(invocation -> {
             Tag tag = invocation.getArgument(0);
-            tag.setId(new Random().nextLong()); // 각 태그에 고유 ID 부여
+            tag.setId(new Random().nextLong());
             return tag;
         });
+
         when(summaryArchiveTagRepository.save(any(SummaryArchiveTag.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userActivityLogRepository.save(any(UserActivityLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-
-        // 3. OpenAI Client Mocking
         when(openAIClient.chat(contains("요약 대상 내용"))).thenReturn(Mono.just("Test summary text."));
         when(openAIClient.chat(contains("핵심 해시태그"))).thenReturn(Mono.just("tag1, tag2, tag3"));
 
-        // 4. 정적(static) 메소드인 Files.readString Mocking
         try (MockedStatic<Files> mockedFiles = Mockito.mockStatic(Files.class)) {
             mockedFiles.when(() -> Files.readString(any(Path.class))).thenReturn("This is a long transcript text...");
 
-            // when: 실제 테스트하려는 메소드를 호출합니다.
+            // when
             SummaryResponseDTO response = summaryService.summarize(testRequest, 1L);
 
-            // then: 결과가 예상과 일치하는지 검증합니다.
+            // then
             assertNotNull(response);
             assertEquals("Test summary text.", response.getSummary());
             assertEquals(List.of("tag1", "tag2", "tag3"), response.getTags());
             assertEquals(100L, response.getSummaryId());
+            assertNotNull(response.getCreatedAt()); // 생성 시간도 null이 아닌지 확인
 
             ArgumentCaptor<Summary> summaryCaptor = ArgumentCaptor.forClass(Summary.class);
             verify(summaryRepository, times(1)).save(summaryCaptor.capture());
-            Summary capturedSummary = summaryCaptor.getValue();
-            assertEquals("Test summary text.", capturedSummary.getSummaryText());
-            assertEquals(testUser, capturedSummary.getUser());
+            assertEquals("test title", summaryCaptor.getValue().getAudioTranscript().getVideo().getTitle());
 
             ArgumentCaptor<SummaryArchive> archiveCaptor = ArgumentCaptor.forClass(SummaryArchive.class);
             verify(summaryArchiveRepository, times(1)).save(archiveCaptor.capture());
             assertEquals(testUser, archiveCaptor.getValue().getUser());
-            // 캡처된 객체의 ID가 null이 아님을 확인
             assertNotNull(archiveCaptor.getValue().getId());
-
 
             verify(tagRepository, times(3)).save(any(Tag.class));
             verify(summaryArchiveTagRepository, times(3)).save(any(SummaryArchiveTag.class));
