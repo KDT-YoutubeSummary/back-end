@@ -56,7 +56,6 @@ class SummaryServiceImplTest {
     void setUp() {
         testUser = User.builder().id(1L).userName("testuser").build();
 
-        // NullPointerException 방지를 위해 DTO 생성에 필요한 모든 필드를 채워줍니다.
         testVideo = Video.builder()
                 .id(1L)
                 .youtubeId("test-id")
@@ -82,18 +81,15 @@ class SummaryServiceImplTest {
     @Test
     @DisplayName("요약 및 해시태그 생성 단위 테스트 - 성공 (FR-007, FR-008, FR-009)")
     void summarize_Success() throws IOException {
-        // given: 테스트에 필요한 모든 전제 조건을 설정합니다.
+        // given
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(audioTranscriptRepository.findByVideo_OriginalUrl(anyString())).thenReturn(Optional.of(testTranscript));
         when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty());
 
-        // NullPointerException 방지를 위해 save 메소드가 호출될 때,
-        // ID와 생성시간, 그리고 내부에 포함된 객체까지 명확하게 설정하여 반환합니다.
         when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> {
             Summary summary = invocation.getArgument(0);
             summary.setId(100L);
             summary.setCreatedAt(LocalDateTime.now());
-            // 서비스 코드에서 설정한 transcript 객체를 그대로 유지하도록 보장합니다.
             summary.setAudioTranscript(testTranscript);
             return summary;
         });
@@ -113,27 +109,30 @@ class SummaryServiceImplTest {
         when(summaryArchiveTagRepository.save(any(SummaryArchiveTag.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userActivityLogRepository.save(any(UserActivityLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        when(openAIClient.chat(contains("요약 대상 내용"))).thenReturn(Mono.just("Test summary text."));
+        // ⭐️⭐️⭐️ 여기가 최종 핵심 수정 포인트입니다! ⭐️⭐️⭐️
+        // 1. 각 조각(chunk)을 요약하는 AI 호출을 Mocking 합니다.
+        when(openAIClient.chat(contains("요약 대상 내용"))).thenReturn(Mono.just("부분 요약 내용."));
+        // 2. 조각난 요약들을 합쳐 최종 요약을 만드는 AI 호출을 Mocking 합니다.
+        when(openAIClient.chat(contains("하나로 합쳐서"))).thenReturn(Mono.just("Test summary text."));
+        // 3. 요약문에서 해시태그를 추출하는 AI 호출을 Mocking 합니다.
         when(openAIClient.chat(contains("핵심 해시태그"))).thenReturn(Mono.just("tag1, tag2, tag3"));
 
         try (MockedStatic<Files> mockedFiles = Mockito.mockStatic(Files.class)) {
             mockedFiles.when(() -> Files.readString(any(Path.class), any(Charset.class)))
                     .thenReturn("This is a long transcript text from mock...");
 
-            // when: 테스트하려는 실제 메소드를 호출합니다.
+            // when
             SummaryResponseDTO response = summaryService.summarize(testRequest, 1L);
 
-            // then: 메소드 호출 후 결과가 우리가 예상한 대로인지 검증합니다.
+            // then
             assertNotNull(response, "응답 DTO는 null이 아니어야 합니다.");
-            assertEquals("Test summary text.", response.getSummary());
+            assertEquals("Test summary text.", response.getSummary()); // 최종 요약 검증
             assertEquals(List.of("tag1", "tag2", "tag3"), response.getTags());
             assertEquals(100L, response.getSummaryId());
             assertNotNull(response.getCreatedAt(), "생성 시간은 null이 아니어야 합니다.");
 
-            // ArgumentCaptor를 사용하여 save 메소드에 전달된 객체의 내용을 검증합니다.
             ArgumentCaptor<Summary> summaryCaptor = ArgumentCaptor.forClass(Summary.class);
             verify(summaryRepository, times(1)).save(summaryCaptor.capture());
-            // 이 검증 라인에서 NPE가 발생하지 않도록, 위의 when()에서 내부 객체까지 모두 설정했습니다.
             assertEquals("test title", summaryCaptor.getValue().getAudioTranscript().getVideo().getTitle());
 
             ArgumentCaptor<SummaryArchive> archiveCaptor = ArgumentCaptor.forClass(SummaryArchive.class);
