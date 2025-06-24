@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -85,22 +86,33 @@ class SummaryServiceImplTest {
         when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty()); // 새로운 태그라고 가정
 
         // 2. DB 저장 관련 Mocking
-        // save 메소드가 호출되면, 파라미터로 받은 객체를 그대로 반환하도록 설정합니다. (실제 DB처럼 동작)
         when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> {
             Summary summary = invocation.getArgument(0);
             summary.setId(100L); // 저장 후 ID가 생성된 것처럼 시뮬레이션
             return summary;
         });
-        when(tagRepository.save(any(Tag.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(summaryArchiveRepository.save(any(SummaryArchive.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        //
+        // ⭐️⭐️⭐️ 여기가 핵심 수정 포인트입니다! ⭐️⭐️⭐️
+        // SummaryArchive 저장 시, ID가 생성된 것처럼 시뮬레이션합니다.
+        //
+        when(summaryArchiveRepository.save(any(SummaryArchive.class))).thenAnswer(invocation -> {
+            SummaryArchive archive = invocation.getArgument(0);
+            archive.setId(200L); // 임의의 ID를 설정해줍니다.
+            return archive;
+        });
+
+        when(tagRepository.save(any(Tag.class))).thenAnswer(invocation -> {
+            Tag tag = invocation.getArgument(0);
+            tag.setId(new Random().nextLong()); // 각 태그에 고유 ID 부여
+            return tag;
+        });
         when(summaryArchiveTagRepository.save(any(SummaryArchiveTag.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userActivityLogRepository.save(any(UserActivityLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 
         // 3. OpenAI Client Mocking
-        // 실제 프롬프트에 포함된 키워드로 더 정확하게 매칭합니다.
         when(openAIClient.chat(contains("요약 대상 내용"))).thenReturn(Mono.just("Test summary text."));
-        // 해시태그 추출 프롬프트는 '해시태그'와 '기본 태그 목록' 이라는 키워드를 포함합니다.
         when(openAIClient.chat(contains("핵심 해시태그"))).thenReturn(Mono.just("tag1, tag2, tag3"));
 
         // 4. 정적(static) 메소드인 Files.readString Mocking
@@ -114,9 +126,8 @@ class SummaryServiceImplTest {
             assertNotNull(response);
             assertEquals("Test summary text.", response.getSummary());
             assertEquals(List.of("tag1", "tag2", "tag3"), response.getTags());
-            assertEquals(100L, response.getSummaryId()); // Mocking된 ID로 검증
+            assertEquals(100L, response.getSummaryId());
 
-            // ArgumentCaptor를 사용하여 save 메서드에 전달된 실제 객체를 캡처하여 내용을 검증합니다.
             ArgumentCaptor<Summary> summaryCaptor = ArgumentCaptor.forClass(Summary.class);
             verify(summaryRepository, times(1)).save(summaryCaptor.capture());
             Summary capturedSummary = summaryCaptor.getValue();
@@ -126,8 +137,10 @@ class SummaryServiceImplTest {
             ArgumentCaptor<SummaryArchive> archiveCaptor = ArgumentCaptor.forClass(SummaryArchive.class);
             verify(summaryArchiveRepository, times(1)).save(archiveCaptor.capture());
             assertEquals(testUser, archiveCaptor.getValue().getUser());
+            // 캡처된 객체의 ID가 null이 아님을 확인
+            assertNotNull(archiveCaptor.getValue().getId());
 
-            // 총 3개의 태그가 생성(save)되고, 3개의 연결(SummaryArchiveTag)이 생성되는지 확인합니다.
+
             verify(tagRepository, times(3)).save(any(Tag.class));
             verify(summaryArchiveTagRepository, times(3)).save(any(SummaryArchiveTag.class));
 
