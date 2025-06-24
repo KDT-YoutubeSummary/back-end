@@ -77,34 +77,46 @@ class SummaryServiceImplTest {
     @Test
     @DisplayName("요약 및 해시태그 생성 단위 테스트 - 성공 (FR-007, FR-008, FR-009)")
     void summarize_Success() throws IOException {
-        // given
+        // given: 모든 외부 의존성(Repository, Client)이 어떻게 동작할지 정의합니다.
+
+        // 1. DB 조회 관련 Mocking
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(audioTranscriptRepository.findByVideo_OriginalUrl(anyString())).thenReturn(Optional.of(testTranscript));
+        when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty()); // 새로운 태그라고 가정
 
-        // when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        // when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        // when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty());
-        // when(tagRepository.save(any(Tag.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        // when(summaryArchiveRepository.save(any(SummaryArchive.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        // 2. DB 저장 관련 Mocking
+        // save 메소드가 호출되면, 파라미터로 받은 객체를 그대로 반환하도록 설정합니다. (실제 DB처럼 동작)
+        when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> {
+            Summary summary = invocation.getArgument(0);
+            summary.setId(100L); // 저장 후 ID가 생성된 것처럼 시뮬레이션
+            return summary;
+        });
+        when(tagRepository.save(any(Tag.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(summaryArchiveRepository.save(any(SummaryArchive.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(summaryArchiveTagRepository.save(any(SummaryArchiveTag.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userActivityLogRepository.save(any(UserActivityLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // openAIClient.chat()은 Mono<String>을 반환하므로, Mono.just()로 감싸서 반환
-        when(openAIClient.chat(contains("요약을 만들어주세요"))).thenReturn(Mono.just("Test summary text."));
-        when(openAIClient.chat(contains("키워드 3개"))).thenReturn(Mono.just("tag1, tag2, tag3"));
 
+        // 3. OpenAI Client Mocking
+        // 실제 프롬프트에 포함된 키워드로 더 정확하게 매칭합니다.
+        when(openAIClient.chat(contains("요약 대상 내용"))).thenReturn(Mono.just("Test summary text."));
+        // 해시태그 추출 프롬프트는 '해시태그'와 '기본 태그 목록' 이라는 키워드를 포함합니다.
+        when(openAIClient.chat(contains("핵심 해시태그"))).thenReturn(Mono.just("tag1, tag2, tag3"));
 
-        // Mocking static Files.readString
+        // 4. 정적(static) 메소드인 Files.readString Mocking
         try (MockedStatic<Files> mockedFiles = Mockito.mockStatic(Files.class)) {
             mockedFiles.when(() -> Files.readString(any(Path.class))).thenReturn("This is a long transcript text...");
 
-            // when
+            // when: 실제 테스트하려는 메소드를 호출합니다.
             SummaryResponseDTO response = summaryService.summarize(testRequest, 1L);
 
-            // then
+            // then: 결과가 예상과 일치하는지 검증합니다.
             assertNotNull(response);
             assertEquals("Test summary text.", response.getSummary());
             assertEquals(List.of("tag1", "tag2", "tag3"), response.getTags());
+            assertEquals(100L, response.getSummaryId()); // Mocking된 ID로 검증
 
-            // ArgumentCaptor를 사용하여 save 메서드에 전달된 실제 객체를 캡처
+            // ArgumentCaptor를 사용하여 save 메서드에 전달된 실제 객체를 캡처하여 내용을 검증합니다.
             ArgumentCaptor<Summary> summaryCaptor = ArgumentCaptor.forClass(Summary.class);
             verify(summaryRepository, times(1)).save(summaryCaptor.capture());
             Summary capturedSummary = summaryCaptor.getValue();
@@ -115,9 +127,13 @@ class SummaryServiceImplTest {
             verify(summaryArchiveRepository, times(1)).save(archiveCaptor.capture());
             assertEquals(testUser, archiveCaptor.getValue().getUser());
 
+            // 총 3개의 태그가 생성(save)되고, 3개의 연결(SummaryArchiveTag)이 생성되는지 확인합니다.
+            verify(tagRepository, times(3)).save(any(Tag.class));
+            verify(summaryArchiveTagRepository, times(3)).save(any(SummaryArchiveTag.class));
+
             ArgumentCaptor<UserActivityLog> logCaptor = ArgumentCaptor.forClass(UserActivityLog.class);
             verify(userActivityLogRepository, times(1)).save(logCaptor.capture());
             assertEquals(testUser, logCaptor.getValue().getUser());
         }
     }
-} 
+}
