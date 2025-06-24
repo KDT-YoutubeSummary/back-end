@@ -10,5 +10,5 @@ import java.util.Optional;
 public interface SummaryRepository extends JpaRepository<Summary, Long> {
     Optional<Summary> findById(Long id);
 
-    Optional<Summary> findByUserIdAndAudioTranscriptId(Long userId, Long transcriptId);
+    Optional<Summary> findByUser_IdAndAudioTranscript_Id(Long userId, Long transcriptId);
 }

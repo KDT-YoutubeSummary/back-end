@@ -42,7 +42,7 @@ public class SummaryArchiveService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 요약이 존재하지 않습니다."));
 
         // 3. 중복 저장 방지
-        Optional<SummaryArchive> existingArchive = summaryArchiveRepository.findByUserIdAndSummaryId(userId, request.getSummaryId());
+        Optional<SummaryArchive> existingArchive = summaryArchiveRepository.findByUser_IdAndSummary_Id(userId, request.getSummaryId());
         if (existingArchive.isPresent()) {
             throw new IllegalStateException("이미 저장된 요약입니다.");
         }
@@ -68,7 +68,7 @@ public class SummaryArchiveService {
         }
 
         // 태그 이름 리스트
-        List<String> tagNames = summaryArchiveTagRepository.findBySummaryArchiveId(summaryArchive.getId()).stream()
+        List<String> tagNames = summaryArchiveTagRepository.findBySummaryArchive_Id(summaryArchive.getId()).stream()
                 .map(t -> t.getTag().getTagName()).toList();
 
         return SummaryArchiveResponseListDTO.fromEntity(summaryArchive, tagNames);
@@ -80,11 +80,11 @@ public class SummaryArchiveService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        List<SummaryArchive> archives = summaryArchiveRepository.findByUserId(userId);
+        List<SummaryArchive> archives = summaryArchiveRepository.findByUser_Id(userId);
 
         return archives.stream()
                 .map(archive -> {
-                    List<SummaryArchiveTag> tags = summaryArchiveTagRepository.findBySummaryArchiveId(archive.getId());
+                    List<SummaryArchiveTag> tags = summaryArchiveTagRepository.findBySummaryArchive_Id(archive.getId());
                     List<String> tagNames = tags.stream()
                             .map(t -> t.getTag().getTagName())
                             .toList();
@@ -108,7 +108,7 @@ public class SummaryArchiveService {
         archive.setLastViewedAt(LocalDateTime.now());
         summaryArchiveRepository.save(archive);
 
-        List<SummaryArchiveTag> tags = summaryArchiveTagRepository.findBySummaryArchiveId(archive.getId());
+        List<SummaryArchiveTag> tags = summaryArchiveTagRepository.findBySummaryArchive_Id(archive.getId());
         List<String> tagNames = tags.stream().map(t -> t.getTag().getTagName()).toList();
 
         return SummaryArchiveResponseDTO.fromEntity(archive, tagNames);
@@ -133,7 +133,7 @@ public class SummaryArchiveService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        List<SummaryArchive> summaryArchives = summaryArchiveRepository.findByUserId(userId);
+        List<SummaryArchive> summaryArchives = summaryArchiveRepository.findByUser_Id(userId);
 
         return summaryArchives.stream().filter(summaryArchive -> {
             boolean titleMatches = (title == null ||
@@ -145,13 +145,13 @@ public class SummaryArchiveService {
                         .map(String::trim)
                         .filter(s -> !s.isBlank())
                         .toList();
-                List<String> actualTags = summaryArchiveTagRepository.findBySummaryArchiveId(summaryArchive.getId()).stream()
+                List<String> actualTags = summaryArchiveTagRepository.findBySummaryArchive_Id(summaryArchive.getId()).stream()
                         .map(t -> t.getTag().getTagName()).toList();
                 tagMatches = new HashSet<>(actualTags).containsAll(filterTags);
             }
             return titleMatches && tagMatches;
         }).map(archive -> {
-            List<String> tagList = summaryArchiveTagRepository.findBySummaryArchiveId(archive.getId()).stream()
+            List<String> tagList = summaryArchiveTagRepository.findBySummaryArchive_Id(archive.getId()).stream()
                     .map(summaryArchiveTag -> summaryArchiveTag.getTag().getTagName())
                     .toList();
 

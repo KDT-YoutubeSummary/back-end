@@ -14,7 +14,7 @@ public interface SummaryArchiveTagRepository extends JpaRepository<SummaryArchiv
 
     // 특정 요약 저장소의 태그 목록 조회
     @Query("SELECT sat FROM SummaryArchiveTag sat JOIN FETCH sat.tag WHERE sat.summaryArchiveId = :summaryArchiveId")
-    List<SummaryArchiveTag> findBySummaryArchiveId(@Param("summaryArchiveId") Long summaryArchiveId);
+    List<SummaryArchiveTag> findBySummaryArchive_Id(@Param("summaryArchiveId") Long summaryArchiveId);
 
     // 특정 사용자의 태그별 요약 저장소 개수 조회
     @Query(value = """
@@ -28,5 +28,5 @@ public interface SummaryArchiveTagRepository extends JpaRepository<SummaryArchiv
     List<Object[]> countTagsByUserId(@Param("userId") Long userId);
 
     // 특정 요약 저장소와 태그 조합 삭제  
-    void deleteBySummaryArchiveIdAndTagId(Long summaryArchiveId, Long tagId);
+    void deleteBySummaryArchive_IdAndTag_Id(Long summaryArchiveId, Long tagId);
 }
