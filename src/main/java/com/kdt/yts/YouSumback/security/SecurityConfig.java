@@ -43,7 +43,7 @@ public class SecurityConfig {
     @Bean
     public JwtLoginAuthenticationFilter jwtLoginAuthenticationFilter(AuthenticationManager authManager) {
         JwtLoginAuthenticationFilter filter = new JwtLoginAuthenticationFilter(authManager, jwtProvider, userRepository);
-        filter.setFilterProcessesUrl("/api/auth/login");
+        filter.setFilterProcessesUrl("/auth/login");
         return filter;
     }
 
