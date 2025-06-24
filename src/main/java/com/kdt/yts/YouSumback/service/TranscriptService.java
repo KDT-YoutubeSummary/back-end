@@ -7,7 +7,12 @@ import com.kdt.yts.YouSumback.repository.AudioTranscriptRepository;
 import com.kdt.yts.YouSumback.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -50,8 +55,19 @@ public class TranscriptService {
             return videoRepository.save(newVideo);
         });
 
-        // 2. Whisper 스크립트 실행 (도커 컨테이너 내부 실행)
-        runWhisperPythonScript(originalUrl);
+        // 2. whisper-server REST API 호출
+        RestTemplate restTemplate = new RestTemplate();
+        String whisperServerUrl = "http://whisper-server:8000/transcribe";
+
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("youtubeId", youtubeId);
+        requestBody.put("videoUrl", originalUrl);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+
+        ResponseEntity<String> response = restTemplate.postForEntity(whisperServerUrl, requestEntity, String.class);
 
         // 3. Whisper가 S3에 결과 올려놨다고 가정 -> S3에서 가져오기
         String s3Key = "whisper-results/" + youtubeId + ".txt";
@@ -75,25 +91,6 @@ public class TranscriptService {
         transcriptRepository.save(transcript);
 
         return video.getId();
-    }
-
-    // Python 스크립트 직접 실행
-    private void runWhisperPythonScript(String youtubeUrl) throws IOException, InterruptedException {
-        String scriptPath = "/app/yt_whisper.py";  // Docker 컨테이너 내부 경로
-        ProcessBuilder pb = new ProcessBuilder("python3", scriptPath, youtubeUrl);
-        pb.redirectErrorStream(true);
-
-        Process process = pb.start();
-
-        // 로그 출력 (디버깅용)
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            reader.lines().forEach(System.out::println);
-        }
-
-        int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            throw new RuntimeException("Whisper 스크립트 실행 실패 (exitCode=" + exitCode + ")");
-        }
     }
 
     private String extractYoutubeId(String url) {
