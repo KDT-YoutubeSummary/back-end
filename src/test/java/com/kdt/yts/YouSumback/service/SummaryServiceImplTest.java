@@ -70,6 +70,7 @@ class SummaryServiceImplTest {
                 .uploaderName("Test Uploader")
                 .viewCount(1000L)
                 .originalLanguageCode("ko")
+                // .duration(300) // IDE 컴파일 오류의 원인이므로 이 라인을 삭제합니다.
                 .build();
 
         testTranscript = AudioTranscript.builder()
