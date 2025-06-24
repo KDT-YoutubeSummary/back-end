@@ -81,12 +81,12 @@ public class SecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 // 인증없이 허용할 경로들
-                                "/api/auth/login",            // 로그인
-                                "/api/auth/register",         // 회원가입
-                                "/api/recommendations/**",    // 추천 API 경로 추가
+                                "/auth/login",            // 로그인
+                                "/auth/register",         // 회원가입
+                                "/recommendations/**",    // 추천 API 경로 추가
                                 "/oauth2/**",                 // OAuth2 관련 엔드포인트
                                 "/login/oauth2/code/**",      // OAuth2 콜백 엔드포인트
-                                "/api/auth/google",           // 구글 로그인 API
+                                "/auth/google",           // 구글 로그인 API
                                 "/swagger-ui/**",             // Swagger UI
                                 "/swagger-ui.html",           // Swagger UI HTML
                                 "/swagger-ui/index.html",     // Swagger UI Index
@@ -101,8 +101,8 @@ public class SecurityConfig {
                                 "/error",                     // 에러 페이지
                                 "/favicon.ico"               // 파비콘
                         ).permitAll()
-                        .requestMatchers("/api/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
-                        .requestMatchers("/api/summary-archives/**").authenticated() // 요약 저장소는 인증 필요
+                        .requestMatchers("/youtube/upload").authenticated() // 요약 업로드 경로는 인증 필요
+                        .requestMatchers("/summary-archives/**").authenticated() // 요약 저장소는 인증 필요
                         .anyRequest().authenticated()
         );
 
