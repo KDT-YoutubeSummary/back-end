@@ -14,13 +14,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +38,33 @@ public class TranscriptService {
 
     @Value("${aws.s3.bucket-name}")
     private String s3BucketName;
+
+    // 🎯 Transcript 텍스트 읽기 (S3에서)
+    public String readTranscriptText(Long videoId) {
+        AudioTranscript transcript = transcriptRepository.findByVideoId(videoId)
+                .orElseThrow(() -> new IllegalArgumentException("Transcript not found for videoId: " + videoId));
+
+        String s3Key = transcript.getTranscriptPath();
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(s3BucketName)
+                .key(s3Key)
+                .build();
+
+        try (ResponseInputStream<?> s3Object = s3Client.getObject(getObjectRequest);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(s3Object))) {
+
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+            return sb.toString();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read transcript from S3", e);
+        }
+    }
 
     public Long extractYoutubeIdAndRunWhisper(String originalUrl, String purpose) throws Exception {
         String youtubeId = extractYoutubeId(originalUrl);
@@ -94,7 +126,6 @@ public class TranscriptService {
         return video.getId();
     }
 
-    // 유튜브 ID 추출 유틸
     private String extractYoutubeId(String url) {
         if (url == null || url.trim().isEmpty()) {
             return null;
@@ -119,7 +150,6 @@ public class TranscriptService {
         return null;
     }
 
-    // S3 업로드 함수
     private void uploadTextToS3(String key, String text) {
         PutObjectRequest putRequest = PutObjectRequest.builder()
                 .bucket(s3BucketName)
