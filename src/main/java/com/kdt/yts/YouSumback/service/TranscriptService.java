@@ -7,7 +7,9 @@ import com.kdt.yts.YouSumback.repository.AudioTranscriptRepository;
 import com.kdt.yts.YouSumback.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -50,8 +52,19 @@ public class TranscriptService {
             return videoRepository.save(newVideo);
         });
 
-        // 2. Whisper 스크립트 실행 (도커 컨테이너 내부 실행)
-        runWhisperPythonScript(originalUrl);
+        // 2. Whisper 스크립트 실행 (이제 REST API 호출)
+        RestTemplate restTemplate = new RestTemplate();
+        String whisperServerUrl = "http://whisper-server:8000/transcribe";
+
+        Map<String, String> request = new HashMap<>();
+        request.put("youtubeId", youtubeId);
+        request.put("videoUrl", originalUrl);
+
+        ResponseEntity<String> response = restTemplate.postForEntity(whisperServerUrl, request, String.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Whisper Server 호출 실패");
+        }
 
         // 3. Whisper가 S3에 결과 올려놨다고 가정 -> S3에서 가져오기
         String s3Key = "whisper-results/" + youtubeId + ".txt";
