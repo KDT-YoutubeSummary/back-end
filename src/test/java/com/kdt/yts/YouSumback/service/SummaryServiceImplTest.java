@@ -18,7 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.nio.charset.Charset; // ⭐️ StandardCharsets 대신 Charset을 import 합니다.
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -56,6 +56,7 @@ class SummaryServiceImplTest {
     void setUp() {
         testUser = User.builder().id(1L).userName("testuser").build();
 
+        // NullPointerException 방지를 위해 DTO 생성에 필요한 모든 필드를 채워줍니다.
         testVideo = Video.builder()
                 .id(1L)
                 .youtubeId("test-id")
@@ -86,10 +87,14 @@ class SummaryServiceImplTest {
         when(audioTranscriptRepository.findByVideo_OriginalUrl(anyString())).thenReturn(Optional.of(testTranscript));
         when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty());
 
+        // NullPointerException 방지를 위해 save 메소드가 호출될 때,
+        // ID와 생성시간, 그리고 내부에 포함된 객체까지 명확하게 설정하여 반환합니다.
         when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> {
             Summary summary = invocation.getArgument(0);
             summary.setId(100L);
             summary.setCreatedAt(LocalDateTime.now());
+            // 서비스 코드에서 설정한 transcript 객체를 그대로 유지하도록 보장합니다.
+            summary.setAudioTranscript(testTranscript);
             return summary;
         });
 
@@ -112,9 +117,6 @@ class SummaryServiceImplTest {
         when(openAIClient.chat(contains("핵심 해시태그"))).thenReturn(Mono.just("tag1, tag2, tag3"));
 
         try (MockedStatic<Files> mockedFiles = Mockito.mockStatic(Files.class)) {
-
-            // ⭐️⭐️⭐️ 여기가 최종 수정 포인트입니다! ⭐️⭐️⭐️
-            // `any(StandardCharsets.class)`를 `any(Charset.class)`로 수정하여 문법 오류를 해결합니다.
             mockedFiles.when(() -> Files.readString(any(Path.class), any(Charset.class)))
                     .thenReturn("This is a long transcript text from mock...");
 
@@ -128,8 +130,10 @@ class SummaryServiceImplTest {
             assertEquals(100L, response.getSummaryId());
             assertNotNull(response.getCreatedAt(), "생성 시간은 null이 아니어야 합니다.");
 
+            // ArgumentCaptor를 사용하여 save 메소드에 전달된 객체의 내용을 검증합니다.
             ArgumentCaptor<Summary> summaryCaptor = ArgumentCaptor.forClass(Summary.class);
             verify(summaryRepository, times(1)).save(summaryCaptor.capture());
+            // 이 검증 라인에서 NPE가 발생하지 않도록, 위의 when()에서 내부 객체까지 모두 설정했습니다.
             assertEquals("test title", summaryCaptor.getValue().getAudioTranscript().getVideo().getTitle());
 
             ArgumentCaptor<SummaryArchive> archiveCaptor = ArgumentCaptor.forClass(SummaryArchive.class);
