@@ -26,7 +26,6 @@ public class SecurityConfig {
     private final CustomUserDetailService customUserDetailService;
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
-
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
@@ -39,7 +38,7 @@ public class SecurityConfig {
     @Bean
     public JwtLoginAuthenticationFilter jwtLoginAuthenticationFilter(AuthenticationManager authManager) {
         JwtLoginAuthenticationFilter filter = new JwtLoginAuthenticationFilter(authManager, jwtProvider, userRepository);
-        filter.setFilterProcessesUrl("/api/auth/login"); // ✅ 여기서도 /api 붙여줘야 함
+        filter.setFilterProcessesUrl("/api/auth/login");
         return filter;
     }
 
@@ -70,6 +69,7 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 
+        // ✅ 경로 예외처리는 여기서만 관리
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         "/api/auth/login",
@@ -79,16 +79,9 @@ public class SecurityConfig {
                         "/login/oauth2/code/**",
                         "/auth/google",
                         "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/swagger-ui/index.html",
                         "/v3/api-docs/**",
-                        "/v3/api-docs",
-                        "/api-docs/**",
-                        "/api-docs",
                         "/swagger-resources/**",
-                        "/swagger-config",
                         "/webjars/**",
-                        "/actuator/**",
                         "/error",
                         "/favicon.ico"
                 ).permitAll()
