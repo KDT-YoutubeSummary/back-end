@@ -83,17 +83,19 @@ public class TranscriptService {
             return videoRepository.save(newVideo);
         });
 
-        // 2. Whisper 서버 REST 호출
+        // 2. Whisper 서버 REST 호출 (수정된 부분)
         RestTemplate restTemplate = new RestTemplate();
         String whisperServerUrl = "http://whisper-server:8000/transcribe";
 
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("youtubeId", youtubeId);
-        requestBody.put("videoUrl", originalUrl);
+        String requestJson = String.format(
+                "{\"videoUrl\": \"%s\", \"youtubeId\": \"%s\"}",
+                originalUrl,
+                youtubeId
+        );
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+        HttpEntity<String> requestEntity = new HttpEntity<>(requestJson, headers);
 
         ResponseEntity<String> response = restTemplate.postForEntity(whisperServerUrl, requestEntity, String.class);
         if (!response.getStatusCode().is2xxSuccessful()) {
