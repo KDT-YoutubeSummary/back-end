@@ -2,25 +2,17 @@ package com.kdt.yts.YouSumback.model.dto.request;
 
 import com.kdt.yts.YouSumback.model.entity.SummaryType;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-// Whisper에서 추출, 정제 후 요약 요청을 위한 DTO
+@NoArgsConstructor
+@AllArgsConstructor
 public class SummaryRequestDTO {
-        private String originalUrl;
-        private String userPrompt; // 사용자 정의 프롬프트 (선택적)
-        private SummaryType summaryType = SummaryType.BASIC;
-
-    public SummaryRequestDTO(String url, String testPrompt, SummaryType summaryType) {
-        this.originalUrl = url;
-        this.userPrompt = testPrompt;
-        this.summaryType = summaryType;
-    }
-
-//        private Long transcriptId;
-//        private Long userId;
-//        @NotBlank(message = "요약할 텍스트는 비어 있을 수 없습니다.")
-//        private String text;
+    private String originalUrl;
+    private String userPrompt;
+    private SummaryType summaryType = SummaryType.BASIC;
 }
