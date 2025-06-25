@@ -15,7 +15,6 @@ import java.io.IOException;
 
 @RequiredArgsConstructor
 @Slf4j
-// JWT 토큰을 검증하고 인증 정보를 설정하는 필터
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
@@ -29,66 +28,47 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
         String method = request.getMethod();
+        log.debug("🔍 Request: {} {}", method, path);
 
-        // ✅ 디버깅을 위한 요청 정보 로깅
-        log.debug("🔍 Processing request: {} {}", method, path);
-
-        // ✅ 인증 예외 처리할 경로들
+        // public path는 토큰 체크 제외
         if (isPublicPath(path)) {
-            log.debug("✅ Public path, skipping authentication: {}", path);
+            log.debug("✅ Public path, skip auth: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
 
-        // ✅ Authorization 헤더 검사
-        String authHeader = request.getHeader("Authorization");
-        log.debug("🔑 Authorization header: {}", authHeader != null ? "Present" : "Missing");
-
         String token = resolveToken(request);
-
         if (token == null) {
-            log.warn("⚠️ No JWT token found in request for protected path: {}", path);
+            log.warn("⚠️ No JWT token for protected path: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            log.debug("🔍 Validating JWT token...");
-
             if (!jwtProvider.validateToken(token)) {
-                log.warn("❌ Invalid JWT token for path: {}", path);
-                filterChain.doFilter(request, response);
+                log.warn("❌ Invalid JWT token");
+                responseUnauthorized(response, "Invalid or expired token");
                 return;
             }
 
-            // ✅ 이미 인증된 경우 스킵
             if (SecurityContextHolder.getContext().getAuthentication() != null) {
-                log.debug("✅ Already authenticated, skipping");
+                log.debug("✅ Already authenticated");
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            // ✅ 사용자 정보 로딩 및 인증 설정
             Long userId = jwtProvider.extractUserId(token);
-            log.debug("🆔 Extracted userId from token: {}", userId);
-
             UserDetails userDetails = customUserDetailService.loadUserByUserId(userId);
-            log.debug("👤 Loaded user details for: {}", userDetails.getUsername());
 
-            UsernamePasswordAuthenticationToken authToken =
+            UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-            SecurityContextHolder.getContext().setAuthentication(authToken);
-            log.debug("✅ Authentication set successfully for user: {}", userDetails.getUsername());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            log.debug("✅ Authentication set for user: {}", userDetails.getUsername());
 
         } catch (Exception e) {
-            log.error("❌ JWT authentication failed for path {}: {}", path, e.getMessage());
+            log.error("❌ JWT auth failed: {}", e.getMessage());
             SecurityContextHolder.clearContext();
-
-            // ✅ 인증 실패 시 401 응답 반환
-            response.setContentType("application/json;charset=UTF-8");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\":\"Invalid or expired token\",\"message\":\"" + e.getMessage() + "\"}");
+            responseUnauthorized(response, e.getMessage());
             return;
         }
 
@@ -96,10 +76,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicPath(String path) {
-        return path.startsWith("/api/auth/login")
-                || path.startsWith("/api/auth/register")
-                || path.startsWith("/api/recommendations")
-                || path.startsWith("/api-docs/swagger-config")
+        return path.startsWith("/auth/login")
+                || path.startsWith("/auth/register")
+                || path.startsWith("/recommendations")
                 || path.startsWith("/oauth2")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
@@ -112,22 +91,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private String resolveToken(HttpServletRequest request) {
         String bearer = request.getHeader("Authorization");
         if (bearer != null && bearer.startsWith("Bearer ")) {
-            String token = bearer.substring(7);
-            log.debug("🎫 Extracted token: {}...", token.length() > 10 ? token.substring(0, 10) : token);
-            return token;
+            return bearer.substring(7);
         }
         return null;
     }
 
+    private void responseUnauthorized(HttpServletResponse response, String message) throws IOException {
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"" + message + "\"}");
+    }
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return path.startsWith("/api/auth")
-                || path.startsWith("/oauth2")
-                || path.startsWith("/swagger-ui")
-                || path.startsWith("/v3/api-docs")
-                || path.startsWith("/swagger-resources")
-                || path.startsWith("/webjars")
-                || path.startsWith("/api-docs");
+        return isPublicPath(request.getRequestURI());
     }
 }
