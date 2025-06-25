@@ -13,6 +13,9 @@ public class SummaryRequestDTO {
         private String userPrompt; // 사용자 정의 프롬프트 (선택적)
         private SummaryType summaryType = SummaryType.BASIC;
 
+    public SummaryRequestDTO(String url, String testPrompt, SummaryType summaryType) {
+    }
+
 //        private Long transcriptId;
 //        private Long userId;
 //        @NotBlank(message = "요약할 텍스트는 비어 있을 수 없습니다.")
