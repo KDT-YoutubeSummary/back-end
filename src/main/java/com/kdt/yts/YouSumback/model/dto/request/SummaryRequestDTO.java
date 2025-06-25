@@ -14,6 +14,9 @@ public class SummaryRequestDTO {
         private SummaryType summaryType = SummaryType.BASIC;
 
     public SummaryRequestDTO(String url, String testPrompt, SummaryType summaryType) {
+        this.originalUrl = url;
+        this.userPrompt = testPrompt;
+        this.summaryType = summaryType;
     }
 
 //        private Long transcriptId;
