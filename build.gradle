@@ -160,6 +160,7 @@ dependencies {
 	// ⭐️⭐️⭐️ 컴파일 오류 해결을 위해 빠져있던 의존성을 다시 추가합니다. ⭐️⭐️⭐️
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
 	// Database
 	runtimeOnly 'com.mysql:mysql-connector-j'
