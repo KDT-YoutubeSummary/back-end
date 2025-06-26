@@ -37,7 +37,6 @@ public class SecurityConfig {
     @Bean
     public JwtLoginAuthenticationFilter jwtLoginAuthenticationFilter(AuthenticationManager authManager) {
         JwtLoginAuthenticationFilter filter = new JwtLoginAuthenticationFilter(authManager, jwtProvider, userRepository);
-        // ⭐️⭐️⭐️ API 경로 표준에 맞춰 로그인 주소 변경 ⭐️⭐️⭐️
         filter.setFilterProcessesUrl("/api/v1/auth/login");
         return filter;
     }
@@ -69,9 +68,19 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 
-        // ⭐️⭐️⭐️ API 경로 표준에 맞춰 허용 목록을 재정리합니다. ⭐️⭐️⭐️
+        // ⭐️⭐️⭐️ 여기가 최종 수정 포인트입니다! ⭐️⭐️⭐️
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                        // --- 프론트엔드 관련 리소스는 모두 허용 ---
+                        "/",
+                        "/index.html",
+                        "/assets/**", // Vite 빌드 시 생성되는 JS, CSS 폴더
+                        "/*.ico",
+                        "/*.png",
+                        "/*.svg",
+                        "/*.jpg",
+                        "/*.jpeg",
+
                         // --- 인증 관련 API는 모두 허용 ---
                         "/api/v1/auth/**",
                         "/oauth2/**",
@@ -83,8 +92,7 @@ public class SecurityConfig {
                         "/swagger-resources/**",
 
                         // --- 기타 필요한 경로 허용 ---
-                        "/error",
-                        "/favicon.ico"
+                        "/error"
                 ).permitAll()
                 // 위에서 허용한 주소 외의 모든 요청은 인증을 받아야 합니다.
                 .anyRequest().authenticated()
