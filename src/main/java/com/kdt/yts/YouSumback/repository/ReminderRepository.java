@@ -13,10 +13,4 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
 
     List<Reminder> findByUser_Id(Long userId);
     List<Reminder> findByIsActiveTrueAndNextNotificationDatetimeLessThanEqual(LocalDateTime localDateTime);
-    
-    // 특정 요약 저장소의 리마인더 목록 조회
-    List<Reminder> findBySummaryArchive_Id(Long summaryArchiveId);
-    
-    // 사용자와 요약 저장소별 리마인더 조회
-    List<Reminder> findByUser_IdAndSummaryArchive_Id(Long userId, Long summaryArchiveId);
 }

@@ -1,4 +1,3 @@
-// src/main/java/com/youtube/summary/backend/dto/reminder/ReminderCreateRequest.java
 package com.kdt.yts.YouSumback.model.dto.request;
 
 import com.kdt.yts.YouSumback.model.entity.ReminderType;

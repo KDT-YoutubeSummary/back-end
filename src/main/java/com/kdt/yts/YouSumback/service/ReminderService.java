@@ -54,14 +54,14 @@ public class ReminderService {
         reminder.setReminderNote(request.getReminderNote());
         reminder.setIsActive(request.getIsActive() != null ? request.getIsActive() : true); // 기본값 true
 
-        // 다음 알림 시간을 계산하여 설정합니다.
+        // 다음 알림 시간을 계산하여 설정
         reminder.setNextNotificationDatetime(calculateNextNotificationTime(request.getBaseDatetimeForRecurrence(), request.getReminderType(),
                 reminder.getFrequencyInterval(), request.getDayOfWeek(), request.getDayOfMonth(), LocalDateTime.now()));
 
         Reminder savedReminder = reminderRepository.save(reminder); // 데이터베이스에 리마인더 저장
         log.info("Created reminder with ID: {}", savedReminder.getId());
 
-        // ✅ 활동 로그 저장
+        // 활동 로그 저장
         UserActivityLog logEntry = UserActivityLog.builder()
                 .user(user)
                 .activityType("REMINDER_CREATED")
@@ -78,7 +78,7 @@ public class ReminderService {
 
     }
 
-    @Transactional(readOnly = true) // 읽기 전용 트랜잭션으로 설정하여 성능을 최적화합니다.
+    @Transactional(readOnly = true) // 읽기 전용 트랜잭션으로 설정하여 성능을 최적화
     public ReminderResponseDTO getReminderById(Long reminderId) {
         Reminder reminder = reminderRepository.findById(reminderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reminder not found with ID: " + reminderId));
@@ -93,12 +93,12 @@ public class ReminderService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional // 수정 작업은 트랜잭션으로 묶습니다.
+    @Transactional
     public ReminderResponseDTO updateReminder(Long reminderId, ReminderUpdateRequestDTO request) {
         Reminder reminder = reminderRepository.findById(reminderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reminder not found with ID: " + reminderId));
 
-        // 요청에 따라 필드를 업데이트합니다. (null이 아닌 경우에만 업데이트)
+        // 요청에 따라 필드를 업데이트 (null이 아닌 경우에만 업데이트)
         if (request.getReminderType() != null) {
             reminder.setReminderType(request.getReminderType());
         }
@@ -121,7 +121,7 @@ public class ReminderService {
             reminder.setIsActive(request.getIsActive());
         }
 
-        // 리마인더 타입이나 기준 시간이 변경되면 다음 알림 시간을 재계산합니다.
+        // 리마인더 타입이나 기준 시간이 변경되면 다음 알림 시간을 재계산
         if (request.getReminderType() != null || request.getBaseDatetimeForRecurrence() != null ||
             request.getFrequencyInterval() != null || request.getDayOfWeek() != null || request.getDayOfMonth() != null) {
             reminder.setNextNotificationDatetime(calculateNextNotificationTime(
@@ -132,7 +132,7 @@ public class ReminderService {
         Reminder updatedReminder = reminderRepository.save(reminder); // 데이터베이스에 변경사항 저장
         log.info("Updated reminder with ID: {}", updatedReminder.getId());
 
-        // ✅ 활동 로그 저장
+        // 활동 로그 저장
         UserActivityLog logEntry = UserActivityLog.builder()
                 .user(reminder.getUser())
                 .activityType("REMINDER_UPDATED")
@@ -159,13 +159,13 @@ public class ReminderService {
 
     // ---------------------- 리마인더 알림 처리 스케줄링 ----------------------
 
-    @Scheduled(cron = "0 * * * * *") // 매 분 0초에 이 메서드를 실행합니다. (예: 00:00:00, 00:01:00 등)
+    @Scheduled(cron = "0 * * * * *") // 매 분 0초에 이 메서드를 실행
     @Transactional
     public void processScheduledReminders() {
         LocalDateTime now = LocalDateTime.now(); // 현재 시간
-        log.info("리마인더 알림 검색중 。 。 。『 {} 』", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))); // 시간 형식 포맷팅
+        log.info("리마인더 알림 검색중 。 。 。『 {} 』", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
-        // 현재 시간보다 다음 알림 시간이 이전이거나 같은 활성화된 리마인더들을 조회합니다.
+        // 현재 시간보다 다음 알림 시간이 이전이거나 같은 활성화된 리마인더들을 조회
         List<Reminder> remindersToNotify = reminderRepository.findByIsActiveTrueAndNextNotificationDatetimeLessThanEqual(now);
 
         if (remindersToNotify.isEmpty()) {
@@ -177,7 +177,6 @@ public class ReminderService {
         for (Reminder reminder : remindersToNotify) {
             String recipientEmail = reminder.getUser().getEmail(); // 사용자 이메일 주소 가져오기
             String summaryTitle = reminder.getSummaryArchive().getSummary().getAudioTranscript().getVideo().getTitle(); // 요약 영상 제목 가져오기
-            String reminderNote = reminder.getReminderNote(); // 리마인더 메모 가져오기
 
             String subject = "[YouSum] 리마인더 알림: " + summaryTitle; // 이메일 제목 구성
             String emailContent = buildEmailContent(reminder); // 이메일 내용 구성
@@ -195,7 +194,7 @@ public class ReminderService {
                 // 이메일 발송 실패 시에도 스케줄러가 멈추지 않도록 예외 처리
             }
 
-            // 알림 발송 후, 다음 알림 시간을 계산하고 업데이트합니다.
+            // 알림 발송 후, 다음 알림 시간을 계산하고 업데이트
             if (reminder.getReminderType() == ReminderType.ONE_TIME) {
                 reminder.setIsActive(false); // ONE_TIME 리마인더는 한 번 발송 후 비활성화
                 log.info("One-time reminder ID {} deactivated.", reminder.getId());
@@ -211,7 +210,7 @@ public class ReminderService {
         log.info("Reminder processing finished.");
     }
 
-    // ---------------------- 이메일 내용 구성 유틸리티 메서드 (신규 추가) ----------------------
+    // ---------------------- 이메일 내용 구성 ----------------------
     private String buildEmailContent(Reminder reminder) {
         StringBuilder content = new StringBuilder();
         content.append("안녕하세요, ").append(reminder.getUser().getUserName()).append("님!\n\n");
@@ -220,26 +219,16 @@ public class ReminderService {
         content.append("리마인더 메모: ").append(reminder.getReminderNote()).append("\n");
         content.append("알림 시간: ").append(reminder.getNextNotificationDatetime().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH시 mm분"))).append("\n\n");
         content.append("지금 바로 YouSum에서 요약 내용을 확인해보세요!\n");
-        // 실제 요약 페이지 URL 추가 (예: front-end URL)
         String summaryPageUrl = emailService.createSummaryPageUrl(reminder);
         content.append("요약 바로가기: ").append(summaryPageUrl).append("\n\n"); // 예시로 비디오 원본 URL 사용
         content.append("감사합니다.\n***YouSum***\n");
         return content.toString();
     }
 
-    // ---------------------- 다음 알림 시간 계산 유틸리티 ----------------------
+    // ---------------------- 다음 알림 시간 계산 ----------------------
 
-    /**
-     * 리마인더 타입과 설정에 따라 다음 알림 시간을 계산합니다.
-     *
-     * @param baseDateTime 기준 날짜/시간
-     * @param type 리마인더 타입 (ONE_TIME, DAILY, WEEKLY, MONTHLY)
-     * @param interval 반복 간격 (예: 2일, 3주)
-     * @param dayOfWeek 주중 요일 (1=월, 7=일)
-     * @param dayOfMonth 월중 일자 (1-31)
-     * @param now 현재 시간 (알림 시간이 이미 지난 경우를 대비)
-     * @return 계산된 다음 알림 시간
-     */
+    // 리마인더 타입과 설정에 따라 다음 알림 시간을 계산
+
     private LocalDateTime calculateNextNotificationTime(LocalDateTime baseDateTime, ReminderType type,
                                                         Integer interval, Integer dayOfWeek, Integer dayOfMonth, LocalDateTime now) {
         LocalDateTime next = baseDateTime; // 초기값은 기준 날짜/시간
@@ -250,19 +239,19 @@ public class ReminderService {
 
         switch (type) {
             case ONE_TIME:
-                // ONE_TIME은 기준 날짜/시간이 곧 다음 알림 시간입니다.
-                // 이미 지난 시간이라면 현재 시간보다 나중인 가장 가까운 시간을 계산할 필요는 없음.
+                // ONE_TIME은 기준 날짜/시간이 곧 다음 알림 시간
+                // 이미 지난 시간이라면 현재 시간보다 나중인 가장 가까운 시간을 계산할 필요는 없음
                 // (이후 스케줄러에서 isActive = false로 처리)
                 break;
             case DAILY:
-                // 현재 시간보다 과거라면 현재 시간부터 interval마다 더합니다.
+                // 현재 시간보다 과거라면 현재 시간부터 interval마다 더함
                 while (next.isBefore(now) || next.isEqual(now)) {
                     next = next.plusDays(interval != null ? interval : 1);
                 }
                 break;
             case WEEKLY:
-                // 주간 반복: 기준 날짜의 시간은 유지하고, 다음 주 또는 다다음 주의 특정 요일로 이동합니다.
-                // interval이 1이면 다음 주, 2이면 다다음 주 등.
+                // 주간 반복: 기준 날짜의 시간은 유지, 다음 주 또는 다다음 주의 특정 요일로 이동
+                // interval이 1이면 다음 주, 2이면 다다음 주 등
                 LocalDateTime target = next.with(TemporalAdjusters.nextOrSame(DayOfWeek.of(dayOfWeek != null ? dayOfWeek : 1))); // 요일이 지정되지 않으면 월요일 기준
                 if (target.isBefore(now)) { // 계산된 시간이 현재보다 이전이라면, interval만큼 더 주차를 이동
                     target = target.plusWeeks(interval != null ? interval : 1);
@@ -273,8 +262,8 @@ public class ReminderService {
                 next = target;
                 break;
             case MONTHLY:
-                // 월간 반복: 기준 날짜의 시간은 유지하고, 다음 달 또는 다다음 달의 특정 일자로 이동합니다.
-                // interval이 1이면 다음 달, 2이면 다다음 달 등.
+                // 월간 반복: 기준 날짜의 시간은 유지, 다음 달 또는 다다음 달의 특정 일자로 이동.
+                // interval이 1이면 다음 달, 2이면 다다음 달 등
                 LocalDateTime targetDate = next.withDayOfMonth(dayOfMonth != null ? dayOfMonth : 1); // 일자가 지정되지 않으면 1일 기준
                 if (targetDate.isBefore(now)) { // 계산된 시간이 현재보다 이전이라면, interval만큼 더 월을 이동
                     targetDate = targetDate.plusMonths(interval != null ? interval : 1);
