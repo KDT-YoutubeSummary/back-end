@@ -9,7 +9,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,7 +37,8 @@ public class SecurityConfig {
     @Bean
     public JwtLoginAuthenticationFilter jwtLoginAuthenticationFilter(AuthenticationManager authManager) {
         JwtLoginAuthenticationFilter filter = new JwtLoginAuthenticationFilter(authManager, jwtProvider, userRepository);
-        filter.setFilterProcessesUrl("/api/auth/login");
+        // ⭐️⭐️⭐️ API 경로 표준에 맞춰 로그인 주소 변경 ⭐️⭐️⭐️
+        filter.setFilterProcessesUrl("/api/v1/auth/login");
         return filter;
     }
 
@@ -69,22 +69,24 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 
-        // ✅ 경로 예외처리는 여기서만 관리
+        // ⭐️⭐️⭐️ API 경로 표준에 맞춰 허용 목록을 재정리합니다. ⭐️⭐️⭐️
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                        "/api/auth/login",
-                        "/api/auth/register",
-                        "/api/recommendations/**",
+                        // --- 인증 관련 API는 모두 허용 ---
+                        "/api/v1/auth/**",
                         "/oauth2/**",
                         "/login/oauth2/code/**",
-                        "/auth/google",
+
+                        // --- API 문서(Swagger) 관련 경로는 모두 허용 ---
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/swagger-resources/**",
-                        "/webjars/**",
+
+                        // --- 기타 필요한 경로 허용 ---
                         "/error",
                         "/favicon.ico"
                 ).permitAll()
+                // 위에서 허용한 주소 외의 모든 요청은 인증을 받아야 합니다.
                 .anyRequest().authenticated()
         );
 
