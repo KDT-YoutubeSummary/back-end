@@ -7,9 +7,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+@Slf4j
 @RestController
 @RequestMapping("/api/scripts")
 @RequiredArgsConstructor
@@ -24,13 +27,18 @@ public class TranscriptController {
             @ApiResponse(responseCode = "400", description = "잘못된 파일 형식")
     })
     @PostMapping("/stt")
-    public ResponseEntity<String> saveTranscript(@RequestBody TranscriptSaveRequestDTO requestDTO) {
+    public ResponseEntity<?> saveTranscript(@RequestBody TranscriptSaveRequestDTO requestDTO) {
         try {
             transcriptService.extractYoutubeIdAndRunWhisper(requestDTO.getOriginalUrl(), requestDTO.getUserPrompt());
-            return ResponseEntity.ok("✅ Whisper 실행 완료");
+            return ResponseEntity.status(201).body("✅ Whisper 실행 완료");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("❌ Whisper 실행 실패: " + e.getMessage());
+            log.error("❌ Whisper 실행 중 예외 발생", e);
+            return ResponseEntity.status(500).body(Map.of(
+                    "message", "요약 생성 중 서버 오류가 발생했습니다.",
+                    "error", e.getMessage()
+            ));
         }
     }
+
 }
 
