@@ -88,12 +88,11 @@ class SummaryServiceImplTest {
         when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty());
         when(summaryArchiveTagRepository.existsById(any())).thenReturn(false);
 
-        // ⭐️⭐️⭐️ [핵심 수정] OpenAIClient.chat()의 첫 번째와 두 번째 호출에 대한 응답을 명시적으로 순서대로 지정합니다. ⭐️⭐️⭐️
-        when(openAIClient.chat(anyString()))
-                .thenReturn(
-                        Mono.just("Test summary text."),      // 첫 번째 호출 시 반환될 값
-                        Mono.just("기술,인공지능,코딩")      // 두 번째 호출 시 반환될 값
-                );
+        // ⭐️⭐️⭐️ [핵심 수정] OpenAIClient.chat() 호출을 프롬프트 내용에 따라 구분하여 Mocking합니다. ⭐️⭐️⭐️
+        when(openAIClient.chat(argThat(prompt -> prompt.contains("요약 대상 내용:"))))
+                .thenReturn(Mono.just("Test summary text."));
+        when(openAIClient.chat(argThat(prompt -> prompt.contains("핵심 해시태그 3개를 추출해줘"))))
+                .thenReturn(Mono.just("기술,인공지능,코딩"));
 
         when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> {
             Summary summary = invocation.getArgument(0);
