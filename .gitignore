@@ -1,11 +1,24 @@
-HELP.md
+# ============================================
+# YouSum Project .gitignore
+# ============================================
+
+# Gradle
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### STS ###
+# IDE - IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# IDE - Eclipse
 .apt_generated
 .classpath
 .factorypath
@@ -17,24 +30,100 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-### VS Code ###
+# IDE - VS Code
 .vscode/
+
+# ============================================
+# 환경변수 및 보안 관련 파일
+# ============================================
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+
+# AWS 키 파일
+*.pem
+*.key
+
+# AWS 리소스 정보
+aws-resources.txt
+aws-credentials
+
+# ============================================
+# 로그 파일
+# ============================================
+logs/
+*.log
+*.log.*
+
+# ============================================
+# 백업 파일
+# ============================================
+backups/
+*.sql
+*.dump
+
+# ============================================
+# Docker 관련
+# ============================================
+docker-data/
+.dockerignore
+
+# ============================================
+# 임시 파일
+# ============================================
+temp/
+tmp/
+*.tmp
+*.temp
+
+# ============================================
+# Spring Boot 관련
+# ============================================
+target/
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# ============================================
+# Python 관련 (Whisper)
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# ============================================
+# 시스템 파일
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ============================================
+# 텍스트 파일 (너무 많은 경우)
+# ============================================
+src/main/resources/textfiles/*.txt
+src/main/resources/textfiles/*.vtt
+src/main/resources/chunks/
+
+# ============================================
+# 배포 스크립트 생성 파일
+# ============================================
+user-data.sh
+s3-policy.json
 
 src/main/resources/application.properties
 src/main/resources/audiofiles
