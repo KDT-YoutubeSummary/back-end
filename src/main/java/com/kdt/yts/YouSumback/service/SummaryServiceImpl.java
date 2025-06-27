@@ -130,7 +130,9 @@ public class SummaryServiceImpl implements SummaryService {
 
             SummaryArchiveTagId summaryArchiveTagId = new SummaryArchiveTagId(archive.getId(), tag.getId());
             if (!summaryArchiveTagRepository.existsById(summaryArchiveTagId)) {
-                SummaryArchiveTag summaryArchiveTag = new SummaryArchiveTag(summaryArchiveTagId);
+                SummaryArchiveTag summaryArchiveTag = new SummaryArchiveTag();
+                summaryArchiveTag.setSummaryArchive(archive);
+                summaryArchiveTag.setTag(tag);
                 summaryArchiveTagRepository.save(summaryArchiveTag);
             }
         }
@@ -170,10 +172,8 @@ public class SummaryServiceImpl implements SummaryService {
     }
 
     public class PromptBuilder {
-
         public String buildPrompt(String userPrompt, SummaryType summaryType) {
             String formatInstruction = switch (summaryType) {
-
                 case BASIC -> """
     ## 📚 기본 요약
     
@@ -470,3 +470,4 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
                 .orElseGet(() -> tagRepository.save(Tag.builder().tagName(tagName).build()));
     }
 }
+
