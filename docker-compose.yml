@@ -9,10 +9,10 @@ services:
       - "8080:8080"
       - "8000:8000"
     environment:
-      # Database
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/yousum?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=1111
+      # ✅ AWS RDS MySQL 연결 설정 (RDS 사용으로 변경)
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT:-yousum-mysql-db.cvaqg68u4xoh.ap-northeast-2.rds.amazonaws.com}:3306/yousum?useSSL=true&requireSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD:-12345678}
       
       # ===============================
       # AWS 설정 - 현재 주석처리됨
@@ -40,8 +40,9 @@ services:
       - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
       - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
       
-    depends_on:
-      - mysql
+    # ✅ RDS 사용으로 로컬 MySQL 의존성 제거
+    # depends_on:
+    #   - mysql
     volumes:
       - ./logs:/app/logs
       - ./src/main/resources/textfiles:/app/textfiles  # 로컬 파일 시스템 마운트
@@ -50,24 +51,25 @@ services:
       - yousum-network
     restart: unless-stopped
 
-  # MySQL Database
-  mysql:
-    image: mysql:8.0
-    container_name: yousum-mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=1111
-      - MYSQL_DATABASE=yousum
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=1111
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    command: --default-authentication-plugin=mysql_native_password
-    networks:
-      - yousum-network
-    restart: unless-stopped
+  # ✅ RDS 사용으로 로컬 MySQL 컨테이너 비활성화
+  # MySQL Database - RDS 사용으로 주석처리
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: yousum-mysql
+  #   environment:
+  #     - MYSQL_ROOT_PASSWORD=yousum123!
+  #     - MYSQL_DATABASE=yousum
+  #     - MYSQL_USER=yousum
+  #     - MYSQL_PASSWORD=yousum123!
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #     - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   command: --default-authentication-plugin=mysql_native_password
+  #   networks:
+  #     - yousum-network
+  #   restart: unless-stopped
 
   # Redis (향후 캐싱용)
   redis:
@@ -82,7 +84,8 @@ services:
     restart: unless-stopped
 
 volumes:
-  mysql_data:
+  # ✅ RDS 사용으로 로컬 MySQL 볼륨 비활성화
+  # mysql_data:  # RDS 사용으로 주석처리
   redis_data:
 
 networks:
