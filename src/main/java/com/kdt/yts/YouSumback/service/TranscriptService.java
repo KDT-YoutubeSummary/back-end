@@ -23,7 +23,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TranscriptService {
 
-    private final RestTemplate restTemplate;
+    private final RestTemplate restTemplate; // 여기에 주입될 수 있도록 bean 필요
     private final VideoRepository videoRepository;
     private final AudioTranscriptRepository audioTranscriptRepository;
     private final YouTubeMetadataService youTubeMetadataService;
