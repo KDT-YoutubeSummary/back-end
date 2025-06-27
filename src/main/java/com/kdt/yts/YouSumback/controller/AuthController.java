@@ -26,8 +26,8 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/auth")
-// AuthController는 사용자 인증과 관련된 API 엔드포인트를 처리하는 컨트롤러입니다.
+// ⭐️⭐️⭐️ 중요: 여기에 v1을 추가하여 API 경로를 올바르게 수정했습니다. ⭐️⭐️⭐️
+@RequestMapping("/api/v1/auth")
 @Tag(name = "인증", description = "사용자 인증 관련 API")
 public class AuthController {
 
@@ -47,33 +47,33 @@ public class AuthController {
         return ResponseEntity.ok(new LoginResponseDTO(token));
     }
 
-    // Google 로그인 엔드포인트
-//    @Operation(summary = "구글 로그인", description = "Google OAuth를 통한 로그인")
-//    @ApiResponses({
-//            @ApiResponse(responseCode = "200", description = "구글 로그인 성공"),
-//            @ApiResponse(responseCode = "401", description = "구글 토큰 인증 실패")
-//    })
-//    @PostMapping("/google")
-//    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequestDTO request) {
-//        String idToken = request.getId_token();
-//        GoogleIdToken.Payload payload = googleOAuthService.verifyToken(idToken);
-//
-//        String email = payload.getEmail();
-//        String name = (String) payload.get("name");
-//
-//        // fallback 처리
-//        if (name == null || name.isBlank()) {
-//            name = (String) payload.get("given_name");
-//            if (name == null || name.isBlank()) {
-//                name = "GoogleUser";
-//            }
-//        }
-//
-//        User user = userService.loginOrRegister(email, name);
-//        String jwt = userService.issueJwtToken(user);
-//
-//        return ResponseEntity.ok(Map.of("token", jwt));
-//    }
+    // Google 로그인 엔드포인트 (주석 처리된 원본 코드)
+    // @Operation(summary = "구글 로그인", description = "Google OAuth를 통한 로그인")
+    // @ApiResponses({
+    //         @ApiResponse(responseCode = "200", description = "구글 로그인 성공"),
+    //         @ApiResponse(responseCode = "401", description = "구글 토큰 인증 실패")
+    // })
+    // @PostMapping("/google")
+    // public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequestDTO request) {
+    //     String idToken = request.getId_token();
+    //     GoogleIdToken.Payload payload = googleOAuthService.verifyToken(idToken);
+    //
+    //     String email = payload.getEmail();
+    //     String name = (String) payload.get("name");
+    //
+    //     // fallback 처리
+    //     if (name == null || name.isBlank()) {
+    //         name = (String) payload.get("given_name");
+    //         if (name == null || name.isBlank()) {
+    //             name = "GoogleUser";
+    //         }
+    //     }
+    //
+    //     User user = userService.loginOrRegister(email, name);
+    //     String jwt = userService.issueJwtToken(user);
+    //
+    //     return ResponseEntity.ok(Map.of("token", jwt));
+    // }
 
     // 회원가입 엔드포인트
     @Operation(summary = "회원가입", description = "새로운 사용자 계정 등록")
@@ -129,6 +129,7 @@ public class AuthController {
     @Operation(summary = "구글 로그인 시작", description = "구글 OAuth2 로그인 프로세스 시작")
     @GetMapping("/google")
     public ResponseEntity<?> googleLogin() {
+        // 실제로는 SecurityConfig에서 처리하므로, 이 URL을 클라이언트에게 알려주는 역할만 합니다.
         String googleLoginUrl = "http://localhost:8080/oauth2/authorization/google";
         return ResponseEntity.ok(Collections.singletonMap("loginUrl", googleLoginUrl));
     }
