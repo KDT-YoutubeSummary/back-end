@@ -3,6 +3,7 @@ package com.kdt.yts.YouSumback.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+@Builder
 @Getter
 @Setter
 @Entity

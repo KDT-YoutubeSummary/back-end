@@ -1,7 +1,10 @@
 package com.kdt.yts.YouSumback.model.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
@@ -10,6 +13,9 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "summary_archive")
 public class SummaryArchive {
 
@@ -54,4 +60,4 @@ public class SummaryArchive {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-} 
+}
