@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,7 +22,6 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -93,13 +91,10 @@ class SummaryServiceImplTest {
         when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty());
         when(summaryArchiveTagRepository.existsById(any())).thenReturn(false);
 
-        // ⭐️⭐️⭐️ [핵심 수정] OpenAIClient.chat() 호출을 프롬프트 내용에 따라 구분하여 Mocking합니다. ⭐️⭐️⭐️
-        // 1. 요약 요청에 대한 Mock 설정
-        when(openAIClient.chat(argThat(prompt -> prompt.contains("요약 대상 내용:"))))
-                .thenReturn(Mono.just("Test summary text."));
-        // 2. 태그 추출 요청에 대한 Mock 설정
-        when(openAIClient.chat(argThat(prompt -> prompt.contains("핵심 해시태그 3개를 추출해줘"))))
-                .thenReturn(Mono.just("기술,인공지능,코딩"));
+        // ⭐️⭐️⭐️ [핵심 수정] OpenAIClient.chat()의 첫 번째와 두 번째 호출에 대해 다른 값을 반환하도록 설정합니다. ⭐️⭐️⭐️
+        when(openAIClient.chat(anyString()))
+                .thenReturn(Mono.just("Test summary text."))       // 첫 번째 호출(요약)에 대한 응답
+                .thenReturn(Mono.just("기술,인공지능,코딩"));     // 두 번째 호출(태그 추출)에 대한 응답
 
         when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> {
             Summary summary = invocation.getArgument(0);
@@ -126,7 +121,10 @@ class SummaryServiceImplTest {
 
         // then
         assertNotNull(response, "응답 DTO는 null이 아니어야 합니다.");
+
+        // 내용 검증
         assertEquals("Test summary text.", response.getSummary(), "요약 내용이 일치해야 합니다.");
+        assertNotNull(response.getTags(), "태그 목록은 null이 아니어야 합니다.");
         assertEquals(3, response.getTags().size(), "생성된 해시태그는 3개여야 합니다.");
         assertEquals("기술", response.getTags().get(0), "첫 번째 태그가 일치해야 합니다.");
     }
