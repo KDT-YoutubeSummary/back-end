@@ -1,4 +1,4 @@
-package com.kdt.yts.YouSumback.Util;
+package com.kdt.yts.YouSumback.util;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

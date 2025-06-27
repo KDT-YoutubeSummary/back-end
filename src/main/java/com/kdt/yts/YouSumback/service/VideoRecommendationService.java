@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 import com.kdt.yts.YouSumback.repository.SummaryArchiveTagRepository;
 import com.kdt.yts.YouSumback.model.entity.SummaryArchive;
 import com.kdt.yts.YouSumback.repository.SummaryArchiveRepository;
-import com.kdt.yts.YouSumback.Util.MetadataHelper;
+import com.kdt.yts.YouSumback.util.MetadataHelper;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;

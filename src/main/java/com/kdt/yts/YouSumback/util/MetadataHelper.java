@@ -1,5 +1,5 @@
 // MetadataHelper.java
-package com.kdt.yts.YouSumback.Util;
+package com.kdt.yts.YouSumback.util;
 
 import org.springframework.stereotype.Component;
 

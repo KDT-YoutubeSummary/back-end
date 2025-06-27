@@ -8,7 +8,7 @@ import com.kdt.yts.YouSumback.repository.VideoRepository;
 import com.kdt.yts.YouSumback.security.CustomUserDetails;
 import com.kdt.yts.YouSumback.service.TranscriptService;
 import com.kdt.yts.YouSumback.service.YouTubeMetadataService;
-import com.kdt.yts.YouSumback.Util.MetadataHelper;
+import com.kdt.yts.YouSumback.util.MetadataHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

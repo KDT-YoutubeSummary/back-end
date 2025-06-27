@@ -7,7 +7,7 @@ import com.kdt.yts.YouSumback.model.entity.AudioTranscript;
 import com.kdt.yts.YouSumback.model.entity.Video;
 import com.kdt.yts.YouSumback.repository.AudioTranscriptRepository;
 import com.kdt.yts.YouSumback.repository.VideoRepository;
-import com.kdt.yts.YouSumback.Util.MetadataHelper;
+import com.kdt.yts.YouSumback.util.MetadataHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
