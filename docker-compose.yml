@@ -12,7 +12,7 @@ services:
       # Database
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/yousum?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=yousum123!
+      - SPRING_DATASOURCE_PASSWORD=1111
       
       # ===============================
       # AWS 설정 - 현재 주석처리됨
@@ -55,10 +55,10 @@ services:
     image: mysql:8.0
     container_name: yousum-mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=yousum123!
+      - MYSQL_ROOT_PASSWORD=1111
       - MYSQL_DATABASE=yousum
       - MYSQL_USER=yousum
-      - MYSQL_PASSWORD=yousum123!
+      - MYSQL_PASSWORD=1111
     ports:
       - "3306:3306"
     volumes:
