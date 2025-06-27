@@ -1,9 +1,8 @@
-
-// YouTubeMetadataController.java
 package com.kdt.yts.YouSumback.controller;
 
 import com.kdt.yts.YouSumback.model.dto.request.TranscriptSaveRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.response.SummaryResponseDTO;
+import com.kdt.yts.YouSumback.model.entity.SummaryType;
 import com.kdt.yts.YouSumback.repository.VideoRepository;
 import com.kdt.yts.YouSumback.security.CustomUserDetails;
 import com.kdt.yts.YouSumback.service.TranscriptService;
@@ -75,11 +74,20 @@ public class YouTubeMetadataController {
         try {
             Long userId = userDetails.getUserId();
 
-            transcriptService.extractYoutubeIdAndRunWhisper(request.getOriginalUrl(), request.getUserPrompt());
+            // summaryType 변환
+            SummaryType summaryType;
+            try {
+                summaryType = SummaryType.valueOf(request.getSummaryType().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body("❌ 유효하지 않은 요약 타입입니다: " + request.getSummaryType());
+            }
+
+            transcriptService.extractYoutubeIdAndRunWhisper(request.getVideoUrl(), request.getUserPrompt());
+
             SummaryResponseDTO responseDTO = youTubeMetadataService.summarizeWithMetadata(
-                    request.getOriginalUrl(),
+                    request.getVideoUrl(),
                     request.getUserPrompt(),
-                    request.getSummaryType(),
+                    summaryType,
                     userId
             );
 

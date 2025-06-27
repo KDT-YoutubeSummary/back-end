@@ -95,5 +95,7 @@ public class TranscriptService {
             e.printStackTrace();
             throw new RuntimeException("Whisper 처리 실패", e);
         }
+
+
     }
 }
