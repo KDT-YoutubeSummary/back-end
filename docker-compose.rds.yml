@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # YouSum Backend Application with AWS RDS
+  yousum-backend:
+    build: .
+    container_name: yousum-backend-rds
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+    environment:
+      # ✅ AWS RDS MySQL 연결 설정 (실제 RDS 정보)
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT:-yousum-mysql-db.cvaqg68u4xoh.ap-northeast-2.rds.amazonaws.com}:3306/yousum?useSSL=true&requireSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD:-12345678}
+      
+      # Redis 연결 (로컬 컨테이너 사용)
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      
+      # OpenAI API
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # Google OAuth
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
+      
+      # YouTube API
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+      
+      # JWT Secret
+      - JWT_SECRET=${JWT_SECRET:-bXl2ZXJ5c2VjdXJld2l0aGxvbmdzZWNyZXRrZXlzdHJpbmcxMjM=}
+      
+      # Email 설정
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
+      
+      # AWS 설정 (S3 사용시)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-yousum-s3}
+      - AWS_REGION=${AWS_REGION:-ap-northeast-2}
+      
+    depends_on:
+      - redis
+    volumes:
+      - ./logs:/app/logs
+      - ./src/main/resources/textfiles:/app/textfiles
+      - /tmp:/tmp
+    networks:
+      - yousum-network
+    restart: unless-stopped
+    
+    # ✅ RDS 연결을 위한 헬스체크
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis 캐시 (유지)
+  redis:
+    image: redis:7-alpine
+    container_name: yousum-redis-rds
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - yousum-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:
+
+networks:
+  yousum-network:
+    driver: bridge
+
+# =============================================================================
+# 사용 방법:
+# 1. 환경변수 설정 (선택사항 - 기본값 사용 가능):
+#    export RDS_ENDPOINT="yousum-mysql-db.cvaqg68u4xoh.ap-northeast-2.rds.amazonaws.com"
+#    export RDS_USERNAME="admin"
+#    export RDS_PASSWORD="12345678"
+#    export OPENAI_API_KEY="your_api_key"
+#    # ... 기타 필요한 환경변수들
+#
+# 2. 실행:
+#    docker-compose -f docker-compose.rds.yml up --build
+#
+# 3. 중지:
+#    docker-compose -f docker-compose.rds.yml down
+#
+# 4. 로컬 MySQL 사용 시:
+#    docker-compose up --build  (기본 docker-compose.yml 사용)
+# ============================================================================= 
