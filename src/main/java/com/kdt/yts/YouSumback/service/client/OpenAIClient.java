@@ -23,7 +23,13 @@ public class OpenAIClient {
                 .baseUrl(openAIConfig.getBaseUrl())
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
+
+        System.out.println("✅ [OpenAI 설정 확인]");
+        System.out.println("Base URL: " + openAIConfig.getBaseUrl());
+        System.out.println("API Key: " + openAIConfig.getApiKey());
+        System.out.println("Model: " + openAIConfig.getModel());  // 여기서 null이면 model 누락된 것
     }
+
 
     public Mono<String> chat(String prompt) {
         // ✅ 방어코딩: null 방지
