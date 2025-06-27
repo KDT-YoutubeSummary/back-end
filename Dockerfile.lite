@@ -1,0 +1,39 @@
+# YouSum Backend - Ultra Lite (PyTorch 제외)
+# 디스크 공간이 매우 제한적일 때 사용
+FROM openjdk:17-jdk-slim AS builder
+
+WORKDIR /app
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle .
+COPY settings.gradle .
+COPY src src
+
+RUN chmod +x ./gradlew && ./gradlew bootJar --no-daemon
+
+# Ultra-lite production stage
+FROM python:3.11-slim
+
+# 최소 의존성만 설치
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jre-headless \
+    ffmpeg \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Python 패키지 (PyTorch 제외한 초경량 버전)
+RUN pip install --no-cache-dir \
+    flask==2.3.3 \
+    yt-dlp==2023.9.24 \
+    numpy==1.24.3 \
+    openai-whisper==20231117
+
+COPY --from=builder /app/build/libs/*.jar app.jar
+COPY yt/ yt/
+COPY start.sh .
+RUN chmod +x start.sh
+
+EXPOSE 8080 8000
+CMD ["./start.sh"] 

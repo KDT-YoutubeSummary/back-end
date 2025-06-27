@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # YouSum Backend (경량화 버전)
+  yousum-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.lite  # 경량화된 Dockerfile 사용
+    container_name: yousum-backend
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=production
+    volumes:
+      - ./logs:/app/logs
+      - /tmp:/tmp
+    networks:
+      - yousum-network
+    restart: unless-stopped
+
+  # MySQL (메모리 사용량 최적화)
+  mysql:
+    image: mysql:8.0
+    container_name: yousum-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=yousum123!
+      - MYSQL_DATABASE=yousum
+      - MYSQL_USER=yousum
+      - MYSQL_PASSWORD=yousum123!
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password --innodb-buffer-pool-size=128M
+    networks:
+      - yousum-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+
+networks:
+  yousum-network:
+    driver: bridge 
