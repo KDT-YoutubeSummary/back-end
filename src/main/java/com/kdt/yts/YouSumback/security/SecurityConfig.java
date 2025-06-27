@@ -9,6 +9,8 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -28,6 +30,12 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
+
+    // ✅ 비밀번호 암호화용 빈 등록
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -70,10 +78,10 @@ public class SecurityConfig {
 
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                        // ⭐️⭐️⭐️ 중요: Healthcheck를 위해 아래 한 줄을 추가했습니다. ⭐️⭐️⭐️
+                        // ⭐️ Healthcheck 및 공용 리소스
                         "/actuator/**",
 
-                        // --- 프론트엔드 관련 리소스는 모두 허용 ---
+                        // 프론트엔드 정적 리소스
                         "/",
                         "/index.html",
                         "/assets/**",
@@ -83,17 +91,17 @@ public class SecurityConfig {
                         "/*.jpg",
                         "/*.jpeg",
 
-                        // --- 인증 관련 API는 모두 허용 ---
+                        // 인증 및 OAuth2
                         "/api/v1/auth/**",
                         "/oauth2/**",
                         "/login/oauth2/code/**",
 
-                        // --- API 문서(Swagger) 관련 경로는 모두 허용 ---
+                        // Swagger API 문서
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/swagger-resources/**",
 
-                        // --- 기타 필요한 경로 허용 ---
+                        // 기타 허용
                         "/error"
                 ).permitAll()
                 .anyRequest().authenticated()
