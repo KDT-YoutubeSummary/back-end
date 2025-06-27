@@ -88,12 +88,15 @@ class SummaryServiceImplTest {
         when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty());
         when(summaryArchiveTagRepository.existsById(any())).thenReturn(false);
 
-        // ⭐️⭐️⭐️ [핵심 수정] OpenAIClient.chat() 호출을 프롬프트 내용에 따라 구분하여 Mocking합니다. ⭐️⭐️⭐️
-        when(openAIClient.chat(argThat(prompt -> prompt.contains("요약 대상 내용:"))))
-                .thenReturn(Mono.just("Test summary text."));
-        when(openAIClient.chat(argThat(prompt -> prompt.contains("핵심 해시태그 3개를 추출해줘"))))
-                .thenReturn(Mono.just("기술,인공지능,코딩"));
+        // ⭐️⭐️⭐️ [핵심 수정] 3번의 연속적인 openAIClient.chat() 호출에 대해 각각 다른 값을 반환하도록 설정합니다. ⭐️⭐️⭐️
+        when(openAIClient.chat(anyString()))
+                .thenReturn(
+                        Mono.just("Partial summary text."),   // 1. 첫 번째 호출(청크 요약)에 대한 응답
+                        Mono.just("Test summary text."),      // 2. 두 번째 호출(최종 요약)에 대한 응답
+                        Mono.just("기술,인공지능,코딩")         // 3. 세 번째 호출(태그 추출)에 대한 응답
+                );
 
+        // Repository의 save 메서드가 호출될 때 ID가 부여된 객체를 반환하도록 설정
         when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> {
             Summary summary = invocation.getArgument(0);
             summary.setId(100L);
@@ -119,7 +122,7 @@ class SummaryServiceImplTest {
 
         // then
         assertNotNull(response, "응답 DTO는 null이 아니어야 합니다.");
-        assertEquals("Test summary text.", response.getSummary(), "요약 내용이 일치해야 합니다.");
+        assertEquals("Test summary text.", response.getSummary(), "최종 요약 내용이 일치해야 합니다.");
         assertNotNull(response.getTags(), "태그 목록은 null이 아니어야 합니다.");
         assertEquals(3, response.getTags().size(), "생성된 해시태그는 3개여야 합니다.");
     }
