@@ -68,13 +68,15 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 
-        // ⭐️⭐️⭐️ 여기가 최종 수정 포인트입니다! ⭐️⭐️⭐️
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                        // ⭐️⭐️⭐️ 중요: Healthcheck를 위해 아래 한 줄을 추가했습니다. ⭐️⭐️⭐️
+                        "/actuator/**",
+
                         // --- 프론트엔드 관련 리소스는 모두 허용 ---
                         "/",
                         "/index.html",
-                        "/assets/**", // Vite 빌드 시 생성되는 JS, CSS 폴더
+                        "/assets/**",
                         "/*.ico",
                         "/*.png",
                         "/*.svg",
@@ -94,7 +96,6 @@ public class SecurityConfig {
                         // --- 기타 필요한 경로 허용 ---
                         "/error"
                 ).permitAll()
-                // 위에서 허용한 주소 외의 모든 요청은 인증을 받아야 합니다.
                 .anyRequest().authenticated()
         );
 
