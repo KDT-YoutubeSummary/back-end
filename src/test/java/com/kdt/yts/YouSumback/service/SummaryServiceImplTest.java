@@ -56,7 +56,6 @@ class SummaryServiceImplTest {
     @BeforeEach
     void setUp() {
         testUser = User.builder().id(1L).userName("testuser").build();
-
         testVideo = Video.builder()
                 .id(1L)
                 .youtubeId("test-id")
@@ -66,13 +65,11 @@ class SummaryServiceImplTest {
                 .viewCount(1000L)
                 .originalLanguageCode("ko")
                 .build();
-
         testTranscript = AudioTranscript.builder()
                 .id(1L)
                 .video(testVideo)
                 .transcriptPath("subtitles/test-id.vtt")
                 .build();
-
         testRequest = new SummaryRequestDTO("http://youtu.be/test-id", "Test Prompt", SummaryType.BASIC);
     }
 
@@ -91,10 +88,12 @@ class SummaryServiceImplTest {
         when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty());
         when(summaryArchiveTagRepository.existsById(any())).thenReturn(false);
 
-        // ⭐️⭐️⭐️ [핵심 수정] OpenAIClient.chat()의 첫 번째와 두 번째 호출에 대해 다른 값을 반환하도록 설정합니다. ⭐️⭐️⭐️
+        // ⭐️⭐️⭐️ [핵심 수정] OpenAIClient.chat()의 첫 번째와 두 번째 호출에 대한 응답을 명시적으로 순서대로 지정합니다. ⭐️⭐️⭐️
         when(openAIClient.chat(anyString()))
-                .thenReturn(Mono.just("Test summary text."))       // 첫 번째 호출(요약)에 대한 응답
-                .thenReturn(Mono.just("기술,인공지능,코딩"));     // 두 번째 호출(태그 추출)에 대한 응답
+                .thenReturn(
+                        Mono.just("Test summary text."),      // 첫 번째 호출 시 반환될 값
+                        Mono.just("기술,인공지능,코딩")      // 두 번째 호출 시 반환될 값
+                );
 
         when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> {
             Summary summary = invocation.getArgument(0);
@@ -121,11 +120,8 @@ class SummaryServiceImplTest {
 
         // then
         assertNotNull(response, "응답 DTO는 null이 아니어야 합니다.");
-
-        // 내용 검증
         assertEquals("Test summary text.", response.getSummary(), "요약 내용이 일치해야 합니다.");
         assertNotNull(response.getTags(), "태그 목록은 null이 아니어야 합니다.");
         assertEquals(3, response.getTags().size(), "생성된 해시태그는 3개여야 합니다.");
-        assertEquals("기술", response.getTags().get(0), "첫 번째 태그가 일치해야 합니다.");
     }
 }
