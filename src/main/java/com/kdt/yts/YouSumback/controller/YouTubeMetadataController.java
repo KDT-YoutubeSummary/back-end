@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/youtube")
@@ -79,9 +80,13 @@ public class YouTubeMetadataController {
             // summaryType 변환
             SummaryType summaryType;
             try {
-                summaryType = SummaryType.valueOf(request.getSummaryType().toUpperCase());
+                summaryType = SummaryType.valueOf(
+                        Optional.ofNullable(request.getSummaryType())
+                                .orElse("BASIC")
+                                .toUpperCase()
+                );
             } catch (IllegalArgumentException e) {
-                return ResponseEntity.badRequest().body("❌ 유효하지 않은 요약 타입입니다: " + request.getSummaryType());
+                summaryType = SummaryType.BASIC; // 기본값으로 fallback
             }
 
             transcriptService.extractYoutubeIdAndRunWhisper(request.getVideoUrl(), request.getUserPrompt());
