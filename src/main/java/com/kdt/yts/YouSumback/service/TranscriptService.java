@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -65,8 +66,11 @@ public class TranscriptService {
                 JsonNode json = objectMapper.readTree(response.getBody());
                 String s3Path = json.path("s3_path").asText();
 
-                if (s3Path == null || s3Path.isBlank() || !(s3Path.endsWith(".txt") || s3Path.endsWith(".vtt"))) {
-                    throw new IllegalStateException("❌ Whisper 응답에 유효한 s3_path 없음: " + s3Path);
+                List<String> allowedExtensions = List.of(".txt", ".vtt", ".srt");
+                boolean valid = allowedExtensions.stream().anyMatch(s3Path::endsWith);
+
+                if (s3Path == null || s3Path.isBlank() || !valid) {
+                    throw new IllegalStateException("❌ Whisper 응답 확장자 형식이 잘못됨: " + s3Path);
                 }
 
                 AudioTranscript newTranscript = AudioTranscript.builder()
@@ -78,7 +82,6 @@ public class TranscriptService {
 
                 audioTranscriptRepository.save(newTranscript);
                 log.info("✅ AudioTranscript 저장 완료: {}", newTranscript.getId());
-
             } else {
                 throw new IllegalStateException("❌ Whisper 응답 실패 또는 본문 없음: " + response.getStatusCode());
             }
