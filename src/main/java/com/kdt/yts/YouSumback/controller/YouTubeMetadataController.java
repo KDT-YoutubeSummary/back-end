@@ -60,7 +60,9 @@ public class YouTubeMetadataController {
                     .orElseGet(() -> ResponseEntity.status(404).body("해당 영상이 존재하지 않음"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("잘못된 유튜브 URL입니다.");
+
         }
+
     }
 
     @Operation(summary = "유튜브 영상 업로드", description = "유튜브 링크를 업로드해 요약을 요청합니다.")
@@ -98,17 +100,25 @@ public class YouTubeMetadataController {
 
             return ResponseEntity.ok(response);
 
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage() != null && e.getMessage().contains("해당 YouTube ID에 해당하는 영상 없음")) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("code", 404);
+                errorResponse.put("message", "먼저 영상 메타데이터를 저장해야 합니다.");
+                errorResponse.put("error", e.getMessage());
+                errorResponse.put("data", null);
+                return ResponseEntity.status(404).body(errorResponse);
+            } else {
+                throw e;
+            }
         } catch (Exception e) {
-            System.err.println("❌ Controller: Error processing request: " + e.getMessage());
-            e.printStackTrace();
-
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("code", 500);
-            errorResponse.put("message", "요약 생성 중 오류가 발생했습니다");
+            errorResponse.put("message", "요약 생성 중 서버 오류가 발생했습니다.");
             errorResponse.put("error", e.getMessage());
             errorResponse.put("data", null);
-
             return ResponseEntity.status(500).body(errorResponse);
         }
+
     }
 }

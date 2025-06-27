@@ -8,6 +8,7 @@ import com.kdt.yts.YouSumback.repository.AudioTranscriptRepository;
 import com.kdt.yts.YouSumback.repository.VideoRepository;
 import com.kdt.yts.YouSumback.util.MetadataHelper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TranscriptService {
@@ -36,7 +38,7 @@ public class TranscriptService {
         try {
             // 1. 유튜브 ID 추출
             String youtubeId = metadataHelper.extractYoutubeId(url);
-            System.out.println("📺 유튜브 ID 추출: " + youtubeId);
+            log.info("📺 유튜브 ID 추출: {}", youtubeId);
 
             // 2. 해당 Video 조회
             Video video = videoRepository.findByYoutubeId(youtubeId)
@@ -45,7 +47,7 @@ public class TranscriptService {
             // 3. 기존 Transcript 있는지 확인
             Optional<AudioTranscript> optionalTranscript = audioTranscriptRepository.findByVideoId(video.getId());
             if (optionalTranscript.isPresent() && optionalTranscript.get().getTranscriptPath() != null) {
-                System.out.println("🔁 이미 처리된 Transcript 존재. ID: " + optionalTranscript.get().getId());
+                log.info("🔁 이미 처리된 Transcript 존재. ID: {}", optionalTranscript.get().getId());
                 return;
             }
 
@@ -57,10 +59,11 @@ public class TranscriptService {
             Map<String, String> requestBody = new HashMap<>();
             requestBody.put("videoUrl", url);
             requestBody.put("youtubeId", youtubeId);
+            requestBody.put("userPrompt", userPrompt == null ? "" : userPrompt);  // 빈 문자열 허용
 
             HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
 
-            System.out.println("📤 Whisper 서버로 요청 전송...");
+            log.info("📤 Whisper 서버로 요청 전송 시작...");
             ResponseEntity<String> response = restTemplate.postForEntity(whisperServerUrl, request, String.class);
 
             // 5. 응답 처리
@@ -68,11 +71,11 @@ public class TranscriptService {
                 JsonNode json = objectMapper.readTree(response.getBody());
                 String s3Path = json.path("s3_path").asText();
 
-                if (s3Path == null || s3Path.isEmpty()) {
-                    throw new IllegalStateException("❌ Whisper 응답에 s3_path 없음");
+                if (s3Path == null || s3Path.isBlank() || !s3Path.endsWith(".txt")) {
+                    throw new IllegalStateException("❌ Whisper 응답에 유효한 s3_path 없음: " + s3Path);
                 }
 
-                System.out.println("✅ Whisper 처리 성공. S3 경로: " + s3Path);
+                log.info("✅ Whisper 처리 성공. S3 경로: {}", s3Path);
 
                 // 6. 새 Transcript 저장 또는 업데이트
                 AudioTranscript transcript = optionalTranscript.orElse(new AudioTranscript());
@@ -82,20 +85,21 @@ public class TranscriptService {
                 transcript.setCreatedAt(LocalDateTime.now());
 
                 audioTranscriptRepository.save(transcript);
-                System.out.println("💾 Transcript 저장 완료");
+                log.info("💾 Transcript 저장 완료: {}", transcript.getId());
 
             } else {
-                System.err.println("❌ Whisper 서버 오류 응답: " + response.getStatusCode());
-                System.err.println("내용: " + response.getBody());
-                throw new RuntimeException("Whisper 서버 응답 실패");
+                log.error("❌ Whisper 서버 오류 응답: {}", response.getStatusCode());
+                log.error("응답 내용: {}", response.getBody());
+                throw new RuntimeException("Whisper 서버 응답 실패: " + response.getStatusCode());
             }
 
+        } catch (IllegalArgumentException e) {
+            // 그대로 상위로 던짐 → 컨트롤러에서 잡기
+            throw e;
+
         } catch (Exception e) {
-            System.err.println("❌ Whisper 처리 중 예외 발생");
-            e.printStackTrace();
+            log.error("❌ Whisper 처리 중 예외 발생", e);
             throw new RuntimeException("Whisper 처리 실패", e);
         }
-
-
     }
 }
