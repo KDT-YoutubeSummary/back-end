@@ -15,7 +15,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 
-// ⭐️⭐️⭐️ S3 관련 Mocking을 위해 필요한 import 추가 ⭐️⭐️⭐️
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -40,9 +39,7 @@ class SummaryServiceImplTest {
     @InjectMocks
     private SummaryServiceImpl summaryService;
 
-    // ⭐️⭐️⭐️ [수정 1] S3Client에 대한 Mock 객체 추가 ⭐️⭐️⭐️
     @Mock private S3Client s3Client;
-
     @Mock private OpenAIClient openAIClient;
     @Mock private AudioTranscriptRepository audioTranscriptRepository;
     @Mock private SummaryRepository summaryRepository;
@@ -71,7 +68,6 @@ class SummaryServiceImplTest {
                 .originalLanguageCode("ko")
                 .build();
 
-        // transcriptPath는 이제 S3의 객체 키(key)를 의미합니다.
         testTranscript = AudioTranscript.builder()
                 .id(1L)
                 .video(testVideo)
@@ -85,69 +81,74 @@ class SummaryServiceImplTest {
     @DisplayName("요약 및 해시태그 생성 단위 테스트 - 성공 (FR-007, FR-008, FR-009)")
     void summarize_Success() throws IOException {
         // given
-        // ⭐️⭐️⭐️ [수정 2] S3 클라이언트의 동작을 Mocking ⭐️⭐️⭐️
         String mockTranscriptText = "This is a mock transcript text from S3.";
-        // S3 응답 객체를 Mocking합니다.
         ResponseBytes<GetObjectResponse> mockResponseBytes = mock(ResponseBytes.class);
-        // S3에서 읽어온 byte 배열이 어떤 값을 반환할지 설정합니다.
         when(mockResponseBytes.asByteArray()).thenReturn(mockTranscriptText.getBytes(StandardCharsets.UTF_8));
-        // s3Client의 getObjectAsBytes 메소드가 호출되면, 위에서 만든 Mock 객체를 반환하도록 설정합니다.
         when(s3Client.getObjectAsBytes(any(GetObjectRequest.class))).thenReturn(mockResponseBytes);
 
-
-        // --- 기존 Repository Mocking 설정은 그대로 유지 ---
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(audioTranscriptRepository.findByVideo_OriginalUrl(anyString())).thenReturn(Optional.of(testTranscript));
+        when(summaryArchiveRepository.findByUserIdAndSummaryId(anyLong(), anyLong())).thenReturn(Optional.empty());
         when(tagRepository.findByTagName(anyString())).thenReturn(Optional.empty());
+        when(summaryArchiveTagRepository.existsById(any())).thenReturn(false);
 
+        // OpenAI 클라이언트 Mocking (요약, 태그 추출 순서대로 다른 값을 반환하도록 설정)
+        when(openAIClient.chat(anyString()))
+                .thenReturn(Mono.just("Test summary text.")) // 첫 번째 호출(요약)에 대한 응답
+                .thenReturn(Mono.just("기술, 인공지능, 코딩")); // 두 번째 호출(태그 추출)에 대한 응답
+
+        // Repository의 save 메서드가 호출될 때 ID가 부여된 객체를 반환하도록 설정
         when(summaryRepository.save(any(Summary.class))).thenAnswer(invocation -> {
             Summary summary = invocation.getArgument(0);
-            if (summary.getId() == null) summary.setId(100L);
-            if (summary.getCreatedAt() == null) summary.setCreatedAt(LocalDateTime.now());
-            if (summary.getAudioTranscript() == null) summary.setAudioTranscript(testTranscript);
+            summary.setId(100L);
+            summary.setCreatedAt(LocalDateTime.now());
+            summary.setAudioTranscript(testTranscript);
             return summary;
         });
-
         when(summaryArchiveRepository.save(any(SummaryArchive.class))).thenAnswer(invocation -> {
             SummaryArchive archive = invocation.getArgument(0);
-            if (archive.getId() == null) archive.setId(200L);
+            archive.setId(200L);
             return archive;
         });
-
         when(tagRepository.save(any(Tag.class))).thenAnswer(invocation -> {
             Tag tag = invocation.getArgument(0);
-            if (tag.getId() == null) tag.setId(new Random().nextLong());
+            tag.setId(new Random().nextLong(1000L));
             return tag;
         });
-
-        when(summaryArchiveTagRepository.save(any(SummaryArchiveTag.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userActivityLogRepository.save(any(UserActivityLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // OpenAI 클라이언트 Mocking은 그대로 유지
-        when(openAIClient.chat(anyString())).thenReturn(Mono.just("Test summary text."));
-
+        when(summaryArchiveTagRepository.save(any(SummaryArchiveTag.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
-        // ⭐️⭐️⭐️ [수정 3] 불필요해진 Files, Paths의 static mocking 제거 ⭐️⭐️⭐️
         SummaryResponseDTO response = summaryService.summarize(testRequest, 1L);
 
         // then
+        // ⭐️⭐️⭐️ [핵심 수정] SummaryResponseDTO의 모든 필드를 검증하도록 로직을 보강합니다. ⭐️⭐️⭐️
         assertNotNull(response, "응답 DTO는 null이 아니어야 합니다.");
-        assertNotNull(response.getSummary(), "요약 내용은 null일 수 없습니다.");
-        assertEquals("Test summary text.", response.getSummary());
 
-        ArgumentCaptor<Summary> summaryCaptor = ArgumentCaptor.forClass(Summary.class);
-        verify(summaryRepository, times(1)).save(summaryCaptor.capture());
+        // ID 검증
+        assertEquals(100L, response.getSummaryId(), "요약 ID가 일치해야 합니다.");
+        assertEquals(1L, response.getTranscriptId(), "대본 ID가 일치해야 합니다.");
+        assertEquals(1L, response.getVideoId(), "비디오 ID가 일치해야 합니다.");
 
-        Summary capturedSummary = summaryCaptor.getValue();
-        assertNotNull(capturedSummary, "저장된 Summary 객체는 null일 수 없습니다.");
+        // 내용 검증
+        assertEquals("Test summary text.", response.getSummary(), "요약 내용이 일치해야 합니다.");
+        assertNotNull(response.getTags(), "태그 목록은 null이 아니어야 합니다.");
+        assertEquals(3, response.getTags().size(), "생성된 해시태그는 3개여야 합니다.");
+        assertEquals("기술", response.getTags().get(0));
 
-        AudioTranscript capturedTranscript = capturedSummary.getAudioTranscript();
-        assertNotNull(capturedTranscript, "Summary 객체 내부의 AudioTranscript는 null일 수 없습니다.");
+        // 비디오 메타데이터 검증
+        assertEquals("test title", response.getTitle(), "영상 제목이 일치해야 합니다.");
+        assertEquals("http://thumbnail.url/test.jpg", response.getThumbnailUrl(), "썸네일 URL이 일치해야 합니다.");
+        assertEquals("Test Uploader", response.getUploaderName(), "업로더 이름이 일치해야 합니다.");
+        assertEquals(1000L, response.getViewCount(), "조회수가 일치해야 합니다.");
+        assertEquals("ko", response.getLanguageCode(), "언어 코드가 일치해야 합니다.");
+        assertNotNull(response.getCreatedAt(), "생성 시간이 null이 아니어야 합니다.");
 
-        Video capturedVideo = capturedTranscript.getVideo();
-        assertNotNull(capturedVideo, "AudioTranscript 내부의 Video 객체는 null일 수 없습니다.");
-
-        assertEquals("test title", capturedVideo.getTitle());
+        // Repository 메서드 호출 횟수 검증
+        verify(summaryRepository, times(1)).save(any(Summary.class));
+        verify(summaryArchiveRepository, times(1)).save(any(SummaryArchive.class));
+        verify(tagRepository, times(3)).save(any(Tag.class));
+        verify(summaryArchiveTagRepository, times(3)).save(any(SummaryArchiveTag.class));
+        verify(userActivityLogRepository, times(1)).save(any(UserActivityLog.class));
     }
 }

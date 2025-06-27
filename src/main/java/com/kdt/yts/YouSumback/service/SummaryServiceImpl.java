@@ -128,9 +128,14 @@ public class SummaryServiceImpl implements SummaryService {
         for (String keyword : hashtags) {
             Tag tag = findOrCreateTag(keyword);
 
+            // ⭐️⭐️⭐️ [핵심 수정] @EmbeddedId를 사용하는 방식으로 객체 생성 로직을 변경합니다. ⭐️⭐️⭐️
             SummaryArchiveTagId summaryArchiveTagId = new SummaryArchiveTagId(archive.getId(), tag.getId());
             if (!summaryArchiveTagRepository.existsById(summaryArchiveTagId)) {
-                SummaryArchiveTag summaryArchiveTag = new SummaryArchiveTag(archive, tag);
+                SummaryArchiveTag summaryArchiveTag = SummaryArchiveTag.builder()
+                        .id(summaryArchiveTagId)
+                        .summaryArchive(archive)
+                        .tag(tag)
+                        .build();
                 summaryArchiveTagRepository.save(summaryArchiveTag);
             }
         }
