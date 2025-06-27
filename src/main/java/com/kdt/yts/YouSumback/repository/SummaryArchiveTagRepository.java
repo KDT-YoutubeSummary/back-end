@@ -12,11 +12,11 @@ import java.util.List;
 @Repository
 public interface SummaryArchiveTagRepository extends JpaRepository<SummaryArchiveTag, SummaryArchiveTagId> {
 
-    // 특정 요약 저장소의 태그 목록 조회
-    @Query("SELECT sat FROM SummaryArchiveTag sat JOIN FETCH sat.tag WHERE sat.summaryArchiveId = :summaryArchiveId")
-    List<SummaryArchiveTag> findBySummaryArchive_Id(@Param("summaryArchiveId") Long summaryArchiveId);
+    // ✅ 특정 요약 저장소의 태그 목록 조회 (EmbeddedId 내부 필드 접근)
+    @Query("SELECT sat FROM SummaryArchiveTag sat JOIN FETCH sat.tag WHERE sat.id.summaryArchiveId = :summaryArchiveId")
+    List<SummaryArchiveTag> findBySummaryArchiveId(@Param("summaryArchiveId") Long summaryArchiveId);
 
-    // 특정 사용자의 태그별 요약 저장소 개수 조회
+    // ✅ 특정 사용자의 태그별 요약 저장소 개수 조회 (native 쿼리 그대로 유지)
     @Query(value = """
         SELECT t.tag_name, COUNT(*) 
         FROM summary_archive sa
@@ -27,6 +27,6 @@ public interface SummaryArchiveTagRepository extends JpaRepository<SummaryArchiv
     """, nativeQuery = true)
     List<Object[]> countTagsByUserId(@Param("userId") Long userId);
 
-    // 특정 요약 저장소와 태그 조합 삭제  
-    void deleteBySummaryArchive_IdAndTag_Id(Long summaryArchiveId, Long tagId);
+    // ✅ 특정 요약 저장소와 태그 조합 삭제 (메서드 이름 기반으로 EmbeddedId 처리)
+    void deleteById_SummaryArchiveIdAndId_TagId(Long summaryArchiveId, Long tagId);
 }
