@@ -15,6 +15,9 @@ public class MetadataHelper {
 
     private final VideoRepository videoRepository;
 
+    /**
+     * 유튜브 URL에서 youtubeId 추출
+     */
     public String extractYoutubeId(String url) {
         if (url.contains("v=")) {
             return url.substring(url.indexOf("v=") + 2).split("&")[0];
@@ -27,11 +30,9 @@ public class MetadataHelper {
     }
 
     /**
-     * 유튜브 ID 기반 Video 조회, 없으면 저장
+     * 유튜브 ID 기반 Video 조회, 없으면 임시 메타데이터로 저장해서 반환
      */
-    // MetadataHelper.java
-
-    public Video fetchAndSaveMetadata(String url) {
+    public Video fetchOrCreateMetadata(String url) {
         String youtubeId = extractYoutubeId(url);
 
         return videoRepository.findByYoutubeId(youtubeId)
@@ -52,5 +53,4 @@ public class MetadataHelper {
                     return videoRepository.save(video);
                 });
     }
-
 }

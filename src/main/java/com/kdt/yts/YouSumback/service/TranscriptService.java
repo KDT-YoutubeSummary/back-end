@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kdt.yts.YouSumback.model.entity.AudioTranscript;
 import com.kdt.yts.YouSumback.model.entity.Video;
 import com.kdt.yts.YouSumback.repository.AudioTranscriptRepository;
-import com.kdt.yts.YouSumback.repository.VideoRepository;
 import com.kdt.yts.YouSumback.util.MetadataHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,6 @@ import java.util.Optional;
 public class TranscriptService {
 
     private final RestTemplate restTemplate;
-    private final VideoRepository videoRepository;
     private final AudioTranscriptRepository audioTranscriptRepository;
     private final MetadataHelper metadataHelper;
     private final ObjectMapper objectMapper;
@@ -36,32 +34,15 @@ public class TranscriptService {
     @Transactional
     public void extractYoutubeIdAndRunWhisper(String url, String userPrompt) {
         try {
-            // 1. 유튜브 ID 추출
-            String youtubeId = metadataHelper.extractYoutubeId(url);
-            log.info("📺 유튜브 ID 추출: {}", youtubeId);
+            // 1. 영상 메타데이터 확보 (없으면 생성)
+            Video video = metadataHelper.fetchOrCreateMetadata(url);
+            String youtubeId = video.getYoutubeId();
+            log.info("📺 유튜브 ID 확보 및 메타데이터 준비 완료: {}", youtubeId);
 
-            // 2. 해당 Video 조회 또는 새로 생성
-            Video video = videoRepository.findByYoutubeId(youtubeId)
-                    .orElseGet(() -> {
-                        log.warn("⚠️ 해당 유튜브 ID의 영상이 존재하지 않음. 메타데이터 수집 시도: {}", youtubeId);
-                        try {
-                            return metadataHelper.fetchAndSaveMetadata(url);  // 이 메서드가 video 저장까지 포함해야 함
-                        } catch (Exception e) {
-                            log.error("❌ 메타데이터 저장 중 오류 발생", e);
-                            throw new RuntimeException("영상 메타데이터 저장 실패", e);
-                        }
-                    });
-
-            log.info("📦 영상 정보 준비 완료. video_id={}, title={}", video.getId(), video.getTitle());
-
-            // 3. 기존 Transcript 있는지 확인
+            // 2. 기존 Transcript 확인 (재요약 허용이므로 무시하고 계속 진행)
             Optional<AudioTranscript> optionalTranscript = audioTranscriptRepository.findByVideoId(video.getId());
-            if (optionalTranscript.isPresent() && optionalTranscript.get().getTranscriptPath() != null) {
-                log.info("🔁 이미 처리된 Transcript 존재. ID: {}", optionalTranscript.get().getId());
-                return;
-            }
 
-            // 4. Whisper 서버 호출 준비
+            // 3. Whisper 서버 호출 준비
             String whisperServerUrl = "http://whisper-server:8000/transcribe";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -76,7 +57,7 @@ public class TranscriptService {
             log.info("📤 Whisper 서버로 요청 전송 시작...");
             ResponseEntity<String> response = restTemplate.postForEntity(whisperServerUrl, request, String.class);
 
-            // 5. 응답 처리
+            // 4. 응답 처리
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 JsonNode json = objectMapper.readTree(response.getBody());
                 String s3Path = json.path("s3_path").asText();
@@ -87,7 +68,7 @@ public class TranscriptService {
 
                 log.info("✅ Whisper 처리 성공. S3 경로: {}", s3Path);
 
-                // 6. 새 Transcript 저장 또는 업데이트
+                // 5. Transcript 저장 (재요약 시 덮어쓰기)
                 AudioTranscript transcript = optionalTranscript.orElse(new AudioTranscript());
                 transcript.setVideo(video);
                 transcript.setYoutubeId(youtubeId);
@@ -100,12 +81,11 @@ public class TranscriptService {
             } else {
                 log.error("❌ Whisper 서버 오류 응답: {}", response.getStatusCode());
                 log.error("응답 내용: {}", response.getBody());
-                throw new RuntimeException("Whisper 서버 응답 실패: " + response.getStatusCode());
+                throw new RuntimeException("Whisper 서버 응답 실패: " + response.getStatusCode() + " - " + response.getBody());
             }
 
         } catch (IllegalArgumentException e) {
-            // 그대로 상위로 던짐 → 컨트롤러에서 잡기
-            throw e;
+            throw e; // 컨트롤러에서 처리하게 던짐
 
         } catch (Exception e) {
             log.error("❌ Whisper 처리 중 예외 발생", e);
