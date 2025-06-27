@@ -11,12 +11,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// ⭐️⭐️⭐️ S3 관련 import 추가 ⭐️⭐️⭐️
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+// ⭐️⭐️⭐️
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -37,6 +43,30 @@ public class SummaryServiceImpl implements SummaryService {
     private final UserActivityLogRepository userActivityLogRepository;
     private final VideoRepository videoRepository;
 
+    // ⭐️⭐️⭐️ S3 클라이언트를 주입받습니다. ⭐️⭐️⭐️
+    private final S3Client s3Client;
+
+    // ⭐️⭐️⭐️ [수정된 부분 1] S3에서 파일을 읽어오는 헬퍼 메소드 추가 ⭐️⭐️⭐️
+    private String readTextFromS3(String s3Key) {
+        System.out.println("✅ S3에서 파일 읽기 시도. Key: " + s3Key);
+        try {
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket("yousum-s3") // 버킷 이름은 하드코딩하거나 설정에서 가져올 수 있습니다.
+                    .key(s3Key)
+                    .build();
+
+            ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
+            byte[] data = objectBytes.asByteArray();
+            System.out.println("✅ S3 파일 읽기 성공. 파일 크기: " + data.length + " bytes");
+            return new String(data, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            System.err.println("❌ S3 파일 읽기 중 심각한 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to read file from S3: " + s3Key, e);
+        }
+    }
+
+
     @Override
     @Transactional
     public SummaryResponseDTO summarize(SummaryRequestDTO request, Long userId) {
@@ -49,40 +79,13 @@ public class SummaryServiceImpl implements SummaryService {
         AudioTranscript transcript = audioTranscriptRepository.findByVideo_OriginalUrl(originalUrl)
                 .orElseThrow(() -> new RuntimeException("AudioTranscript not found for URL: " + originalUrl));
 
-        String text;
-        if (summaryType == SummaryType.TIMELINE) {
-            String videoId = transcript.getVideo().getYoutubeId();
-            String lang = transcript.getVideo().getOriginalLanguageCode();
-            Path vttPath = Paths.get("src", "main", "resources", "textfiles", videoId + "." + lang + ".vtt");
-
-            try {
-                if (Files.exists(vttPath)) {
-                    text = Files.readString(vttPath, StandardCharsets.UTF_8);
-                    System.out.println("✅ TIMELINE summary: Loaded VTT file from: " + vttPath);
-                } else {
-                    Path cleanedPath = Paths.get(transcript.getTranscriptPath());
-                    System.err.println("⚠️ VTT file not found for TIMELINE summary at " + vttPath + ". Falling back to cleaned text from " + cleanedPath);
-                    text = Files.readString(cleanedPath, StandardCharsets.UTF_8);
-                }
-            } catch (IOException e) {
-                System.err.println("❌ Error reading transcript file for TIMELINE summary: " + e.getMessage());
-                throw new RuntimeException("Failed to read transcript file for TIMELINE summary.", e);
-            }
-        } else {
-            if (transcript.getTranscriptPath() == null || transcript.getTranscriptPath().isEmpty()) {
-                System.err.println("❌ AudioTranscript has no file path for URL: " + originalUrl);
-                throw new RuntimeException("No transcript file path found for URL: " + originalUrl + ". Summary failed.");
-            }
-
-            try {
-                Path filePath = Paths.get(transcript.getTranscriptPath());
-                text = Files.readString(filePath, StandardCharsets.UTF_8);
-                System.out.println("✅ Transcript text loaded from file path: " + filePath);
-            } catch (IOException e) {
-                System.err.println("❌ Error reading transcript file from path: " + transcript.getTranscriptPath() + " - " + e.getMessage());
-                throw new RuntimeException("Failed to read transcript text from file.", e);
-            }
+        if (transcript.getTranscriptPath() == null || transcript.getTranscriptPath().isEmpty()) {
+            System.err.println("❌ AudioTranscript에 파일 경로가 없습니다: " + originalUrl);
+            throw new RuntimeException("No transcript file path found for URL: " + originalUrl + ". Summary failed.");
         }
+
+        // ⭐️⭐️⭐️ [수정된 부분 2] 로컬 파일 대신 S3에서 텍스트를 읽어옵니다. ⭐️⭐️⭐️
+        String text = readTextFromS3(transcript.getTranscriptPath());
         Long transcriptId = transcript.getId();
 
         System.out.println("✅ Transcript found/processed. ID: " + transcriptId);
@@ -177,7 +180,7 @@ public class SummaryServiceImpl implements SummaryService {
 
         public String buildPrompt(String userPrompt, SummaryType summaryType) {
             String formatInstruction = switch (summaryType) {
-    
+
                 case BASIC -> """
     ## 📚 기본 요약
     
@@ -192,7 +195,7 @@ public class SummaryServiceImpl implements SummaryService {
     ### 관련 학습
     [추가로 알아볼 만한 관련 주제나 개념]
     """;
-    
+
                 case THREE_LINE -> """
     ## 📝 3줄 요약
     
@@ -203,7 +206,7 @@ public class SummaryServiceImpl implements SummaryService {
     ### 추가 포인트
     [3줄 요약을 보완하는 중요한 내용]
     """;
-    
+
                 case KEYWORD -> """
     ## 🔑 키워드 요약
     
@@ -216,7 +219,7 @@ public class SummaryServiceImpl implements SummaryService {
     ### 키워드 활용
     [키워드들이 어떻게 연결되고 실제로 활용되는지 설명]
     """;
-    
+
                 case TIMELINE -> """
     ## ⏰ 타임라인 요약
     
@@ -231,7 +234,7 @@ public class SummaryServiceImpl implements SummaryService {
     [전체 흐름에서 가장 중요한 포인트들]
     """;
             };
-    
+
             return String.format("""
     학습용 요약을 작성해주세요.
     
@@ -477,6 +480,4 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
         return tagRepository.findByTagName(tagName)
                 .orElseGet(() -> tagRepository.save(Tag.builder().tagName(tagName).build()));
     }
-
-
 }
