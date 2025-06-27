@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# ERROR FIXING PROCESS (Simplified)
+
+1. Define the symptom: Clearly describe the observed issue or error log.
+2. Scope impact: Identify related files, components, or data flows.
+3. Find root cause: Narrow down the main cause based on code/logic.
+4. One-line summary: Explain the issue simply for any developer.
+5. Fix points: List code locations to change and why.
+6. Code fix: Show the changes and brief explanations.
+7. Follow-up: Suggest refactoring, tests, or logging to prevent recurrence.
+

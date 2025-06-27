@@ -1,0 +1,138 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 주요 스택 및 우선순위 선정
+- Spring Boot (JPA, QueryDSL)
+- RDB (MySQL, H2 memory DB for test)
+- Redis Cache DB
+- Kafka 이벤트 스트리밍
+- AWS S3 저장소
+- 프론트엔드는 React Web 사용
+- GCP 의 안면인식 API 활용
+
+- 000 사이트 대상 데이터 크롤링 수행
+
+# 002-tech-stack.mdc - YouSum 기술 스택 정의
+
+## 백엔드 기술 스택
+
+### 핵심 프레임워크
+- **Spring Boot 3.x**: RESTful API 서버 구축
+- **Spring Security**: JWT 기반 인증/인가, OAuth2 구글 로그인
+- **Spring Data JPA**: 데이터베이스 ORM 처리
+- **QueryDSL**: 복잡한 동적 쿼리 처리
+
+### 데이터베이스
+- **MySQL 8.0**: 메인 데이터베이스 (운영 환경)
+- **H2 Database**: 로컬 개발 및 테스트용 인메모리 DB
+- **Redis**: 세션 캐시, API 응답 캐시, 분산 락
+
+### AI 서비스 연동
+- **OpenAI Whisper API**: 음성-텍스트 변환 (STT)
+- **OpenAI GPT API**: 요약 생성, 퀴즈 생성, 해시태그 추출
+- **YouTube Data API v3**: 영상 메타데이터 조회
+
+### 인프라 및 배포
+- **AWS EC2**: 애플리케이션 서버 호스팅
+- **AWS S3**: 오디오 파일, 텍스트 파일 저장소
+- **AWS RDS**: MySQL 관리형 데이터베이스
+- **AWS Lambda**: 파일 처리 자동화 트리거
+- **Docker**: Whisper 처리 컨테이너화
+
+### 모니터링 및 로깅
+- **Spring Boot Actuator**: 애플리케이션 상태 모니터링
+- **Logback**: 구조화된 로깅
+- **AWS CloudWatch**: 로그 수집 및 모니터링
+
+## 프론트엔드 기술 스택
+
+### 핵심 프레임워크
+- **React 18**: 사용자 인터페이스 구축
+- **TypeScript**: 타입 안전성 보장
+- **React Router**: 클라이언트 사이드 라우팅
+- **Axios**: HTTP 클라이언트 (API 통신)
+
+### UI/UX 라이브러리
+- **Material-UI** 또는 **Ant Design**: 컴포넌트 라이브러리
+- **Chart.js**: 학습 통계 시각화
+- **React Hook Form**: 폼 상태 관리
+
+### 상태 관리
+- **React Context API**: 전역 상태 관리
+- **React Query**: 서버 상태 관리 및 캐싱
+
+## 개발 도구 및 환경
+
+### 빌드 도구
+- **Gradle**: Java 프로젝트 빌드 관리
+- **Vite** 또는 **Create React App**: React 개발 환경
+
+### 코드 품질
+- **ESLint**: JavaScript/TypeScript 코드 린팅
+- **Prettier**: 코드 포맷팅
+- **SonarQube**: 코드 품질 분석
+
+### 테스팅
+- **JUnit 5**: Java 단위 테스트
+- **Mockito**: 목 객체 생성
+- **TestContainers**: 통합 테스트용 데이터베이스
+- **Jest**: JavaScript 단위 테스트
+- **React Testing Library**: React 컴포넌트 테스트
+
+## 외부 서비스 연동
+
+### AI 및 머신러닝
+- **OpenAI API**: GPT-4, Whisper 모델 활용
+- **Python**: Whisper 로컬 처리용 스크립트
+
+### 인증 및 보안
+- **JWT**: 토큰 기반 인증
+- **OAuth2**: 구글 소셜 로그인
+- **BCrypt**: 비밀번호 암호화
+
+### 이메일 서비스
+- **JavaMail API**: 리마인드 이메일 발송
+- **Gmail SMTP**: 이메일 전송 서비스
+
+## 개발 환경별 구성
+
+### 로컬 개발 환경
+- H2 인메모리 데이터베이스
+- 로컬 Redis 인스턴스
+- 개발용 OpenAI API 키
+
+### 테스트 환경
+- TestContainers 기반 MySQL
+- 모킹된 외부 API
+- 통합 테스트 자동화
+
+### 운영 환경
+- AWS RDS MySQL
+- AWS ElastiCache Redis
+- 운영용 API 키 및 보안 설정
+
+## 성능 최적화
+
+### 캐싱 전략
+- Redis를 통한 API 응답 캐싱
+- 요약 결과 캐싱으로 중복 처리 방지
+- 사용자 세션 캐싱
+
+### 비동기 처리
+- Whisper 처리의 비동기 실행
+- 이메일 발송 비동기 처리
+- 대용량 텍스트 처리 최적화
+
+## 보안 고려사항
+
+### API 보안
+- JWT 토큰 만료 시간 설정
+- CORS 정책 적용
+- Rate Limiting 구현
+
+### 데이터 보안
+- 개인정보 암호화 저장
+- API 키 환경변수 관리
+- SQL Injection 방지

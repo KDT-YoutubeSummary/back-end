@@ -1,0 +1,142 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 001-workspace.mdc - 프로젝트 워크스페이스 규칙
+
+## 프로젝트 개요
+
+### 프로젝트명
+**YouSum (유썸)** - AI 기반 유튜브 영상 요약 및 학습 지원 플랫폼
+
+### 목적
+능동적 학습자를 위한 AI 기반 유튜브 영상 요약 및 학습 지원 플랫폼 개발
+- Whisper 및 GPT API를 활용한 자동 요약, 퀴즈 생성, 리마인드 기능 제공
+- 사용자 맞춤형 학습 지원 및 영상 추천 시스템 구축
+
+### 핵심 기능
+1. **영상 처리**: Whisper 기반 STT → 텍스트 정제 → GPT 요약 생성
+2. **학습 지원**: 자동 퀴즈 생성, 해시태그 분류, 요약 저장소
+3. **개인화**: 리마인드 알림, AI 추천, 학습 통계 시각화
+4. **사용자 관리**: JWT 인증, OAuth2 구글 로그인, 마이페이지
+
+## 시스템 아키텍처
+
+### 전체 구성도
+```
+[사용자 (React Frontend)]
+        ↓ API 호출
+[Spring Boot Backend API Server]
+    ├── Whisper STT 처리 (Python + Docker)
+    ├── OpenAI GPT API 연동
+    ├── MySQL Database
+    ├── Redis Cache
+    └── AWS 인프라 연동
+        ├── S3 (파일 저장)
+        ├── RDS (MySQL)
+        ├── Lambda (자동화)
+        └── EC2 (서버 호스팅)
+```
+
+### 주요 컴포넌트
+- **Frontend**: React 웹 애플리케이션
+- **Backend**: Spring Boot REST API 서버
+- **Database**: MySQL (메인), Redis (캐시)
+- **AI Services**: OpenAI Whisper (STT), GPT API (요약/퀴즈)
+- **Infrastructure**: AWS (EC2, S3, RDS, Lambda)
+- **Authentication**: JWT + OAuth2 (Google)
+
+## 개발 가이드라인
+
+### 팀 구성 및 역할
+| 역할 | 담당자 | 책임 영역 |
+|------|--------|-----------|
+| 팀 리더 | 석예은 | 프로젝트 총괄 관리 |
+| 프론트엔드 | 석예은, 김지원, 정준호 | React UI/UX, API 연동 |
+| 백엔드 | 석예은, 김지원, 윤정수, 정준호, 최도영 | Spring Boot API, 서비스 로직 |
+| 인프라 | 윤정수, 최도영 | AWS 배포, 보안 설정 |
+| AI 연동 | 김지원, 정준호 | GPT API, Whisper 처리 |
+| STT 처리 | 윤정수 | Whisper 기반 음성-텍스트 변환 |
+
+### 코딩 컨벤션
+1. **Java**: Spring Boot 표준 컨벤션 준수
+2. **API 설계**: RESTful 원칙 따름
+3. **데이터베이스**: JPA Entity 기반 설계
+4. **보안**: JWT 토큰 기반 인증, 비밀번호 암호화 필수
+5. **에러 처리**: 통일된 예외 처리 및 응답 형식
+
+### 주요 엔드포인트 규칙
+```
+/api/auth/*          - 인증 관련
+/api/youtube/*       - 영상 처리 관련  
+/api/summary-archives/*  - 요약 저장소
+/api/quizzes/*       - 퀴즈 기능
+/api/reminders/*     - 리마인드 기능
+/api/recommendations/* - 추천 기능
+/api/mypage/*        - 마이페이지
+```
+
+## 데이터 모델 가이드라인
+
+### 핵심 엔티티
+1. **User**: 사용자 정보, 인증
+2. **Video**: 유튜브 영상 메타데이터
+3. **AudioTranscript**: STT 텍스트 저장
+4. **Summary**: AI 생성 요약 (타입별)
+5. **Quiz/Question/AnswerOption**: 퀴즈 시스템
+6. **SummaryArchive**: 사용자별 요약 저장소
+7. **Reminder**: 리마인드 설정
+8. **VideoRecommendation**: 추천 영상
+
+### Enum 타입 정의
+```java
+public enum SummaryType {
+    BASIC, THREE_LINE, KEYWORD, TIMELINE
+}
+
+public enum ReminderType {
+    DAILY, WEEKLY, CUSTOM
+}
+```
+
+## 품질 기준
+
+### 성능 요구사항
+- API 응답 시간: 95% 요청이 1초 이내
+- Whisper 처리: 병렬 처리로 30% 이상 성능 향상
+- 데이터베이스: 적절한 인덱싱 및 쿼리 최적화
+
+### 보안 요구사항
+- JWT 토큰 기반 인증 필수
+- 비밀번호 BCrypt 암호화
+- OAuth2 구글 로그인 지원
+- CORS 설정 및 보안 헤더 적용
+
+### 호환성 요구사항
+- 주요 브라우저 지원: Chrome, Edge, Safari, Firefox
+- 반응형 웹 디자인 적용
+
+## 배포 및 운영
+
+### 개발 환경
+- **로컬**: H2 메모리 DB, 개발용 설정
+- **테스트**: 통합 테스트 환경
+- **운영**: AWS 기반 프로덕션 환경
+
+### 브랜치 전략
+- `main`: 운영 배포용
+- `dev_*`: 개발자별 기능 개발
+- `feature/*`: 특정 기능 개발
+
+### 모니터링
+- 애플리케이션 로그 수집
+- API 성능 모니터링
+- 에러 추적 및 알림
+
+## 참고 문서
+- [002-tech-stack.mdc](mdc:002-tech-stack.mdc): 기술 스택 상세
+- [003-development-guide.mdc](mdc:003-development-guide.mdc): 개발 가이드
+- [SRS-YTS-001](mdc:001-srs.md): 소프트웨어 요구사항 명세서
+
+[012-cursor-tools.mdc](mdc:.cursor/rules/012-cursor-tools.mdc)

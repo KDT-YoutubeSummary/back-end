@@ -25,16 +25,16 @@ public class AudioTranscript {
     @Column(name = "youtube_id", nullable = false, length = 100)
     private String youtubeId;
 
+    // S3 파일 경로 (기존 방식 - 필요시 사용)
     @Lob
-    @Column(name = "transcript_path", nullable = false, columnDefinition = "LONGTEXT")
+    @Column(name = "transcript_path", columnDefinition = "LONGTEXT")
     private String transcriptPath;
-    // 텍스트를 저장하는 대신, 파일 경로를 저장합니다.
 
-//    @Lob
-//    @Column(name = "transcript_text", nullable = false, columnDefinition = "LONGTEXT")
-//    private String transcriptText;
+    // DB에 직접 텍스트 저장 (새로운 방식)
+    @Lob
+    @Column(name = "transcript_text", columnDefinition = "LONGTEXT")
+    private String transcriptText;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-//    private Timestamp createdAt; // 생성 일자
 }

@@ -14,11 +14,14 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=yousum123!
       
-      # AWS (환경변수로 주입)
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-yousum-s3}
-      - AWS_REGION=${AWS_REGION:-ap-northeast-2}
+      # ===============================
+      # AWS 설정 - 현재 주석처리됨
+      # 로컬 파일 시스템 사용으로 변경
+      # ===============================
+      # - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      # - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      # - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-yousum-s3}
+      # - AWS_REGION=${AWS_REGION:-ap-northeast-2}
       
       # OpenAI
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -41,6 +44,7 @@ services:
       - mysql
     volumes:
       - ./logs:/app/logs
+      - ./src/main/resources/textfiles:/app/textfiles  # 로컬 파일 시스템 마운트
       - /tmp:/tmp
     networks:
       - yousum-network

@@ -1,0 +1,372 @@
+---
+description: Architectural, Design-Pattern based works should reference this rule
+globs: 
+alwaysApply: false
+---
+# 아키텍처 핵심 설명
+- 경제교육 플랫폼의 여러가지 기능을 MSA 형태로 나누어 개발 및 배포
+- Kafka 이벤트를 통한 비동기 처리 구조로 MSA Application 간 통신
+- 이벤트 기반 분산 트랜잭션 (choreography)
+
+- Redis 분산 캐시 및 분산 락 적용
+
+# 003-development-guide.mdc - YouSum 개발 가이드
+
+## 아키텍처 개요
+
+### 시스템 아키텍처 원칙
+- **모놀리식 아키텍처**: 초기 개발 및 배포 단순화를 위한 단일 Spring Boot 애플리케이션
+- **계층형 아키텍처**: Controller → Service → Repository 패턴 적용
+- **비동기 처리**: AI API 호출 및 파일 처리의 비동기 실행
+- **캐시 우선**: Redis를 활용한 성능 최적화
+
+### 핵심 설계 패턴
+
+#### 1. MVC 패턴
+```java
+@RestController
+@RequestMapping("/api/youtube")
+public class YouTubeController {
+    
+    @Autowired
+    private YouTubeService youtubeService;
+    
+    @PostMapping("/summarize")
+    public ResponseEntity<SummaryResponseDTO> createSummary(@RequestBody SummaryRequestDTO request) {
+        // Controller는 요청 검증 및 응답 처리만 담당
+    }
+}
+```
+
+#### 2. Service 계층 패턴
+```java
+@Service
+@Transactional
+public class SummaryServiceImpl implements SummaryService {
+    
+    @Async
+    public CompletableFuture<Summary> generateSummaryAsync(String videoId, SummaryType type) {
+        // 비동기 요약 생성 로직
+    }
+}
+```
+
+#### 3. Repository 패턴
+```java
+public interface SummaryRepository extends JpaRepository<Summary, Long> {
+    
+    @Query("SELECT s FROM Summary s WHERE s.video.videoId = :videoId AND s.type = :type")
+    Optional<Summary> findByVideoIdAndType(@Param("videoId") String videoId, @Param("type") SummaryType type);
+}
+```
+
+## 개발 워크플로우
+
+### 1. 기능 개발 프로세스
+1. **요구사항 분석**: SRS 문서 기반 기능 정의
+2. **API 설계**: RESTful API 엔드포인트 설계
+3. **데이터 모델링**: JPA Entity 설계
+4. **서비스 로직 구현**: 비즈니스 로직 개발
+5. **테스트 작성**: 단위 테스트 및 통합 테스트
+6. **API 문서화**: Swagger/OpenAPI 문서 작성
+
+### 2. 브랜치 전략
+```
+main (운영)
+├── dev_yeeun (석예은 개발)
+├── dev_jiwon (김지원 개발)
+├── dev_junho (정준호 개발)
+├── dev_jungsu (윤정수 개발)
+└── dev_doyoung (최도영 개발)
+```
+
+### 3. 커밋 컨벤션
+```
+feat: 새로운 기능 추가
+fix: 버그 수정
+docs: 문서 수정
+style: 코드 포맷팅
+refactor: 코드 리팩토링
+test: 테스트 코드 추가
+chore: 빌드 및 설정 변경
+```
+
+## 핵심 개발 패턴
+
+### 1. AI 서비스 연동 패턴
+```java
+@Component
+public class OpenAIClient {
+    
+    @Value("${openai.api.key}")
+    private String apiKey;
+    
+    @Retryable(value = {Exception.class}, maxAttempts = 3)
+    public String generateSummary(String text, SummaryType type) {
+        // OpenAI API 호출 로직
+        // 재시도 로직 포함
+    }
+}
+```
+
+### 2. 캐싱 패턴
+```java
+@Service
+public class SummaryService {
+    
+    @Cacheable(value = "summaries", key = "#videoId + '_' + #type")
+    public Summary getSummary(String videoId, SummaryType type) {
+        // 캐시된 요약이 있으면 반환, 없으면 생성 후 캐시
+    }
+    
+    @CacheEvict(value = "summaries", key = "#videoId + '_' + #type")
+    public void evictSummaryCache(String videoId, SummaryType type) {
+        // 캐시 무효화
+    }
+}
+```
+
+### 3. 비동기 처리 패턴
+```java
+@Service
+public class WhisperService {
+    
+    @Async("taskExecutor")
+    public CompletableFuture<String> processAudioAsync(String audioFilePath) {
+        // Whisper 처리 비동기 실행
+        return CompletableFuture.completedFuture(transcript);
+    }
+}
+```
+
+### 4. 예외 처리 패턴
+```java
+@ControllerAdvice
+public class GlobalExceptionHandler {
+    
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(new ErrorResponse("RESOURCE_NOT_FOUND", ex.getMessage()));
+    }
+}
+```
+
+## 데이터베이스 설계 가이드라인
+
+### 1. Entity 설계 원칙
+- **단일 책임 원칙**: 각 Entity는 하나의 도메인 개념만 표현
+- **관계 설정**: JPA 연관관계 매핑 적절히 활용
+- **인덱스 최적화**: 자주 조회되는 컬럼에 인덱스 설정
+
+### 2. 예시 Entity 구조
+```java
+@Entity
+@Table(name = "summaries")
+public class Summary {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "video_id")
+    private Video video;
+    
+    @Enumerated(EnumType.STRING)
+    private SummaryType type;
+    
+    @Column(columnDefinition = "TEXT")
+    private String content;
+    
+    // 생성/수정 시간 자동 관리
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+    
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+}
+```
+
+## API 설계 가이드라인
+
+### 1. RESTful API 설계 원칙
+- **리소스 중심**: URL은 리소스를 나타내고, HTTP 메소드로 행위 표현
+- **상태 코드**: 적절한 HTTP 상태 코드 사용
+- **일관된 응답**: 통일된 응답 형식 유지
+
+### 2. API 응답 형식
+```java
+public class ApiResponse<T> {
+    private boolean success;
+    private String message;
+    private T data;
+    private LocalDateTime timestamp;
+}
+```
+
+### 3. 페이징 처리
+```java
+@GetMapping("/libraries")
+public ResponseEntity<PagedResponse<UserLibraryResponseDTO>> getUserLibraries(
+    @RequestParam(defaultValue = "0") int page,
+    @RequestParam(defaultValue = "10") int size,
+    @RequestParam(defaultValue = "createdAt") String sortBy) {
+    
+    Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
+    // 페이징 처리 로직
+}
+```
+
+## 보안 구현 가이드라인
+
+### 1. JWT 토큰 관리
+```java
+@Component
+public class JwtProvider {
+    
+    public String generateToken(UserDetails userDetails) {
+        // JWT 토큰 생성
+    }
+    
+    public boolean validateToken(String token) {
+        // 토큰 유효성 검증
+    }
+}
+```
+
+### 2. 권한 기반 접근 제어
+```java
+@PreAuthorize("hasRole('USER') and #userId == authentication.principal.id")
+@GetMapping("/users/{userId}/libraries")
+public ResponseEntity<List<UserLibraryResponseDTO>> getUserLibraries(@PathVariable Long userId) {
+    // 사용자별 라이브러리 조회
+}
+```
+
+## 테스트 전략
+
+### 1. 단위 테스트
+```java
+@ExtendWith(MockitoExtension.class)
+class SummaryServiceTest {
+    
+    @Mock
+    private SummaryRepository summaryRepository;
+    
+    @Mock
+    private OpenAIClient openAIClient;
+    
+    @InjectMocks
+    private SummaryServiceImpl summaryService;
+    
+    @Test
+    void 요약_생성_성공_테스트() {
+        // Given, When, Then 패턴 사용
+    }
+}
+```
+
+### 2. 통합 테스트
+```java
+@SpringBootTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Testcontainers
+class SummaryIntegrationTest {
+    
+    @Container
+    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0");
+    
+    @Test
+    void 요약_생성_통합_테스트() {
+        // 실제 데이터베이스와 연동한 테스트
+    }
+}
+```
+
+## 성능 최적화 가이드라인
+
+### 1. 데이터베이스 최적화
+- **N+1 문제 해결**: Fetch Join 또는 @EntityGraph 사용
+- **쿼리 최적화**: 복잡한 쿼리는 QueryDSL 활용
+- **인덱스 활용**: 자주 조회되는 컬럼에 인덱스 설정
+
+### 2. 캐싱 전략
+- **애플리케이션 레벨**: Spring Cache 추상화 활용
+- **데이터베이스 레벨**: Redis 캐시 서버 활용
+- **HTTP 레벨**: 브라우저 캐싱 헤더 설정
+
+### 3. 비동기 처리
+- **@Async**: 시간이 오래 걸리는 작업 비동기 처리
+- **CompletableFuture**: 복합적인 비동기 작업 체이닝
+- **TaskExecutor**: 스레드 풀 설정 최적화
+
+## 모니터링 및 로깅
+
+### 1. 구조화된 로깅
+```java
+@Slf4j
+@Service
+public class SummaryService {
+    
+    public Summary createSummary(String videoId) {
+        log.info("요약 생성 시작 - videoId: {}", videoId);
+        
+        try {
+            // 요약 생성 로직
+            log.info("요약 생성 완료 - videoId: {}, summaryId: {}", videoId, summary.getId());
+        } catch (Exception e) {
+            log.error("요약 생성 실패 - videoId: {}, error: {}", videoId, e.getMessage(), e);
+            throw e;
+        }
+    }
+}
+```
+
+### 2. 메트릭 수집
+```java
+@Component
+public class SummaryMetrics {
+    
+    private final Counter summaryCreatedCounter;
+    private final Timer summaryCreationTimer;
+    
+    public SummaryMetrics(MeterRegistry meterRegistry) {
+        this.summaryCreatedCounter = Counter.builder("summary.created")
+            .description("Number of summaries created")
+            .register(meterRegistry);
+    }
+}
+```
+
+## 배포 및 운영
+
+### 1. 환경별 설정 관리
+```yaml
+# application-prod.yml
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
+```
+
+### 2. 헬스 체크
+```java
+@Component
+public class CustomHealthIndicator implements HealthIndicator {
+    
+    @Override
+    public Health health() {
+        // 애플리케이션 상태 체크 로직
+        return Health.up()
+            .withDetail("database", "available")
+            .withDetail("openai", "connected")
+            .build();
+    }
+}
+```

@@ -42,7 +42,7 @@ public class SummaryArchiveService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 요약이 존재하지 않습니다."));
 
         // 3. 중복 저장 방지
-        Optional<SummaryArchive> existingArchive = summaryArchiveRepository.findByUser_IdAndSummary_Id(userId, request.getSummaryId());
+        Optional<SummaryArchive> existingArchive = summaryArchiveRepository.findByUserIdAndSummaryId(userId, request.getSummaryId());
         if (existingArchive.isPresent()) {
             throw new IllegalStateException("이미 저장된 요약입니다.");
         }
@@ -80,7 +80,7 @@ public class SummaryArchiveService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        List<SummaryArchive> archives = summaryArchiveRepository.findByUser_Id(userId);
+        List<SummaryArchive> archives = summaryArchiveRepository.findByUserId(userId);
 
         return archives.stream()
                 .map(archive -> {
@@ -133,7 +133,7 @@ public class SummaryArchiveService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        List<SummaryArchive> summaryArchives = summaryArchiveRepository.findByUser_Id(userId);
+        List<SummaryArchive> summaryArchives = summaryArchiveRepository.findByUserId(userId);
 
         return summaryArchives.stream().filter(summaryArchive -> {
             boolean titleMatches = (title == null ||

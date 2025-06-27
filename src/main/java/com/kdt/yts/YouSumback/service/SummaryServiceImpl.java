@@ -11,12 +11,20 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/*
+ * ===============================
+ * S3 관련 import - 현재 주석처리됨
+ * RDS DB에서 직접 텍스트 읽기 방식으로 변경
+ * ===============================
+ */
+/*
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-
 import java.nio.charset.StandardCharsets;
+*/
+
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,8 +43,19 @@ public class SummaryServiceImpl implements SummaryService {
     private final SummaryRepository summaryRepository;
     private final QuizRepository quizRepository;
     private final UserActivityLogRepository userActivityLogRepository;
-    private final S3Client s3Client;
+    
+    /*
+     * S3Client 주석처리 - DB 직접 사용으로 변경
+     * private final S3Client s3Client;
+     */
 
+    /*
+     * ===============================
+     * S3에서 파일 읽기 메서드 - 주석처리됨
+     * 로컬 파일 시스템에서 파일 읽기 방식으로 변경
+     * ===============================
+     */
+    /*
     private String readTextFromS3(String s3Key) {
         System.out.println("✅ S3에서 파일 읽기 시도. Key: " + s3Key);
         try {
@@ -55,6 +74,44 @@ public class SummaryServiceImpl implements SummaryService {
             throw new RuntimeException("Failed to read file from S3: " + s3Key, e);
         }
     }
+    */
+
+    /**
+     * 로컬 파일 시스템에서 텍스트 읽기 (새로운 방식)
+     */
+    private String readTextFromFile(String filePath) {
+        System.out.println("✅ 로컬 파일에서 텍스트 읽기 시도. 경로: " + filePath);
+        try {
+            java.nio.file.Path path = java.nio.file.Paths.get(filePath);
+            if (!java.nio.file.Files.exists(path)) {
+                System.err.println("❌ 파일이 존재하지 않습니다: " + filePath);
+                throw new RuntimeException("File not found: " + filePath);
+            }
+            
+            String content = java.nio.file.Files.readString(path, java.nio.charset.StandardCharsets.UTF_8);
+            System.out.println("✅ 로컬 파일 읽기 성공. 텍스트 길이: " + content.length() + " characters");
+            return content;
+        } catch (Exception e) {
+            System.err.println("❌ 로컬 파일 읽기 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to read file from local filesystem: " + filePath, e);
+        }
+    }
+
+    /**
+     * DB에서 직접 텍스트 읽기 (백업 방식)
+     */
+    private String readTextFromDB(AudioTranscript transcript) {
+        System.out.println("✅ DB에서 텍스트 읽기 시도. Transcript ID: " + transcript.getId());
+        
+        if (transcript.getTranscriptText() != null && !transcript.getTranscriptText().isEmpty()) {
+            System.out.println("✅ DB에서 텍스트 읽기 성공. 텍스트 길이: " + transcript.getTranscriptText().length() + " characters");
+            return transcript.getTranscriptText();
+        } else {
+            System.err.println("❌ DB에 저장된 텍스트가 없습니다. Transcript ID: " + transcript.getId());
+            throw new RuntimeException("No transcript text found in DB for transcript ID: " + transcript.getId());
+        }
+    }
 
     @Override
     @Transactional
@@ -68,15 +125,22 @@ public class SummaryServiceImpl implements SummaryService {
         AudioTranscript transcript = audioTranscriptRepository.findByVideo_OriginalUrl(originalUrl)
                 .orElseThrow(() -> new RuntimeException("AudioTranscript not found for URL: " + originalUrl));
 
-        if (transcript.getTranscriptPath() == null || transcript.getTranscriptPath().isEmpty()) {
-            System.err.println("❌ AudioTranscript에 파일 경로가 없습니다: " + originalUrl);
-            throw new RuntimeException("No transcript file path found for URL: " + originalUrl + ". Summary failed.");
+        // 파일 경로 우선, 없으면 DB에서 직접 읽기
+        String text;
+        if (transcript.getTranscriptPath() != null && !transcript.getTranscriptPath().isEmpty()) {
+            // 로컬 파일 시스템에서 파일 읽기
+            text = readTextFromFile(transcript.getTranscriptPath());
+            System.out.println("✅ Transcript text loaded from file. Path: " + transcript.getTranscriptPath());
+        } else if (transcript.getTranscriptText() != null && !transcript.getTranscriptText().isEmpty()) {
+            // DB에서 직접 텍스트 읽기 (백업 방식)
+            text = readTextFromDB(transcript);
+            System.out.println("✅ Transcript text loaded from DB. ID: " + transcript.getId());
+        } else {
+            System.err.println("❌ 파일 경로도 DB 텍스트도 없습니다: " + originalUrl);
+            throw new RuntimeException("No transcript file path or text found for URL: " + originalUrl);
         }
-
-        String text = readTextFromS3(transcript.getTranscriptPath());
+        
         Long transcriptId = transcript.getId();
-
-        System.out.println("✅ Transcript text loaded from S3. ID: " + transcriptId);
 
         PromptBuilder promptBuilder = new PromptBuilder();
         String prompt = promptBuilder.buildPrompt(userPrompt, summaryType);
@@ -130,7 +194,7 @@ public class SummaryServiceImpl implements SummaryService {
 
             SummaryArchiveTagId summaryArchiveTagId = new SummaryArchiveTagId(archive.getId(), tag.getId());
             if (!summaryArchiveTagRepository.existsById(summaryArchiveTagId)) {
-                SummaryArchiveTag summaryArchiveTag = new SummaryArchiveTag(summaryArchiveTagId);
+                SummaryArchiveTag summaryArchiveTag = new SummaryArchiveTag(archive.getId(), tag.getId());
                 summaryArchiveTagRepository.save(summaryArchiveTag);
             }
         }

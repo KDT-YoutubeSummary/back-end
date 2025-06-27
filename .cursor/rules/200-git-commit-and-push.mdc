@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 작업 단위 구분하여 커밋
+# 커밋 메시지 상세하게 파일명 및 작업 의도 반영해서 작성
+# 브랜치 유형 관리
+# 브랜치 별 하나의 작업 목표 설정
+# 원격 Push 작업 시 force push 금지
+# 원격 Push 작업 시 Pull 먼저 수행하고 merge/rebase 를 수행하는 로직
+# 원격 push 후 PR 작성 방법
+
+# 위 작업들을 수행할 때 사용할 git/github 명령어 예시 or 사용할 도구 명시
