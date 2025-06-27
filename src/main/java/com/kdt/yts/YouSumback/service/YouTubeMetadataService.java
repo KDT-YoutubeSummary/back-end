@@ -58,13 +58,20 @@ public class YouTubeMetadataService {
     }
 
     public SummaryResponseDTO summarizeWithMetadata(String url, String userPrompt, SummaryType summaryType, Long userId) throws Exception {
-        saveVideoMetadataFromUrl(url);
+        try {
+            saveVideoMetadataFromUrl(url);
 
-        SummaryRequestDTO dto = new SummaryRequestDTO();
-        dto.setOriginalUrl(url);
-        dto.setSummaryType(summaryType != null ? summaryType : BASIC);
-        dto.setUserPrompt(userPrompt);
+            SummaryRequestDTO dto = new SummaryRequestDTO();
+            dto.setOriginalUrl(url);
+            dto.setSummaryType(summaryType != null ? summaryType : BASIC);
+            dto.setUserPrompt(userPrompt);
 
-        return summaryService.summarize(dto, userId);
+            return summaryService.summarize(dto, userId);
+        } catch (Exception e) {
+            System.err.println("❌ 요약 중 예외 발생: " + e.getMessage());
+            e.printStackTrace(); // 자세한 로그 보기
+            throw e; // 다시 던져서 500 응답 유지
+        }
     }
+
 }

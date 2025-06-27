@@ -40,9 +40,19 @@ public class TranscriptService {
             String youtubeId = metadataHelper.extractYoutubeId(url);
             log.info("📺 유튜브 ID 추출: {}", youtubeId);
 
-            // 2. 해당 Video 조회
+            // 2. 해당 Video 조회 또는 새로 생성
             Video video = videoRepository.findByYoutubeId(youtubeId)
-                    .orElseThrow(() -> new IllegalArgumentException("해당 YouTube ID에 해당하는 영상 없음: " + youtubeId));
+                    .orElseGet(() -> {
+                        log.warn("⚠️ 해당 유튜브 ID의 영상이 존재하지 않음. 메타데이터 수집 시도: {}", youtubeId);
+                        try {
+                            return metadataHelper.fetchAndSaveMetadata(url);  // 이 메서드가 video 저장까지 포함해야 함
+                        } catch (Exception e) {
+                            log.error("❌ 메타데이터 저장 중 오류 발생", e);
+                            throw new RuntimeException("영상 메타데이터 저장 실패", e);
+                        }
+                    });
+
+            log.info("📦 영상 정보 준비 완료. video_id={}, title={}", video.getId(), video.getTitle());
 
             // 3. 기존 Transcript 있는지 확인
             Optional<AudioTranscript> optionalTranscript = audioTranscriptRepository.findByVideoId(video.getId());
