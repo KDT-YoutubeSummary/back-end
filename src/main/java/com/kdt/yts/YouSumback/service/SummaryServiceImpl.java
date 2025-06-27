@@ -11,18 +11,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// ⭐️⭐️⭐️ S3 관련 import 추가 ⭐️⭐️⭐️
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-// ⭐️⭐️⭐️
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,17 +35,13 @@ public class SummaryServiceImpl implements SummaryService {
     private final SummaryRepository summaryRepository;
     private final QuizRepository quizRepository;
     private final UserActivityLogRepository userActivityLogRepository;
-    private final VideoRepository videoRepository;
-
-    // ⭐️⭐️⭐️ S3 클라이언트를 주입받습니다. ⭐️⭐️⭐️
     private final S3Client s3Client;
 
-    // ⭐️⭐️⭐️ [수정된 부분 1] S3에서 파일을 읽어오는 헬퍼 메소드 추가 ⭐️⭐️⭐️
     private String readTextFromS3(String s3Key) {
         System.out.println("✅ S3에서 파일 읽기 시도. Key: " + s3Key);
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                    .bucket("yousum-s3") // 버킷 이름은 하드코딩하거나 설정에서 가져올 수 있습니다.
+                    .bucket("yousum-s3")
                     .key(s3Key)
                     .build();
 
@@ -65,7 +55,6 @@ public class SummaryServiceImpl implements SummaryService {
             throw new RuntimeException("Failed to read file from S3: " + s3Key, e);
         }
     }
-
 
     @Override
     @Transactional
@@ -84,11 +73,10 @@ public class SummaryServiceImpl implements SummaryService {
             throw new RuntimeException("No transcript file path found for URL: " + originalUrl + ". Summary failed.");
         }
 
-        // ⭐️⭐️⭐️ [수정된 부분 2] 로컬 파일 대신 S3에서 텍스트를 읽어옵니다. ⭐️⭐️⭐️
         String text = readTextFromS3(transcript.getTranscriptPath());
         Long transcriptId = transcript.getId();
 
-        System.out.println("✅ Transcript found/processed. ID: " + transcriptId);
+        System.out.println("✅ Transcript text loaded from S3. ID: " + transcriptId);
 
         PromptBuilder promptBuilder = new PromptBuilder();
         String prompt = promptBuilder.buildPrompt(userPrompt, summaryType);
@@ -125,12 +113,14 @@ public class SummaryServiceImpl implements SummaryService {
         Summary saved = summaryRepository.save(summary);
         System.out.println("✅ Summary Saved. ID: " + saved.getId());
 
-        SummaryArchive archive = new SummaryArchive();
+        SummaryArchive archive = summaryArchiveRepository.findByUserIdAndSummaryId(user.getId(), saved.getId())
+                .orElseGet(SummaryArchive::new);
+
         archive.setUser(user);
         archive.setSummary(saved);
         archive.setLastViewedAt(LocalDateTime.now());
         summaryArchiveRepository.save(archive);
-        System.out.println("✅ SummaryArchive Saved. User ID: " + user.getId() + ", Summary ID: " + saved.getId());
+        System.out.println("✅ SummaryArchive Saved/Updated. User ID: " + user.getId() + ", Summary ID: " + saved.getId());
 
         List<String> hashtags = extractTagsWithLLM(finalSummary).stream().distinct().toList();
         System.out.println("✅ Hashtags Extracted: " + hashtags);
@@ -138,8 +128,11 @@ public class SummaryServiceImpl implements SummaryService {
         for (String keyword : hashtags) {
             Tag tag = findOrCreateTag(keyword);
 
-            SummaryArchiveTag summaryArchiveTag = new SummaryArchiveTag(archive.getId(), tag.getId());
-            summaryArchiveTagRepository.save(summaryArchiveTag);
+            SummaryArchiveTagId summaryArchiveTagId = new SummaryArchiveTagId(archive.getId(), tag.getId());
+            if (!summaryArchiveTagRepository.existsById(summaryArchiveTagId)) {
+                SummaryArchiveTag summaryArchiveTag = new SummaryArchiveTag(summaryArchiveTagId);
+                summaryArchiveTagRepository.save(summaryArchiveTag);
+            }
         }
         System.out.println("✅ Tags Processed.");
 
@@ -285,7 +278,7 @@ public class SummaryServiceImpl implements SummaryService {
     }
 
     public Optional<SummaryArchive> findSummaryArchiveByUserAndSummary(Long userId, Summary summary) {
-        return summaryArchiveRepository.findByUser_IdAndSummary_Id(userId, summary.getId());
+        return summaryArchiveRepository.findByUserIdAndSummaryId(userId, summary.getId());
     }
 
     @Transactional
@@ -347,7 +340,7 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
                 if (firstLine.startsWith("Q:")) {
                     questionText = firstLine.substring(2).trim();
                 } else {
-                    continue; // "Q:"로 시작하지 않으면 스킵
+                    continue;
                 }
 
                 List<AnswerOption> options = new ArrayList<>();
@@ -373,7 +366,7 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
                     options.get(answerIndex - 1).setIsCorrect(true);
                 } else {
                     System.out.println("⚠️ 정답 인덱스 파싱 실패: " + block);
-                    continue; // 정답 파싱 실패 시 이 블록 스킵
+                    continue;
                 }
                 Question q = Question.builder()
                         .quiz(quiz)
@@ -401,10 +394,6 @@ Q: 인공지능의 발전으로 등장한 서비스가 아닌 것은?
                     List<OptionDTO> optionDTOs = q.getOptions().stream()
                             .map(o -> new OptionDTO(o.getId(), o.getOptionText()))
                             .collect(Collectors.toList());
-                    // 이 부분은 QuestionDTO를 생성해야 합니다.
-                    // 그러나 반환 타입이 List<QuizResponseDTO>이므로, 전체 구조를 맞춰야 합니다.
-                    // 여기서는 임시로 null을 반환하고 전체 로직을 수정합니다.
-                    // 실제로는 Quiz를 DTO로 변환하는 로직이 필요합니다.
                     return new QuizResponseDTO(quiz.getId(), quiz.getTitle(), quiz.getCreatedAt(), List.of(new QuestionDTO(q.getId(), q.getQuestionText(), optionDTOs)));
                 })
                 .collect(Collectors.toList());
