@@ -3,45 +3,25 @@ package com.kdt.yts.YouSumback.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Builder
 @Getter
 @Setter
 @Entity
 @Table(name = "summary_archive_tag")
-@IdClass(SummaryArchiveTagId.class)
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SummaryArchiveTag {
 
-    @Id
-    @Column(name = "summary_archive_id")
-    private Long summaryArchiveId;
-
-    @Id
-    @Column(name = "tag_id")
-    private Long tagId;
+    @EmbeddedId
+    private SummaryArchiveTagId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "summary_archive_id", insertable = false, updatable = false)
+    @MapsId("summaryArchiveId") // SummaryArchiveTagId의 summaryArchiveId 필드에 매핑
+    @JoinColumn(name = "summary_archive_id")
     private SummaryArchive summaryArchive;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tag_id", insertable = false, updatable = false)
+    @MapsId("tagId") // SummaryArchiveTagId의 tagId 필드에 매핑
+    @JoinColumn(name = "tag_id")
     private Tag tag;
-
-    // 기본 생성자
-    public SummaryArchiveTag() {
-    }
-
-    // SummaryArchive와 Tag를 이용한 생성자
-    public SummaryArchiveTag(SummaryArchive summaryArchive, Tag tag) {
-        this.summaryArchive = summaryArchive;
-        this.tag = tag;
-        this.summaryArchiveId = summaryArchive.getId();
-        this.tagId = tag.getId();
-    }
-
-    // ID만으로 생성하는 생성자 추가
-    public SummaryArchiveTag(Long summaryArchiveId, Long tagId) {
-        this.summaryArchiveId = summaryArchiveId;
-        this.tagId = tagId;
-    }
 }
