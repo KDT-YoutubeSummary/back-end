@@ -19,9 +19,29 @@ public interface SummaryArchiveRepository extends JpaRepository<SummaryArchive, 
 
     long countByUserId(Long userId);
 
-    @Query("SELECT sa FROM SummaryArchive sa JOIN sa.summary s JOIN s.audioTranscript at JOIN at.video v LEFT JOIN sa.tags sat LEFT JOIN sat.tag t WHERE sa.user.id = :userId AND (v.title LIKE %:keyword% OR t.tagName LIKE %:keyword%)")
-    List<SummaryArchive> searchByUserIdAndKeyword(@Param("userId") Long userId, @Param("keyword") String keyword);
+    @Query("""
+        SELECT sa FROM SummaryArchive sa
+        JOIN sa.summary s
+        JOIN s.audioTranscript at
+        JOIN at.video v
+        LEFT JOIN sa.summaryArchiveTags sat
+        LEFT JOIN sat.tag t
+        WHERE sa.user.id = :userId
+        AND (v.title LIKE %:keyword% OR t.tagName LIKE %:keyword%)
+    """)
+    List<SummaryArchive> searchByUserIdAndKeyword(
+            @Param("userId") Long userId,
+            @Param("keyword") String keyword
+    );
 
-    @Query("SELECT new com.kdt.yts.YouSumback.model.dto.response.TagStatResponseDTO(t.tagName, COUNT(t)) FROM SummaryArchive sa JOIN sa.tags sat JOIN sat.tag t WHERE sa.user.id = :userId GROUP BY t.tagName ORDER BY COUNT(t) DESC")
+    @Query("""
+        SELECT new com.kdt.yts.YouSumback.model.dto.response.TagStatResponseDTO(t.tagName, COUNT(t))
+        FROM SummaryArchive sa
+        JOIN sa.summaryArchiveTags sat
+        JOIN sat.tag t
+        WHERE sa.user.id = :userId
+        GROUP BY t.tagName
+        ORDER BY COUNT(t) DESC
+    """)
     List<TagStatResponseDTO> findTagUsageStatisticsByUserId(@Param("userId") Long userId);
 }
