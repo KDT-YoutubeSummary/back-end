@@ -320,7 +320,7 @@ public class SummaryServiceImpl implements SummaryService {
                 default:
                     typeSpecificInstruction = "";
                     break;
-            }
+                }
 
             String userRequest = userPrompt != null && !userPrompt.trim().isEmpty()
                 ? userPrompt
@@ -440,7 +440,7 @@ public class SummaryServiceImpl implements SummaryService {
                 default:
                     typeSpecificInstruction = "";
                     break;
-            }
+                }
 
             String userRequest = "다음은 각 부분에 대한 요약입니다. 이 요약들을 하나로 합쳐서 자연스러운 최종 요약을 만들어주세요.";
 
@@ -462,85 +462,85 @@ public class SummaryServiceImpl implements SummaryService {
 ==========================================
 %s
 """, baseInstruction, typeSpecificInstruction, userRequest, String.join("\n\n---\n\n", summaries));
-        }
+}
 
-        /**
-         * VTT 자막에서 영상의 총 길이(초)를 파싱합니다.
-         */
-        private int parseVideoDurationFromVTT(String vttText) {
+    /**
+     * VTT 자막에서 영상의 총 길이(초)를 파싱합니다.
+     */
+    private int parseVideoDurationFromVTT(String vttText) {
             // ✅ VTT 텍스트 null 체크 추가
             if (vttText == null || vttText.trim().isEmpty()) {
                 System.err.println("⚠️ VTT 텍스트가 null이거나 비어있음. 기본값 5분 반환");
                 return 300; // 기본값 5분
             }
             
-            try {
-                String[] lines = vttText.split("\\r?\\n");
-                int maxSeconds = 0;
+        try {
+            String[] lines = vttText.split("\\r?\\n");
+            int maxSeconds = 0;
 
-                for (String line : lines) {
+            for (String line : lines) {
                     // ✅ 라인별 null 체크 추가
                     if (line == null) continue;
                     
-                    // 타임스탬프 라인 찾기: "00:01:23.456 --> 00:02:34.567" 형식
-                    if (line.contains("-->")) {
-                        String[] timeParts = line.split("-->");
+                // 타임스탬프 라인 찾기: "00:01:23.456 --> 00:02:34.567" 형식
+                if (line.contains("-->")) {
+                    String[] timeParts = line.split("-->");
                         if (timeParts.length >= 2 && timeParts[1] != null) {
-                            String endTime = timeParts[1].trim();
-                            int seconds = parseTimeToSeconds(endTime);
-                            maxSeconds = Math.max(maxSeconds, seconds);
-                        }
+                        String endTime = timeParts[1].trim();
+                        int seconds = parseTimeToSeconds(endTime);
+                        maxSeconds = Math.max(maxSeconds, seconds);
                     }
                 }
-
-                System.out.println("🕐 VTT에서 파싱된 영상 길이: " + maxSeconds + "초 (" + formatDuration(maxSeconds) + ")");
-                return maxSeconds;
-            } catch (Exception e) {
-                System.err.println("⚠️ VTT 파싱 중 오류: " + e.getMessage());
-                return 300; // 기본값 5분
             }
-        }
 
-        /**
-         * "00:01:23.456" 형식의 시간을 초로 변환합니다.
-         */
-        private int parseTimeToSeconds(String timeStr) {
-            try {
-                // "00:01:23.456" -> ["00", "01", "23.456"]
-                String[] parts = timeStr.split(":");
-                if (parts.length >= 3) {
-                    int hours = Integer.parseInt(parts[0]);
-                    int minutes = Integer.parseInt(parts[1]);
-                    double seconds = Double.parseDouble(parts[2]);
-                    return (int) (hours * 3600 + minutes * 60 + seconds);
-                }
-            } catch (Exception e) {
-                System.err.println("⚠️ 시간 파싱 오류: " + timeStr);
+            System.out.println("🕐 VTT에서 파싱된 영상 길이: " + maxSeconds + "초 (" + formatDuration(maxSeconds) + ")");
+            return maxSeconds;
+        } catch (Exception e) {
+            System.err.println("⚠️ VTT 파싱 중 오류: " + e.getMessage());
+            return 300; // 기본값 5분
+        }
+    }
+
+    /**
+     * "00:01:23.456" 형식의 시간을 초로 변환합니다.
+     */
+    private int parseTimeToSeconds(String timeStr) {
+        try {
+            // "00:01:23.456" -> ["00", "01", "23.456"]
+            String[] parts = timeStr.split(":");
+            if (parts.length >= 3) {
+                int hours = Integer.parseInt(parts[0]);
+                int minutes = Integer.parseInt(parts[1]);
+                double seconds = Double.parseDouble(parts[2]);
+                return (int) (hours * 3600 + minutes * 60 + seconds);
             }
-            return 0;
+        } catch (Exception e) {
+            System.err.println("⚠️ 시간 파싱 오류: " + timeStr);
         }
+        return 0;
+    }
 
-        /**
-         * 초를 "X분 Y초" 형식으로 포맷팅합니다.
-         */
-        private String formatDuration(int totalSeconds) {
-            int minutes = totalSeconds / 60;
-            int seconds = totalSeconds % 60;
-            if (minutes > 0) {
-                return minutes + "분 " + seconds + "초";
-            } else {
-                return seconds + "초";
-            }
+    /**
+     * 초를 "X분 Y초" 형식으로 포맷팅합니다.
+     */
+    private String formatDuration(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        if (minutes > 0) {
+            return minutes + "분 " + seconds + "초";
+        } else {
+            return seconds + "초";
         }
+    }
 
-        /**
-         * 영상 길이에 따라 동적 타임라인 구간을 생성합니다.
-         */
-        private String generateDynamicTimeline(int durationSeconds) {
-            if (durationSeconds <= 60) {
-                // 1분 이하: 2구간
-                int mid = durationSeconds / 2;
-                return String.format("""
+    /**
+     * 영상 길이에 따라 동적 타임라인 구간을 생성합니다.
+     */
+    private String generateDynamicTimeline(int durationSeconds) {
+        if (durationSeconds <= 60) {
+            // 1분 이하: 2구간
+            int mid = durationSeconds / 2;
+            return String.format("""
 ## 타임라인
 **0초~%s:** 영상 전반부의 주요 내용과 도입부 핵심 사항
 **%s~%s:** 영상 후반부의 핵심 내용과 결론 부분
@@ -549,12 +549,12 @@ public class SummaryServiceImpl implements SummaryService {
 전체 타임라인에서 가장 중요한 2-3가지 핵심 메시지를 정리해주세요.
 
 ※ 실제 영상 시간에 맞춰 정확히 구분해주세요.""",
-                    formatDuration(mid), formatDuration(mid), formatDuration(durationSeconds));
+                formatDuration(mid), formatDuration(mid), formatDuration(durationSeconds));
 
-            } else if (durationSeconds <= 180) {
-                // 3분 이하: 3구간
-                int third = durationSeconds / 3;
-                return String.format("""
+        } else if (durationSeconds <= 180) {
+            // 3분 이하: 3구간
+            int third = durationSeconds / 3;
+            return String.format("""
 ## 타임라인
 **0초~%s:** 영상 초반부의 주요 내용과 도입부
 **%s~%s:** 영상 중반부의 핵심 내용과 주요 논점
@@ -564,13 +564,13 @@ public class SummaryServiceImpl implements SummaryService {
 전체 타임라인에서 가장 중요한 2-3가지 핵심 메시지를 정리해주세요.
 
 ※ 실제 영상 시간에 맞춰 정확히 구분해주세요.""",
-                    formatDuration(third), formatDuration(third), formatDuration(third * 2),
-                    formatDuration(third * 2), formatDuration(durationSeconds));
+                formatDuration(third), formatDuration(third), formatDuration(third * 2),
+                formatDuration(third * 2), formatDuration(durationSeconds));
 
-            } else if (durationSeconds <= 600) {
-                // 10분 이하: 4구간
-                int quarter = durationSeconds / 4;
-                return String.format("""
+        } else if (durationSeconds <= 600) {
+            // 10분 이하: 4구간
+            int quarter = durationSeconds / 4;
+            return String.format("""
 ## 타임라인
 **0초~%s:** 영상 초반부의 주요 내용과 도입부 핵심 사항
 **%s~%s:** 영상 전반 중반부의 핵심 내용과 주요 논점
@@ -581,14 +581,14 @@ public class SummaryServiceImpl implements SummaryService {
 전체 타임라인에서 가장 중요한 2-3가지 핵심 메시지를 정리해주세요.
 
 ※ 실제 영상 시간에 맞춰 정확히 구분해주세요.""",
-                    formatDuration(quarter), formatDuration(quarter), formatDuration(quarter * 2),
-                    formatDuration(quarter * 2), formatDuration(quarter * 3),
-                    formatDuration(quarter * 3), formatDuration(durationSeconds));
+                formatDuration(quarter), formatDuration(quarter), formatDuration(quarter * 2),
+                formatDuration(quarter * 2), formatDuration(quarter * 3),
+                formatDuration(quarter * 3), formatDuration(durationSeconds));
 
-            } else {
-                // 10분 초과: 5구간
-                int fifth = durationSeconds / 5;
-                return String.format("""
+        } else {
+            // 10분 초과: 5구간
+            int fifth = durationSeconds / 5;
+            return String.format("""
 ## 타임라인
 **0초~%s:** 영상 도입부와 초반 핵심 내용
 **%s~%s:** 영상 전반부의 주요 논점과 설명
@@ -600,12 +600,12 @@ public class SummaryServiceImpl implements SummaryService {
 전체 타임라인에서 가장 중요한 2-3가지 핵심 메시지를 정리해주세요.
 
 ※ 실제 영상 시간에 맞춰 정확히 구분해주세요.""",
-                    formatDuration(fifth), formatDuration(fifth), formatDuration(fifth * 2),
-                    formatDuration(fifth * 2), formatDuration(fifth * 3),
-                    formatDuration(fifth * 3), formatDuration(fifth * 4),
-                    formatDuration(fifth * 4), formatDuration(durationSeconds));
-            }
+                formatDuration(fifth), formatDuration(fifth), formatDuration(fifth * 2),
+                formatDuration(fifth * 2), formatDuration(fifth * 3),
+                formatDuration(fifth * 3), formatDuration(fifth * 4),
+                formatDuration(fifth * 4), formatDuration(durationSeconds));
         }
+    }
     }
 
     private List<String> extractTagsWithLLM(String summaryText) {

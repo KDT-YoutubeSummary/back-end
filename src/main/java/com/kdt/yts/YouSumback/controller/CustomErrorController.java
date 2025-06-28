@@ -1,6 +1,7 @@
 package com.kdt.yts.YouSumback.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +17,9 @@ import java.util.Map;
 @Slf4j
 @RestController
 public class CustomErrorController implements ErrorController {
+
+    @Value("${yousum.frontend.base-url}")
+    private String frontendBaseUrl;
 
     @RequestMapping("/error")
     public ResponseEntity<Map<String, Object>> handleError(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -50,7 +54,7 @@ public class CustomErrorController implements ErrorController {
             return ResponseEntity.status(statusCode).body(errorResponse);
         } else {
             // 웹 요청의 경우 프론트엔드로 리다이렉트
-            String redirectUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/login")
+            String redirectUrl = UriComponentsBuilder.fromUriString(frontendBaseUrl + "/login")
                     .queryParam("error", "oauth_failed")
                     .queryParam("message", "OAuth2 login failed")
                     .build()

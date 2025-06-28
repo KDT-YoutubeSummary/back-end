@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -20,6 +21,9 @@ import java.nio.charset.StandardCharsets;
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+    @Value("${yousum.frontend.base-url}")
+    private String frontendBaseUrl;
 
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
@@ -83,7 +87,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             log.info("JWT 토큰 생성 성공.");
 
             // 4. 프론트엔드로 리다이렉트 URL 생성
-            String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth/redirect")
+            String targetUrl = UriComponentsBuilder.fromUriString(frontendBaseUrl + "/oauth/redirect")
                     .queryParam("accessToken", accessToken)
                     .queryParam("userId", String.valueOf(user.getId()))
                     .queryParam("userName", user.getUserName())
@@ -100,7 +104,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         } catch (Exception e) {
             log.error("OAuth2 로그인 성공 후 처리 중 오류 발생!", e);
             // 에러 페이지로 리다이렉트
-            String errorUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/login")
+            String errorUrl = UriComponentsBuilder.fromUriString(frontendBaseUrl + "/login")
                     .queryParam("error", "oauth_processing_failed")
                     .queryParam("message", "OAuth2 processing failed: " + e.getMessage())
                     .build()
