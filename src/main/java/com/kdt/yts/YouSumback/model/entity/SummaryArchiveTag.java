@@ -12,13 +12,8 @@ import lombok.*;
 @AllArgsConstructor
 public class SummaryArchiveTag {
 
-    @Id
-    @Column(name = "archive_id")
-    private Long summaryArchiveId;
-
-    @Id
-    @Column(name = "tag_id")
-    private Long tagId;
+    @EmbeddedId
+    private SummaryArchiveTagId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "archive_id", insertable = false, updatable = false)
