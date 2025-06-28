@@ -11,11 +11,13 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class OpenAIClient {
     private final OpenAIConfig openAIConfig;
     private final WebClient webClient;
+    private final String model; // ✅ 멤버 변수로 모델을 저장
 
     public OpenAIClient(OpenAIConfig openAIConfig) {
         this.openAIConfig = openAIConfig;
@@ -24,18 +26,20 @@ public class OpenAIClient {
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
+        // ✅ 생성자에서 모델을 한 번만 가져오고, null일 경우 기본값을 설정합니다.
+        this.model = Objects.requireNonNullElse(openAIConfig.getModel(), "gpt-4-turbo");
+
         System.out.println("✅ [OpenAI 설정 확인]");
         System.out.println("Base URL: " + openAIConfig.getBaseUrl());
-        System.out.println("API Key: " + openAIConfig.getApiKey());
-        System.out.println("Model: " + openAIConfig.getModel());  // 여기서 null이면 model 누락된 것
+        System.out.println("API Key: " + (openAIConfig.getApiKey() != null ? "설정됨" : "설정되지 않음"));
+        System.out.println("Model: " + this.model);
     }
 
 
     public Mono<String> chat(String prompt) {
-        // ✅ 방어코딩: null 방지
-        String model = openAIConfig.getModel();
-        if (model == null || prompt == null) {
-            return Mono.error(new IllegalArgumentException("Model 또는 Prompt가 null입니다."));
+        // ✅ Null 체크 로직을 더 명확하게 수정합니다.
+        if (prompt == null) {
+            return Mono.error(new IllegalArgumentException("Prompt가 null입니다."));
         }
 
         // ✅ 메시지 객체 생성
@@ -44,9 +48,9 @@ public class OpenAIClient {
                 "content", prompt
         );
 
-        // ✅ 요청 바디 객체 생성
+        // ✅ 요청 바디 객체 생성 (멤버 변수 model 사용)
         Map<String, Object> requestBody = Map.of(
-                "model", model,
+                "model", this.model,
                 "messages", List.of(message)
         );
 
@@ -58,7 +62,4 @@ public class OpenAIClient {
                 .bodyToMono(JsonNode.class)
                 .map(json -> json.get("choices").get(0).get("message").get("content").asText());
     }
-
 }
-
-
