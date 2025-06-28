@@ -12,16 +12,19 @@ import lombok.*;
 @AllArgsConstructor
 public class SummaryArchiveTag {
 
-    @EmbeddedId
-    private SummaryArchiveTagId id;
+    @Id
+    @Column(name = "archive_id")
+    private Long summaryArchiveId;
+
+    @Id
+    @Column(name = "tag_id")
+    private Long tagId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("summaryArchiveId") // SummaryArchiveTagId의 summaryArchiveId 필드에 매핑
-    @JoinColumn(name = "summary_archive_id")
+    @JoinColumn(name = "archive_id", insertable = false, updatable = false)
     private SummaryArchive summaryArchive;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("tagId") // SummaryArchiveTagId의 tagId 필드에 매핑
-    @JoinColumn(name = "tag_id")
+    @JoinColumn(name = "tag_id", insertable = false, updatable = false)
     private Tag tag;
 }

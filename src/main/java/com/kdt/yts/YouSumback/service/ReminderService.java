@@ -87,10 +87,36 @@ public class ReminderService {
 
     @Transactional(readOnly = true) // 읽기 전용 트랜잭션
     public List<ReminderResponseDTO> getRemindersByUserId(Long userId) {
+        log.info("사용자 ID {}의 리마인더 목록 조회 시작", userId);
+        
+        // ✅ 사용자 존재 여부 먼저 검증
+        if (!userRepository.existsById(userId)) {
+            log.error("사용자를 찾을 수 없습니다. ID: {}", userId);
+            throw new ResourceNotFoundException("User not found with ID: " + userId);
+        }
+        
+        log.debug("사용자 ID {} 존재 확인 완료", userId);
+        
+        // ✅ 일단 기본 조회로 테스트 (Fetch Join 제거)
         List<Reminder> reminders = reminderRepository.findByUser_Id(userId);
-        return reminders.stream()
-                .map(ReminderResponseDTO::new) // 각 Reminder 엔티티를 ReminderResponse DTO로 매핑
+        log.info("사용자 ID {}의 리마인더 {}개 조회 완료", userId, reminders.size());
+        
+        List<ReminderResponseDTO> result = reminders.stream()
+                .map(reminder -> {
+                    try {
+                        log.debug("리마인더 ID {} DTO 변환 시작", reminder.getId());
+                        ReminderResponseDTO dto = new ReminderResponseDTO(reminder);
+                        log.debug("리마인더 ID {} DTO 변환 완료", reminder.getId());
+                        return dto;
+                    } catch (Exception e) {
+                        log.error("리마인더 ID {} DTO 변환 중 오류: {}", reminder.getId(), e.getMessage(), e);
+                        throw new RuntimeException("Error processing reminder data for ID: " + reminder.getId(), e);
+                    }
+                })
                 .collect(Collectors.toList());
+                
+        log.info("사용자 ID {}의 리마인더 목록 조회 완료. 총 {}개", userId, result.size());
+        return result;
     }
 
     @Transactional

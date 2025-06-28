@@ -26,7 +26,7 @@ public class Reminder {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "summary_archive_id", nullable = false)
+    @JoinColumn(name = "archive_id", nullable = false)
     private SummaryArchive summaryArchive;
 
     @Enumerated(EnumType.STRING)
