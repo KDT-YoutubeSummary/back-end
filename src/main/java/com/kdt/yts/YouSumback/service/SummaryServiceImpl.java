@@ -106,8 +106,8 @@ public class SummaryServiceImpl implements SummaryService {
         System.out.println("====================");
 
         String finalSummary;
-        if (summaryType == SummaryType.TIMELINE) {
-            System.out.println("✅ TIMELINE summary: Bypassing chunking and calling AI with full VTT content.");
+        if (summaryType == SummaryType.TIMELINE || summaryType == SummaryType.KEYWORD) {
+            System.out.println("✅ " + summaryType + " summary: Bypassing chunking and calling AI with full content.");
             String fullPromptForAI = prompt + "\n\n" + text;
             System.out.println("🤖 AI에게 전송할 최종 프롬프트 (첫 500자):");
             System.out.println(fullPromptForAI.substring(0, Math.min(500, fullPromptForAI.length())) + "...");
