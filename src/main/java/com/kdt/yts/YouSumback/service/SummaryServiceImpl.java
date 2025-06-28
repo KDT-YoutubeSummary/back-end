@@ -64,11 +64,9 @@ public class SummaryServiceImpl implements SummaryService {
         String userPrompt = request.getUserPrompt();
         SummaryType summaryType = request.getSummaryType();
 
-        // [수정 1] URL에서 '&' 이후의 불필요한 파라미터를 모두 제거합니다.
         String cleanUrl = originalUrl.split("&")[0];
         log.info(">>> SummaryServiceImpl.summarize 진입 - 원본 URL: {}, 정리된 URL: {}, User ID: {}", originalUrl, cleanUrl, userId);
 
-        // [수정 2] 정리된 URL을 사용하여 데이터베이스를 조회합니다.
         AudioTranscript transcript = audioTranscriptRepository.findByVideo_OriginalUrl(cleanUrl)
                 .orElseThrow(() -> new RuntimeException("AudioTranscript not found for URL: " + cleanUrl));
 
@@ -92,6 +90,14 @@ public class SummaryServiceImpl implements SummaryService {
 
             for (String chunk : chunks) {
                 partialSummaries.add(callOpenAISummary(prompt + "\n\n" + chunk));
+                try {
+                    // 429 Too Many Requests 방지를 위한 1초 대기
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.error("API 호출 간 대기 중 오류 발생", e);
+                    throw new RuntimeException("API call delay was interrupted", e);
+                }
             }
             String finalSummaryPrompt = "다음은 각 부분에 대한 요약입니다. 이 요약들을 하나로 합쳐서 자연스러운 최종 요약을 만들어주세요:\n\n" + String.join("\n---\n", partialSummaries);
             finalSummary = callOpenAISummary(finalSummaryPrompt);
@@ -113,7 +119,7 @@ public class SummaryServiceImpl implements SummaryService {
         Summary saved = summaryRepository.save(summary);
         log.info("✅ 요약 저장 완료. ID: {}", saved.getId());
 
-        // [수정 3] Repository 메서드 이름을 findByUserIdAndSummaryId로 수정
+        // [오류 수정] findByUser_UserIdAndSummary_Id -> findByUserIdAndSummaryId로 수정
         SummaryArchive archive = summaryArchiveRepository.findByUserIdAndSummaryId(user.getId(), saved.getId())
                 .orElseGet(() -> SummaryArchive.builder().user(user).summary(saved).build());
 
@@ -138,7 +144,7 @@ public class SummaryServiceImpl implements SummaryService {
         }
         log.info("✅ 태그 처리 완료.");
 
-        // [수정 4] UserActivityLog 저장 로직을 원본에 맞게 수정
+        // [오류 수정] .summaryArchive(archive) 대신 올바른 필드를 사용하도록 수정
         UserActivityLog activityLog = UserActivityLog.builder()
                 .user(user)
                 .activityType("SUMMARY_CREATED")
@@ -150,28 +156,27 @@ public class SummaryServiceImpl implements SummaryService {
         userActivityLogRepository.save(activityLog);
         log.info("✅ 사용자 활동 로그 저장 완료.");
 
-        // [수정 5] SummaryResponseDTO 생성 방식을 빌더 대신 원본의 생성자로 수정
-        return new SummaryResponseDTO(
-                saved.getId(),
-                transcript.getId(),
-                transcript.getVideo().getId(),
-                finalSummary,
-                hashtags,
-                transcript.getVideo().getTitle(),
-                transcript.getVideo().getThumbnailUrl(),
-                transcript.getVideo().getUploaderName(),
-                transcript.getVideo().getViewCount(),
-                transcript.getVideo().getOriginalLanguageCode(),
-                summary.getCreatedAt()
-        );
+        // [오류 수정] DTO 생성 시 .hashtags() 대신 .tags()를 사용
+        return SummaryResponseDTO.builder()
+                .summaryId(saved.getId())
+                .transcriptId(transcript.getId())
+                .videoId(transcript.getVideo().getId())
+                .summary(finalSummary)
+                .tags(hashtags) // .hashtags -> .tags
+                .title(transcript.getVideo().getTitle())
+                .thumbnailUrl(transcript.getVideo().getThumbnailUrl())
+                .uploaderName(transcript.getVideo().getUploaderName())
+                .viewCount(transcript.getVideo().getViewCount())
+                .languageCode(transcript.getVideo().getOriginalLanguageCode())
+                .createdAt(summary.getCreatedAt())
+                .build();
     }
 
     public static class PromptBuilder {
         public String buildPrompt(String userPrompt, SummaryType summaryType) {
             String prompt = (userPrompt != null && !userPrompt.isEmpty()) ? userPrompt + "\n" : "";
-            String formatInstruction = "다음 텍스트를 요약해줘: ";
-            // Simplified prompt logic from original for compatibility
-            return prompt + formatInstruction;
+            // Simplified prompt logic
+            return prompt + "다음 텍스트를 요약해줘: ";
         }
     }
 
@@ -186,11 +191,11 @@ public class SummaryServiceImpl implements SummaryService {
 
     @Override
     public Optional<SummaryArchive> findSummaryArchiveByUserAndSummary(Long userId, Summary summary) {
-        // [수정 6] Repository 메서드 이름을 findByUserIdAndSummaryId로 수정
+        // [오류 수정] findByUser_UserIdAndSummary_Id -> findByUserIdAndSummaryId
         return summaryArchiveRepository.findByUserIdAndSummaryId(userId, summary.getId());
     }
 
-    // --- 미사용/원본에 없는 메서드 처리 ---
+    // ... (generateFromSummary, checkQuizAnswers 등 나머지 메서드는 이전과 동일하게 유지)
     @Override
     public List<QuizResponseDTO> generateFromSummary(QuizRequestDTO request) {
         throw new UnsupportedOperationException("Not implemented.");
@@ -203,26 +208,21 @@ public class SummaryServiceImpl implements SummaryService {
     public List<QuestionWithOptionsResponseDTO> getQuestionsFromUserAnswers(List<UserAnswerDTO> answers) {
         throw new UnsupportedOperationException("Not implemented.");
     }
-
     @Override
     public String callOpenAISummary(String fullPrompt) {
         return openAIClient.chat(fullPrompt).block();
     }
-
     private List<String> splitTextIntoChunks(String text, int chunkSizeInWords) {
         List<String> chunks = new ArrayList<>();
         String[] words = text.split("\\s+");
-        int wordCount = words.length;
-
-        for (int i = 0; i < wordCount; i += chunkSizeInWords) {
-            int end = Math.min(i + chunkSizeInWords, wordCount);
+        for (int i = 0; i < words.length; i += chunkSizeInWords) {
+            int end = Math.min(i + chunkSizeInWords, words.length);
             chunks.add(String.join(" ", Arrays.copyOfRange(words, i, end)));
         }
         return chunks;
     }
-
     private synchronized Tag findOrCreateTag(String tagName) {
-        // [수정 7] Repository 메서드 이름과 Entity 필드 이름을 원본에 맞게 수정
+        // [오류 수정] findByName -> findByTagName, .name -> .tagName
         return tagRepository.findByTagName(tagName)
                 .orElseGet(() -> tagRepository.save(Tag.builder().tagName(tagName).build()));
     }
