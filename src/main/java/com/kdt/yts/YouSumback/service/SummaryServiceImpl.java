@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.nio.charset.StandardCharsets;
@@ -178,10 +179,8 @@ public class SummaryServiceImpl implements SummaryService {
 
         for (String keyword : hashtags) {
             Tag tag = findOrCreateTag(keyword);
-            SummaryArchiveTagId summaryArchiveTagId = new SummaryArchiveTagId(archive.getId(), tag.getId());
-            if (!summaryArchiveTagRepository.existsById(summaryArchiveTagId)) {
+            if (!summaryArchiveTagRepository.existsById(new SummaryArchiveTagId(archive.getId(), tag.getId()))) {
                 SummaryArchiveTag summaryArchiveTag = SummaryArchiveTag.builder()
-                        .id(summaryArchiveTagId)
                         .summaryArchive(archive)
                         .tag(tag)
                         .build();

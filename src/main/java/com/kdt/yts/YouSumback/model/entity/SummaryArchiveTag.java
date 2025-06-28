@@ -16,10 +16,12 @@ public class SummaryArchiveTag {
     private SummaryArchiveTagId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "archive_id", insertable = false, updatable = false)
+    @MapsId("summaryArchiveId")
+    @JoinColumn(name = "archive_id")
     private SummaryArchive summaryArchive;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tag_id", insertable = false, updatable = false)
+    @MapsId("tagId")
+    @JoinColumn(name = "tag_id")
     private Tag tag;
 }
