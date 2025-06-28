@@ -122,7 +122,7 @@ public class TranscriptService {
         if (isWhisper) {
             // Whisper의 경우: 이미 텍스트 형태
             rawText = Files.readString(Path.of(rawFilePath));
-        } else {
+            } else {
             // VTT 파일: 라인 필터링 (타임라인/헤더 제거)
             List<String> vttLines = Files.readAllLines(Path.of(rawFilePath));
             StringBuilder sb = new StringBuilder();

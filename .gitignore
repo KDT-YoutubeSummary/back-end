@@ -39,4 +39,9 @@ out/
 src/main/resources/application.properties
 src/main/resources/audiofiles
 
+# 텍스트 파일들 제외
+src/main/resources/textfiles/
+*.txt
+*.vtt
+
 C:\workspace\back-end\set-env.ps1

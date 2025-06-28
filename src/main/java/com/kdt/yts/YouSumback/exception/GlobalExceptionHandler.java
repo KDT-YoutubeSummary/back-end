@@ -43,6 +43,31 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
     
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        log.error("Resource not found: {}", ex.getMessage());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", 404);
+        response.put("message", ex.getMessage());
+        response.put("data", Map.of());
+        
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+    
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
+        log.error("Runtime error occurred: {}", ex.getMessage(), ex);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", 500);
+        response.put("message", "데이터 처리 중 오류가 발생했습니다.");
+        response.put("error", ex.getMessage());
+        response.put("data", Map.of());
+        
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
         log.error("Unexpected error occurred: ", ex);

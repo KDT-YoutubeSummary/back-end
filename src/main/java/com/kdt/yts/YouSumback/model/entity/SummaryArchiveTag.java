@@ -11,7 +11,7 @@ import lombok.*;
 public class SummaryArchiveTag {
 
     @Id
-    @Column(name = "summary_archive_id")
+    @Column(name = "archive_id")
     private Long summaryArchiveId;
 
     @Id
@@ -19,7 +19,7 @@ public class SummaryArchiveTag {
     private Long tagId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "summary_archive_id", insertable = false, updatable = false)
+    @JoinColumn(name = "archive_id", insertable = false, updatable = false)
     private SummaryArchive summaryArchive;
 
     @ManyToOne(fetch = FetchType.LAZY)

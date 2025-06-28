@@ -20,7 +20,7 @@ public interface SummaryArchiveTagRepository extends JpaRepository<SummaryArchiv
     @Query(value = """
         SELECT t.tag_name, COUNT(*) 
         FROM summary_archive sa
-        JOIN summary_archive_tag sat ON sa.summary_archive_id = sat.summary_archive_id
+        JOIN summary_archive_tag sat ON sa.archive_id = sat.archive_id
         JOIN tag t ON sat.tag_id = t.tag_id
         WHERE sa.user_id = :userId
         GROUP BY t.tag_name

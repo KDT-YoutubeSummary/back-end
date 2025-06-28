@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS `summary_archive` (
 CREATE TABLE IF NOT EXISTS `reminder` (
     reminder_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    summary_archive_id INT NOT NULL,
+    archive_id INT NOT NULL,
     reminder_type VARCHAR(50) NOT NULL,
     frequency_interval INT DEFAULT 1,
     day_of_week INT,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS `reminder` (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     last_sent_at TIMESTAMP,
     CONSTRAINT fk_reminder_user FOREIGN KEY (user_id) REFERENCES `user`(user_id) ON DELETE CASCADE,
-    CONSTRAINT fk_reminder_summary_archive FOREIGN KEY (summary_archive_id) REFERENCES summary_archive(archive_id) ON DELETE CASCADE
+    CONSTRAINT fk_reminder_summary_archive FOREIGN KEY (archive_id) REFERENCES summary_archive(archive_id) ON DELETE CASCADE
 );
 
 -- 퀴즈 (Quiz) 테이블

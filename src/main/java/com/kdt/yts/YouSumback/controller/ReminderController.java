@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid; // 유효성 검사 어노테이션
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/reminders") // 기본 URL 경로를 설정
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "리마인더", description = "리마인더 관리 API")
 public class ReminderController {
 
@@ -55,8 +57,16 @@ public class ReminderController {
     })
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<ReminderResponseDTO>> getRemindersByUserId(@PathVariable Long userId) {
-        List<ReminderResponseDTO> reminders = reminderService.getRemindersByUserId(userId);
-        return ResponseEntity.ok(reminders);
+        log.info("사용자 ID {}의 리마인더 목록 조회 API 호출", userId);
+        
+        try {
+            List<ReminderResponseDTO> reminders = reminderService.getRemindersByUserId(userId);
+            log.info("사용자 ID {}의 리마인더 목록 조회 성공. 총 {}개", userId, reminders.size());
+            return ResponseEntity.ok(reminders);
+        } catch (Exception e) {
+            log.error("사용자 ID {}의 리마인더 목록 조회 실패: {}", userId, e.getMessage(), e);
+            throw e; // GlobalExceptionHandler에서 처리하도록 재던지기
+        }
     }
 
     // 리마인더 정보를 업데이트하는 API 엔드포인트

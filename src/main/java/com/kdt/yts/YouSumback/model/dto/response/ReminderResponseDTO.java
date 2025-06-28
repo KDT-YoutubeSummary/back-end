@@ -2,6 +2,8 @@ package com.kdt.yts.YouSumback.model.dto.response;
 
 import com.kdt.yts.YouSumback.model.entity.Reminder;
 import com.kdt.yts.YouSumback.model.entity.ReminderType;
+import com.kdt.yts.YouSumback.model.entity.User;
+import com.kdt.yts.YouSumback.model.entity.SummaryArchive;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -30,9 +32,11 @@ public class ReminderResponseDTO {
     private LocalDateTime lastSentAt; // 마지막 알림 발송 시간
 
     public ReminderResponseDTO(Reminder reminder) {
+        if (reminder == null) {
+            throw new IllegalArgumentException("Reminder cannot be null");
+        }
+        
         this.reminderId = reminder.getId();
-        this.user_id = reminder.getUser() != null ? reminder.getUser().getId() : null;
-        this.summaryArchiveId = reminder.getSummaryArchive() != null ? reminder.getSummaryArchive().getId() : null;
         this.reminderType = reminder.getReminderType();
         this.frequencyInterval = reminder.getFrequencyInterval();
         this.dayOfWeek = reminder.getDayOfWeek();
@@ -43,5 +47,23 @@ public class ReminderResponseDTO {
         this.isActive = reminder.getIsActive();
         this.createdAt = reminder.getCreatedAt();
         this.lastSentAt = reminder.getLastSentAt();
+        
+        // ✅ 안전한 User 접근 - Lazy Loading 고려
+        try {
+            User user = reminder.getUser();
+            this.user_id = (user != null) ? user.getId() : null;
+        } catch (org.hibernate.LazyInitializationException e) {
+            this.user_id = null;
+            System.err.println("User Lazy Loading 실패: " + e.getMessage());
+        }
+        
+        // ✅ 안전한 SummaryArchive 접근 - Lazy Loading 고려
+        try {
+            SummaryArchive summaryArchive = reminder.getSummaryArchive();
+            this.summaryArchiveId = (summaryArchive != null) ? summaryArchive.getId() : null;
+        } catch (org.hibernate.LazyInitializationException e) {
+            this.summaryArchiveId = null;
+            System.err.println("SummaryArchive Lazy Loading 실패: " + e.getMessage());
+        }
     }
 }
