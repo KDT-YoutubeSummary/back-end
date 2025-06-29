@@ -1,6 +1,7 @@
 package com.kdt.yts.YouSumback.security;
 
 import com.kdt.yts.YouSumback.repository.UserRepository;
+import com.kdt.yts.YouSumback.config.RequestLoggingFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +31,7 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
+    private final RequestLoggingFilter requestLoggingFilter;
 
 
     @Bean
@@ -52,7 +54,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        // 구체적인 도메인 허용 (보안 강화)
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:5173", 
+            "http://www.yousum.site",
+            "https://www.yousum.site"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -124,6 +131,8 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
         );
 
+        // 필터 체인 순서: RequestLoggingFilter -> JwtAuthenticationFilter -> JwtLoginAuthenticationFilter
+        http.addFilterBefore(requestLoggingFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
         http.addFilterAfter(jwtLoginAuthenticationFilter(authManager), JwtAuthenticationFilter.class);
 

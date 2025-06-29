@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 // ⭐️⭐️⭐️ 프론트엔드 호환성을 위해 /api/auth 경로 사용 ⭐️⭐️⭐️
 @RequestMapping("/api/auth")
 @Tag(name = "인증", description = "사용자 인증 관련 API")
@@ -36,7 +38,7 @@ public class AuthController {
     private final UserService userService;
 
     // 로그인은 JwtLoginAuthenticationFilter에서 처리됩니다.
-    // POST /api/v1/auth/login 요청은 필터가 가로채서 처리합니다.
+    // POST /api/auth/login 요청은 필터가 가로채서 처리합니다.
 
     // Google 로그인 엔드포인트 (주석 처리된 원본 코드)
     // @Operation(summary = "구글 로그인", description = "Google OAuth를 통한 로그인")
@@ -74,16 +76,25 @@ public class AuthController {
     })
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
-        // AuthService.register()가 User 엔티티를 반환
-        // 생성된 User의 정보를 클라이언트에 돌려주기 위해 RegisterResponse를 생성
-        var savedUser = authService.register(request);
-        RegisterResponseDTO response = new RegisterResponseDTO(
-                savedUser.getId(),
-                savedUser.getUserName(),
-                savedUser.getEmail(),
-                "회원가입이 성공적으로 완료되었습니다."
-        );
-        return ResponseEntity.ok(response);
+        log.info("회원가입 요청 수신 - userName: {}, email: {}", request.getUserName(), request.getEmail());
+        
+        try {
+            // AuthService.register()가 User 엔티티를 반환
+            // 생성된 User의 정보를 클라이언트에 돌려주기 위해 RegisterResponse를 생성
+            var savedUser = authService.register(request);
+            RegisterResponseDTO response = new RegisterResponseDTO(
+                    savedUser.getId(),
+                    savedUser.getUserName(),
+                    savedUser.getEmail(),
+                    "회원가입이 성공적으로 완료되었습니다."
+            );
+            log.info("회원가입 성공 - userId: {}, userName: {}", savedUser.getId(), savedUser.getUserName());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("회원가입 실패 - userName: {}, email: {}, error: {}", 
+                     request.getUserName(), request.getEmail(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     // 회원정보 수정 엔드포인트
