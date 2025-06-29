@@ -19,7 +19,7 @@ import java.util.List;
 
 @Tag(name = "리마인더", description = "리마인더 관리 API")
 @RestController
-@RequestMapping("/reminders") // 기본 URL 경로를 설정
+@RequestMapping("/api/reminders") // 기본 URL 경로를 설정
 @RequiredArgsConstructor
 @Slf4j
 public class ReminderController {

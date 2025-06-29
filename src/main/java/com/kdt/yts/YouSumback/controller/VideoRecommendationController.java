@@ -18,7 +18,7 @@ import java.util.List;
 
 @Tag(name = "영상 추천", description = "사용자 맞춤 영상 추천 관련 API")
 @RestController
-@RequestMapping("/recommendations")
+@RequestMapping("/api/recommendations")
 @RequiredArgsConstructor
 @Slf4j
 public class VideoRecommendationController {

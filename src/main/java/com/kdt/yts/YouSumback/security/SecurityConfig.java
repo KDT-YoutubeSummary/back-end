@@ -40,6 +40,11 @@ public class SecurityConfig {
     }
 
     @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
     public JwtLoginAuthenticationFilter jwtLoginAuthenticationFilter(AuthenticationManager authManager) {
         JwtLoginAuthenticationFilter filter = new JwtLoginAuthenticationFilter(authManager, jwtProvider, userRepository);
         filter.setFilterProcessesUrl("/api/auth/login");
@@ -56,7 +61,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         // 구체적인 도메인 허용 (보안 강화)
         configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:5173", 
+            "http://localhost:3000",   // React 기본 개발 서버
+            "http://localhost:5173",   // Vite 개발 서버
             "http://www.yousum.site",
             "https://www.yousum.site"
         ));

@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 
 @Tag(name = "요약 아카이브", description = "요약 아카이브 관리 API")
 @RestController
-@RequestMapping("/summary-archives")
+@RequestMapping("/api/summary-archives")
 @RequiredArgsConstructor
 @Slf4j
 public class SummaryArchiveController {

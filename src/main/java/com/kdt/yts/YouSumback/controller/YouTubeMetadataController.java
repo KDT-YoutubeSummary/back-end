@@ -23,7 +23,7 @@ import java.util.Optional;
 
 @Tag(name = "YouTube 메타데이터", description = "YouTube 동영상 메타데이터 관련 API")
 @RestController
-@RequestMapping("/youtube")
+@RequestMapping("/api/youtube")
 @RequiredArgsConstructor
 public class YouTubeMetadataController {
 

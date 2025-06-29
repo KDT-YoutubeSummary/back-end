@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 @Slf4j
+@Tag(name = "음성 인식", description = "음성을 텍스트로 변환하는 API")
 @RestController
-@RequestMapping("/scripts")
+@RequestMapping("/api/scripts")
 @RequiredArgsConstructor
-@Tag(name = "스크립트", description = "스크립트 조회, 저장, 삭제 API")
 public class TranscriptController {
 
     private final TranscriptService transcriptService;

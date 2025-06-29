@@ -23,7 +23,7 @@ import java.util.Map;
 
 @Tag(name = "마이페이지", description = "마이페이지 관련 API")
 @RestController
-@RequestMapping("/mypage")
+@RequestMapping("/api/mypage")
 @RequiredArgsConstructor
 public class MypageController {
 

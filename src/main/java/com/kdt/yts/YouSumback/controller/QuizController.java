@@ -20,7 +20,7 @@ import java.util.List;
 
 @Tag(name = "퀴즈", description = "퀴즈 생성 및 제출 관련 API")
 @RestController
-@RequestMapping("/quizzes")
+@RequestMapping("/api/quizzes")
 @RequiredArgsConstructor
 public class QuizController {
 
