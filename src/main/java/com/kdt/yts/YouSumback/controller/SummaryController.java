@@ -19,7 +19,7 @@ import java.util.List;
 
 @Tag(name = "요약", description = "동영상 요약 생성 관련 API")
 @RestController
-@RequestMapping("/summary")
+@RequestMapping("/summaries")
 @RequiredArgsConstructor
 public class SummaryController {
 
