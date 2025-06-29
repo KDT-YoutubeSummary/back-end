@@ -26,6 +26,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        // 인증이 필요하지 않은 경로들은 JWT 검증을 건너뜁니다
+        if (shouldNotFilter(request)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String token = resolveToken(request);
 
         if (token == null) {
@@ -54,6 +60,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        
+        // 인증이 필요하지 않은 경로들
+        return path.startsWith("/actuator/") ||
+               path.equals("/") ||
+               path.startsWith("/index.html") ||
+               path.startsWith("/assets/") ||
+               path.endsWith(".ico") ||
+               path.endsWith(".png") ||
+               path.endsWith(".svg") ||
+               path.endsWith(".jpg") ||
+               path.endsWith(".jpeg") ||
+               path.startsWith("/api/v1/auth/") ||
+               path.startsWith("/oauth2/") ||
+               path.startsWith("/login/oauth2/code/") ||
+               path.startsWith("/swagger-ui/") ||
+               path.startsWith("/v3/api-docs/") ||
+               path.startsWith("/swagger-resources/") ||
+               path.equals("/error");
     }
 
     private String resolveToken(HttpServletRequest request) {
