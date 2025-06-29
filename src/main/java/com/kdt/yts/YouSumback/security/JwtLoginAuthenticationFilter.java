@@ -41,6 +41,14 @@ public class JwtLoginAuthenticationFilter extends UsernamePasswordAuthentication
     }
 
     @Override
+    protected boolean requiresAuthentication(HttpServletRequest request, HttpServletResponse response) {
+        // 오직 /api/auth/login 경로의 POST 요청만 처리
+        String uri = request.getRequestURI();
+        String method = request.getMethod();
+        return "POST".equals(method) && "/api/auth/login".equals(uri);
+    }
+
+    @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
             throws AuthenticationException {
         try {

@@ -11,3 +11,4 @@ public class TranscriptSaveRequestDTO {
     private String userPrompt;
     private SummaryType summaryType;
 }
+

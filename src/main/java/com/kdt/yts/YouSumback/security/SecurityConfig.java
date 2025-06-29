@@ -40,7 +40,7 @@ public class SecurityConfig {
     @Bean
     public JwtLoginAuthenticationFilter jwtLoginAuthenticationFilter(AuthenticationManager authManager) {
         JwtLoginAuthenticationFilter filter = new JwtLoginAuthenticationFilter(authManager, jwtProvider, userRepository);
-        filter.setFilterProcessesUrl("/api/v1/auth/login");
+        filter.setFilterProcessesUrl("/api/auth/login");
         return filter;
     }
 
@@ -88,6 +88,7 @@ public class SecurityConfig {
 
                         // 인증 및 OAuth2
                         "/api/v1/auth/**",
+                        "/api/auth/**",  // 프론트엔드 호환성을 위해 추가
                         "/oauth2/**",
                         "/login/oauth2/code/**",
 
@@ -123,8 +124,8 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
         );
 
-        http.addFilter(jwtLoginAuthenticationFilter(authManager));
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(jwtLoginAuthenticationFilter(authManager), JwtAuthenticationFilter.class);
 
         return http.build();
     }

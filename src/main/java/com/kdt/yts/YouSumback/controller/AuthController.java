@@ -26,8 +26,8 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-// ⭐️⭐️⭐️ 중요: 여기에 v1을 추가하여 API 경로를 올바르게 수정했습니다. ⭐️⭐️⭐️
-@RequestMapping("/v1/auth")
+// ⭐️⭐️⭐️ 프론트엔드 호환성을 위해 /api/auth 경로 사용 ⭐️⭐️⭐️
+@RequestMapping("/api/auth")
 @Tag(name = "인증", description = "사용자 인증 관련 API")
 public class AuthController {
 
@@ -35,17 +35,8 @@ public class AuthController {
     private final GoogleOAuthService googleOAuthService;
     private final UserService userService;
 
-    // 기본 로그인 엔드포인트
-    @Operation(summary = "일반 로그인", description = "이메일과 비밀번호를 사용하여 로그인")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "로그인 성공"),
-            @ApiResponse(responseCode = "401", description = "인증 실패")
-    })
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
-        String token = authService.authenticate(request);
-        return ResponseEntity.ok(new LoginResponseDTO(token));
-    }
+    // 로그인은 JwtLoginAuthenticationFilter에서 처리됩니다.
+    // POST /api/v1/auth/login 요청은 필터가 가로채서 처리합니다.
 
     // Google 로그인 엔드포인트 (주석 처리된 원본 코드)
     // @Operation(summary = "구글 로그인", description = "Google OAuth를 통한 로그인")
