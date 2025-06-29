@@ -1,5 +1,9 @@
 package com.kdt.yts.YouSumback.security;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,70 +30,62 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 인증이 필요하지 않은 경로들은 JWT 검증을 건너뜁니다
-        if (shouldNotFilter(request)) {
+        String requestURI = request.getRequestURI();
+        String method = request.getMethod();
+        
+        log.debug("🔍 JWT Filter 처리 - {} {}", method, requestURI);
+
+        // 인증이 필요 없는 경로들은 JWT 검증을 건너뛰기
+        if (isPublicPath(requestURI)) {
+            log.debug("✅ Public path detected, skipping JWT validation: {}", requestURI);
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = resolveToken(request);
 
-        if (token == null) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        if (token != null) {
+            try {
+                if (jwtProvider.validateToken(token)) {
+                    Long userId = jwtProvider.extractUserId(token);
+                    UserDetails userDetails = customUserDetailService.loadUserByUserId(userId);
 
-        try {
-            if (!jwtProvider.validateToken(token)) {
-                responseUnauthorized(response, "Invalid or expired token");
-                return;
+                    if (userDetails != null) {
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        log.debug("✅ Authentication success for user: {}", userDetails.getUsername());
+                    }
+                }
+            } catch (SignatureException | MalformedJwtException | UnsupportedJwtException | IllegalArgumentException e) {
+                log.warn("! Invalid JWT token: {}", e.getMessage());
+                SecurityContextHolder.clearContext();
+            } catch (ExpiredJwtException e) {
+                log.warn("! Expired JWT token: {}", e.getMessage());
+                SecurityContextHolder.clearContext();
+            } catch (Exception e) {
+                log.error("! JWT token processing failed: {}", e.getMessage(), e);
+                SecurityContextHolder.clearContext();
             }
-
-            Long userId = jwtProvider.extractUserId(token);
-            UserDetails userDetails = customUserDetailService.loadUserByUserId(userId);
-
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("✅ Authentication success for user: {}", userDetails.getUsername());
-
-        } catch (Exception e) {
-            SecurityContextHolder.clearContext();
-            responseUnauthorized(response, e.getMessage());
-            return;
+        } else {
+            log.debug("🔍 No JWT token found in request: {} {}", method, requestURI);
         }
 
         filterChain.doFilter(request, response);
     }
 
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        
-        // 인증이 필요하지 않은 경로들
-        boolean shouldSkip = path.startsWith("/actuator/") ||
-                           path.equals("/") ||
-                           path.startsWith("/index.html") ||
-                           path.startsWith("/assets/") ||
-                           path.endsWith(".ico") ||
-                           path.endsWith(".png") ||
-                           path.endsWith(".svg") ||
-                           path.endsWith(".jpg") ||
-                           path.endsWith(".jpeg") ||
-                           path.startsWith("/api/v1/auth/") ||
-                           path.startsWith("/api/auth/") ||  // 🔥 프론트엔드 호환성을 위해 추가
-                           path.startsWith("/oauth2/") ||
-                           path.startsWith("/login/oauth2/code/") ||
-                           path.startsWith("/swagger-ui/") ||
-                           path.startsWith("/v3/api-docs/") ||
-                           path.startsWith("/swagger-resources/") ||
-                           path.equals("/error");
-        
-        if (path.contains("/auth/")) {
-            log.info("🔍 JWT 필터 체크 - 경로: {}, JWT 검증 건너뛰기: {}", path, shouldSkip);
-        }
-        
-        return shouldSkip;
+    private boolean isPublicPath(String requestURI) {
+        return requestURI.startsWith("/api/auth/") ||
+               requestURI.startsWith("/auth/") ||
+               requestURI.startsWith("/oauth2/") ||
+               requestURI.startsWith("/login/oauth2/code/") ||
+               requestURI.startsWith("/swagger-ui/") ||
+               requestURI.startsWith("/v3/api-docs/") ||
+               requestURI.startsWith("/actuator/") ||
+               requestURI.equals("/error") ||
+               requestURI.equals("/") ||
+               requestURI.equals("/index.html") ||
+               requestURI.matches(".*\\.(ico|png|svg|jpg|jpeg|css|js)$");
     }
 
     private String resolveToken(HttpServletRequest request) {
@@ -98,11 +94,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearer.substring(7);
         }
         return null;
-    }
-
-    private void responseUnauthorized(HttpServletResponse response, String message) throws IOException {
-        response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"" + message + "\"}");
     }
 }

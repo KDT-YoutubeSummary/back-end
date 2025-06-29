@@ -1,6 +1,10 @@
 #!/bin/bash
 
 # YouSum 서비스 시작 스크립트
+
+# 시작하기 전에 환경 변수 설정 파일을 로드합니다.
+source /app/env.sh
+
 echo "Starting YouSum services..."
 
 # Python Flask 서비스 시작 (백그라운드)

@@ -1,7 +1,5 @@
 package com.kdt.yts.YouSumback.controller;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.kdt.yts.YouSumback.model.dto.request.GoogleLoginRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.LoginRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.RegisterRequestDTO;
 import com.kdt.yts.YouSumback.model.dto.request.UpdateUserRequestDTO;
@@ -9,6 +7,8 @@ import com.kdt.yts.YouSumback.model.dto.response.LoginResponseDTO;
 import com.kdt.yts.YouSumback.model.dto.response.RegisterResponseDTO;
 import com.kdt.yts.YouSumback.model.dto.response.UpdateUserResponseDTO;
 import com.kdt.yts.YouSumback.model.entity.User;
+import com.kdt.yts.YouSumback.security.CustomUserDetails;
+import com.kdt.yts.YouSumback.security.JwtProvider;
 import com.kdt.yts.YouSumback.service.GoogleOAuthService;
 import com.kdt.yts.YouSumback.service.UserService;
 import com.kdt.yts.YouSumback.service.AuthService;
@@ -20,6 +20,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -28,7 +31,6 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-// ⭐️⭐️⭐️ 프론트엔드 호환성을 위해 /api/auth 경로 사용 ⭐️⭐️⭐️
 @RequestMapping("/api/auth")
 @Tag(name = "인증", description = "사용자 인증 관련 API")
 public class AuthController {
@@ -36,6 +38,29 @@ public class AuthController {
     private final AuthService authService;
     private final GoogleOAuthService googleOAuthService;
     private final UserService userService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtProvider jwtProvider;
+
+    @Operation(summary = "로그인", description = "사용자 이름과 비밀번호로 로그인하고 JWT 토큰을 발급합니다.")
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
+        try {
+            log.info("로그인 시도 - userName: {}", request.getUserName());
+            
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getUserName(), request.getPassword())
+            );
+
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String token = jwtProvider.generateToken(userDetails.getUserId(), userDetails.getUsername());
+
+            log.info("로그인 성공 - userId: {}, userName: {}", userDetails.getUserId(), userDetails.getUsername());
+            return ResponseEntity.ok(new LoginResponseDTO(token));
+        } catch (Exception e) {
+            log.error("로그인 실패 - userName: {}, error: {}", request.getUserName(), e.getMessage(), e);
+            throw e;
+        }
+    }
 
     // 로그인은 JwtLoginAuthenticationFilter에서 처리됩니다.
     // POST /api/auth/login 요청은 필터가 가로채서 처리합니다.

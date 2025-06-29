@@ -2,6 +2,8 @@ package com.kdt.yts.YouSumback.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -41,6 +43,30 @@ public class GlobalExceptionHandler {
         response.put("data", Map.of());
         
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+    
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleBadCredentialsException(BadCredentialsException ex) {
+        log.error("Authentication failed: {}", ex.getMessage());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", 401);
+        response.put("message", "사용자명 또는 비밀번호가 올바르지 않습니다.");
+        response.put("data", Map.of());
+        
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+    
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleUsernameNotFoundException(UsernameNotFoundException ex) {
+        log.error("User not found: {}", ex.getMessage());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", 401);
+        response.put("message", "사용자명 또는 비밀번호가 올바르지 않습니다.");
+        response.put("data", Map.of());
+        
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
     
     @ExceptionHandler(ResourceNotFoundException.class)

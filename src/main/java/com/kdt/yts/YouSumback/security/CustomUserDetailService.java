@@ -24,7 +24,7 @@ public class CustomUserDetailService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUserName(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
 
@@ -37,10 +37,10 @@ public class CustomUserDetailService implements UserDetailsService {
         );
     }
 
-    // JWT 토큰에서 userId로 사용자 조회할 때 사용 (직접 호출)
+    // JWT 토큰에서 userId로 사용자 조회할 때 사용
     public UserDetails loadUserByUserId(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found by ID"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found by ID: " + userId));
 
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
 
