@@ -21,10 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api")
-@RequiredArgsConstructor
 @Tag(name = "마이페이지", description = "마이페이지 관련 API")
+@RestController
+@RequestMapping("/mypage")
+@RequiredArgsConstructor
 public class MypageController {
 
     private final UserService userService;
@@ -40,7 +40,7 @@ public class MypageController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
             @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
     })
-    @GetMapping("/mypage")
+    @GetMapping
     public ResponseEntity<?> getMypage(Authentication auth) {
         Long userId = getUserIdFromAuth(auth); // 커스텀 유저 디테일에서 꺼내기
 

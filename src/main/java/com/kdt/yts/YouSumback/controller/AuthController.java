@@ -27,7 +27,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 // ⭐️⭐️⭐️ 중요: 여기에 v1을 추가하여 API 경로를 올바르게 수정했습니다. ⭐️⭐️⭐️
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/v1/auth")
 @Tag(name = "인증", description = "사용자 인증 관련 API")
 public class AuthController {
 

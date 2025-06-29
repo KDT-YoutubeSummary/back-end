@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 @Slf4j
 @RestController
-@RequestMapping("/api/scripts")
+@RequestMapping("/scripts")
 @RequiredArgsConstructor
-@Tag(name = "대본", description = "음성 및 영상 대본 관리 API")
+@Tag(name = "스크립트", description = "스크립트 조회, 저장, 삭제 API")
 public class TranscriptController {
 
     private final TranscriptService transcriptService;

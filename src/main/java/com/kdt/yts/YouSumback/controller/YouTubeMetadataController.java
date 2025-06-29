@@ -21,9 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@Tag(name = "YouTube 메타데이터", description = "YouTube 동영상 메타데이터 관련 API")
 @RestController
-@RequestMapping("/api/youtube")
-@Tag(name = "유튜브 영상 업로드", description = "유튜브 영상 메타데이터 관리 및 요약 요청 API")
+@RequestMapping("/youtube")
 @RequiredArgsConstructor
 public class YouTubeMetadataController {
 

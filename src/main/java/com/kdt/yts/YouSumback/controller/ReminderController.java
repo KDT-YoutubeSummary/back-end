@@ -17,11 +17,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "리마인더", description = "리마인더 관리 API")
 @RestController
-@RequestMapping("/api/reminders") // 기본 URL 경로를 설정
+@RequestMapping("/reminders") // 기본 URL 경로를 설정
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "리마인더", description = "리마인더 관리 API")
 public class ReminderController {
 
     private final ReminderService reminderService;

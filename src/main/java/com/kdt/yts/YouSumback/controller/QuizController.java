@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/quizzes")
-@RequiredArgsConstructor
 @Tag(name = "퀴즈", description = "퀴즈 생성 및 제출 관련 API")
+@RestController
+@RequestMapping("/quizzes")
+@RequiredArgsConstructor
 public class QuizController {
 
     private final SummaryService summaryService;
@@ -35,7 +35,7 @@ public class QuizController {
     @PostMapping("/generate")
     public ResponseEntity<List<QuizResponseDTO>> generateQuiz(@RequestBody QuizRequestDTO request) {
         // SummaryService.generateFromSummary(...)를 호출해야
-        // “퀴즈용 프롬프트 → AI 호출 → 파싱 → DB 저장” 로직이 실행됩니다.
+        // "퀴즈용 프롬프트 → AI 호출 → 파싱 → DB 저장" 로직이 실행됩니다.
         return ResponseEntity.ok(summaryService.generateFromSummary(request));
     }
 

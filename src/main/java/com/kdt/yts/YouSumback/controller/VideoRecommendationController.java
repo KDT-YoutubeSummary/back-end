@@ -12,12 +12,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
+@Tag(name = "영상 추천", description = "사용자 맞춤 영상 추천 관련 API")
 @RestController
-@RequestMapping("/api/recommendations")
-@Tag(name = "영상 추천", description = "영상 추천 관리 API")
+@RequestMapping("/recommendations")
+@RequiredArgsConstructor
 @Slf4j
 public class VideoRecommendationController {
     @Autowired

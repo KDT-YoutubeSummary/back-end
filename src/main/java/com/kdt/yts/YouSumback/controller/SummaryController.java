@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "요약", description = "동영상 요약 생성 관련 API")
 @RestController
-@RequestMapping("/api/summaries")
+@RequestMapping("/summaries")
 @RequiredArgsConstructor
-@Tag(name = "요약", description = "텍스트 요약 관련 API")
 public class SummaryController {
 
 

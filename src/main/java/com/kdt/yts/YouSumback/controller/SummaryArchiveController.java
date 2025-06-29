@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+@Tag(name = "요약 아카이브", description = "요약 아카이브 관리 API")
 @RestController
-@RequestMapping("/api/summary-archives")
+@RequestMapping("/summary-archives")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "요약 저장소", description = "사용자 요약 저장소 관련 API")
 public class SummaryArchiveController {
 
     private final SummaryArchiveService summaryArchiveService;
