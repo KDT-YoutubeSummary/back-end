@@ -77,17 +77,9 @@ public class YouTubeMetadataController {
         try {
             Long userId = userDetails.getUserId();
 
-            // summaryType 변환
-            SummaryType summaryType;
-            try {
-                summaryType = SummaryType.valueOf(
-                        Optional.ofNullable(request.getSummaryType())
-                                .orElse("BASIC")
-                                .toUpperCase()
-                );
-            } catch (IllegalArgumentException e) {
-                summaryType = SummaryType.BASIC; // 기본값으로 fallback
-            }
+            // DTO의 summaryType이 Enum 타입으로 변경되었으므로, 변환 로직을 단순화합니다.
+            // 만약 summaryType이 null이면 기본값으로 BASIC을 사용합니다.
+            SummaryType summaryType = request.getSummaryType() != null ? request.getSummaryType() : SummaryType.BASIC;
 
             transcriptService.extractYoutubeIdAndRunWhisper(request.getVideoUrl(), request.getUserPrompt());
 
