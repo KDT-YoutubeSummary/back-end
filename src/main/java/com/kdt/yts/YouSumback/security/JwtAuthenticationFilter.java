@@ -67,22 +67,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         
         // 인증이 필요하지 않은 경로들
-        return path.startsWith("/actuator/") ||
-               path.equals("/") ||
-               path.startsWith("/index.html") ||
-               path.startsWith("/assets/") ||
-               path.endsWith(".ico") ||
-               path.endsWith(".png") ||
-               path.endsWith(".svg") ||
-               path.endsWith(".jpg") ||
-               path.endsWith(".jpeg") ||
-               path.startsWith("/api/v1/auth/") ||
-               path.startsWith("/oauth2/") ||
-               path.startsWith("/login/oauth2/code/") ||
-               path.startsWith("/swagger-ui/") ||
-               path.startsWith("/v3/api-docs/") ||
-               path.startsWith("/swagger-resources/") ||
-               path.equals("/error");
+        boolean shouldSkip = path.startsWith("/actuator/") ||
+                           path.equals("/") ||
+                           path.startsWith("/index.html") ||
+                           path.startsWith("/assets/") ||
+                           path.endsWith(".ico") ||
+                           path.endsWith(".png") ||
+                           path.endsWith(".svg") ||
+                           path.endsWith(".jpg") ||
+                           path.endsWith(".jpeg") ||
+                           path.startsWith("/api/v1/auth/") ||
+                           path.startsWith("/api/auth/") ||  // 🔥 프론트엔드 호환성을 위해 추가
+                           path.startsWith("/oauth2/") ||
+                           path.startsWith("/login/oauth2/code/") ||
+                           path.startsWith("/swagger-ui/") ||
+                           path.startsWith("/v3/api-docs/") ||
+                           path.startsWith("/swagger-resources/") ||
+                           path.equals("/error");
+        
+        if (path.contains("/auth/")) {
+            log.info("🔍 JWT 필터 체크 - 경로: {}, JWT 검증 건너뛰기: {}", path, shouldSkip);
+        }
+        
+        return shouldSkip;
     }
 
     private String resolveToken(HttpServletRequest request) {
