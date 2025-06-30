@@ -11,12 +11,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -79,7 +79,13 @@ public class SummaryServiceImpl implements SummaryService {
         log.info("✅ Transcript text loaded from S3. ID: {}", transcript.getId());
 
         PromptBuilder promptBuilder = new PromptBuilder();
-        String prompt = promptBuilder.buildPrompt(userPrompt, summaryType);
+        String prompt;
+        if (summaryType == SummaryType.TIMELINE) {
+            // TIMELINE 타입일 때는 VTT 텍스트를 전달하여 동적 타임라인 생성
+            prompt = promptBuilder.buildPromptWithDuration(userPrompt, summaryType, text);
+        } else {
+            prompt = promptBuilder.buildPrompt(userPrompt, summaryType);
+        }
 
         String finalSummary;
         if (summaryType == SummaryType.TIMELINE) {
@@ -99,14 +105,23 @@ public class SummaryServiceImpl implements SummaryService {
                     throw new RuntimeException("API call delay was interrupted", e);
                 }
             }
-            String finalSummaryPrompt = "다음은 각 부분에 대한 요약입니다. 이 요약들을 하나로 합쳐서 자연스러운 최종 요약을 만들어주세요:\n\n" + String.join("\n---\n", partialSummaries);
+            // 최종 합치기에서도 TIMELINE 타입인 경우 VTT 텍스트 전달
+            String finalSummaryPrompt;
+            if (summaryType == SummaryType.TIMELINE) {
+                finalSummaryPrompt = promptBuilder.buildMergePromptWithDuration(partialSummaries, summaryType, text);
+            } else {
+                finalSummaryPrompt = promptBuilder.buildMergePrompt(partialSummaries, summaryType);
+            }
+            System.out.println("🔄 최종 요약 합치기 프롬프트:");
+            System.out.println(finalSummaryPrompt.substring(0, Math.min(300, finalSummaryPrompt.length())) + "...");
             finalSummary = callOpenAISummary(finalSummaryPrompt);
         }
-        log.info("✅ 최종 요약 생성 완료. 길이: {}", finalSummary.length());
+        System.out.println("✅ Final Summary Generated. Length: " + finalSummary.length());
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found for ID: " + userId));
 
+        String videoLanguageCode = transcript.getVideo().getOriginalLanguageCode();
         Summary summary = Summary.builder()
                 .user(user)
                 .audioTranscript(transcript)
@@ -114,7 +129,7 @@ public class SummaryServiceImpl implements SummaryService {
                 .summaryType(summaryType)
                 .userPrompt(userPrompt)
                 .createdAt(LocalDateTime.now())
-                .languageCode(transcript.getVideo().getOriginalLanguageCode() != null ? transcript.getVideo().getOriginalLanguageCode() : "ko")
+                .languageCode(videoLanguageCode != null ? videoLanguageCode : "ko")
                 .build();
         Summary saved = summaryRepository.save(summary);
         log.info("✅ 요약 저장 완료. ID: {}", saved.getId());
@@ -151,6 +166,13 @@ public class SummaryServiceImpl implements SummaryService {
                 .targetEntityType("SUMMARY")
                 .targetEntityIdInt(saved.getId())
                 .activityDetail("요약 생성 완료: " + summaryType)
+                .details(String.format("""
+{
+"summaryType": "%s",
+"videoId": %d,
+"videoTitle": "%s"
+}
+""", summaryType, transcript.getVideo().getId(), transcript.getVideo().getTitle()))
                 .createdAt(LocalDateTime.now())
                 .build();
         userActivityLogRepository.save(activityLog);
@@ -172,21 +194,255 @@ public class SummaryServiceImpl implements SummaryService {
                 .build();
     }
 
-    public static class PromptBuilder {
+    public class PromptBuilder {
         public String buildPrompt(String userPrompt, SummaryType summaryType) {
-            String prompt = (userPrompt != null && !userPrompt.isEmpty()) ? userPrompt + "\n" : "";
-            // Simplified prompt logic
-            return prompt + "다음 텍스트를 요약해줘: ";
+            return buildPromptWithDuration(userPrompt, summaryType, null);
+        }
+
+        public String buildPromptWithDuration(String userPrompt, SummaryType summaryType, String vttText) {
+            String baseInstruction = "당신은 전문적인 콘텐츠 요약 AI입니다. 제공된 텍스트를 아래 지침에 따라 정확히 요약해주세요.";
+
+            String typeSpecificInstruction = switch (summaryType) {
+
+                case BASIC -> """
+
+【기본 요약 지침】
+아래 형식을 정확히 지켜서 요약해주세요:
+
+## 핵심 내용
+- 첫 번째 주요 포인트 (구체적인 내용)
+- 두 번째 주요 포인트 (구체적인 내용)  
+- 세 번째 주요 포인트 (구체적인 내용)
+
+## 결론
+실무에서 활용 가능한 방법이나 핵심 결론을 제시해주세요.
+
+## 추천 학습
+관련 주제나 추가 학습 방향을 제안해주세요.
+
+※ 위 형식을 반드시 지켜주세요.
+    """;
+
+                case THREE_LINE -> """
+
+【3줄 요약 지침】
+반드시 아래 형식으로 정확히 3줄만 작성해주세요:
+
+1. [첫 번째 핵심 내용을 한 줄로 명확히]
+2. [두 번째 핵심 내용을 한 줄로 명확히]  
+3. [세 번째 핵심 내용 또는 결론을 한 줄로 명확히]
+
+**추가 포인트:**
+3줄 요약을 보완하는 중요한 내용이나 실무 적용 팁을 간단히 추가해주세요.
+
+※ 정확히 3줄 형식을 지켜주세요.
+    """;
+
+                case KEYWORD -> """
+
+【키워드 추출 지침】
+아래 형식을 정확히 지켜서 키워드를 추출해주세요:
+
+## 핵심 키워드
+1. **키워드1** - 이 키워드가 중요한 이유와 의미
+2. **키워드2** - 이 키워드가 중요한 이유와 의미
+3. **키워드3** - 이 키워드가 중요한 이유와 의미
+4. **키워드4** - 이 키워드가 중요한 이유와 의미
+5. **키워드5** - 이 키워드가 중요한 이유와 의미
+
+## 키워드 연관성
+5개 키워드들이 어떻게 서로 연결되어 있고, 전체 내용의 맥락에서 어떤 의미를 가지는지 설명해주세요.
+
+※ 정확히 5개의 키워드를 추출해주세요.
+    """;
+
+                case TIMELINE -> {
+                    if (vttText != null) {
+                        int durationSeconds = parseVideoDurationFromVTT(vttText);
+                        yield "\n【타임라인 요약 지침】\n영상의 시간 흐름에 따라 아래 형식으로 정리해주세요:\n\n" +
+                              generateDynamicTimeline(durationSeconds);
+                    } else {
+                        yield """
+
+【타임라인 요약 지침】
+영상의 시간 흐름에 따라 아래 형식으로 정리해주세요:
+
+## 타임라인
+**0~5분:** 영상 초반부의 주요 내용과 도입부 핵심 사항
+**5~10분:** 영상 중반부의 핵심 내용과 주요 논점  
+**10~15분:** 영상 후반부의 중요 내용과 발전된 논의
+**15분 이후:** 마무리 내용과 결론 부분
+
+## 핵심 포인트
+전체 타임라인에서 가장 중요한 2-3가지 핵심 메시지를 정리해주세요.
+
+※ 시간대별 구분을 명확히 해주세요.
+    """;
+                    }
+                }
+            };
+
+            String userRequest = userPrompt != null && !userPrompt.trim().isEmpty()
+                    ? userPrompt
+                    : "영상 내용을 요약해주세요";
+
+            return String.format("""
+%s
+
+%s
+
+【사용자 요청사항】
+%s
+
+【중요 안내】
+- 위에 제시된 형식을 반드시 준수해주세요
+- 각 섹션의 제목(##, **)을 정확히 사용해주세요
+- 불필요한 부연설명은 피하고 핵심 내용만 간결하게 작성해주세요
+- 한국어로 자연스럽게 작성해주세요
+
+【요약할 내용】
+==========================================
+""", baseInstruction, typeSpecificInstruction, userRequest);
+        }
+
+        public String buildMergePrompt(List<String> summaries, SummaryType summaryType) {
+            return buildMergePromptWithDuration(summaries, summaryType, null);
+        }
+
+        public String buildMergePromptWithDuration(List<String> summaries, SummaryType summaryType, String vttText) {
+            String baseInstruction = "당신은 전문적인 콘텐츠 요약 AI입니다. 제공된 텍스트를 아래 지침에 따라 정확히 요약해주세요.";
+
+            String typeSpecificInstruction = switch (summaryType) {
+
+                case BASIC -> """
+
+【기본 요약 지침】
+아래 형식을 정확히 지켜서 요약해주세요:
+
+## 핵심 내용
+- 첫 번째 주요 포인트 (구체적인 내용)
+- 두 번째 주요 포인트 (구체적인 내용)  
+- 세 번째 주요 포인트 (구체적인 내용)
+
+## 결론
+실무에서 활용 가능한 방법이나 핵심 결론을 제시해주세요.
+
+## 추천 학습
+관련 주제나 추가 학습 방향을 제안해주세요.
+
+※ 위 형식을 반드시 지켜주세요.
+    """;
+
+                case THREE_LINE -> """
+
+【3줄 요약 지침】
+반드시 아래 형식으로 정확히 3줄만 작성해주세요:
+
+1. [첫 번째 핵심 내용을 한 줄로 명확히]
+2. [두 번째 핵심 내용을 한 줄로 명확히]  
+3. [세 번째 핵심 내용 또는 결론을 한 줄로 명확히]
+
+**추가 포인트:**
+3줄 요약을 보완하는 중요한 내용이나 실무 적용 팁을 간단히 추가해주세요.
+
+※ 정확히 3줄 형식을 지켜주세요.
+    """;
+
+                case KEYWORD -> """
+
+【키워드 추출 지침】
+아래 형식을 정확히 지켜서 키워드를 추출해주세요:
+
+## 핵심 키워드
+1. **키워드1** - 이 키워드가 중요한 이유와 의미
+2. **키워드2** - 이 키워드가 중요한 이유와 의미
+3. **키워드3** - 이 키워드가 중요한 이유와 의미
+4. **키워드4** - 이 키워드가 중요한 이유와 의미
+5. **키워드5** - 이 키워드가 중요한 이유와 의미
+
+## 키워드 연관성
+5개 키워드들이 어떻게 서로 연결되어 있고, 전체 내용의 맥락에서 어떤 의미를 가지는지 설명해주세요.
+
+※ 정확히 5개의 키워드를 추출해주세요.
+    """;
+
+                case TIMELINE -> {
+                    if (vttText != null) {
+                        int durationSeconds = parseVideoDurationFromVTT(vttText);
+                        yield "\n【타임라인 요약 지침】\n영상의 시간 흐름에 따라 아래 형식으로 정리해주세요:\n\n" +
+                                generateDynamicTimeline(durationSeconds);
+                    } else {
+                        yield """
+
+【타임라인 요약 지침】
+영상의 시간 흐름에 따라 아래 형식으로 정리해주세요:
+
+## 타임라인
+**0~5분:** 영상 초반부의 주요 내용과 도입부 핵심 사항
+**5~10분:** 영상 중반부의 핵심 내용과 주요 논점  
+**10~15분:** 영상 후반부의 중요 내용과 발전된 논의
+**15분 이후:** 마무리 내용과 결론 부분
+
+## 핵심 포인트
+전체 타임라인에서 가장 중요한 2-3가지 핵심 메시지를 정리해주세요.
+
+※ 시간대별 구분을 명확히 해주세요.
+    """;
+                    }
+                }
+            };
+
+            String userRequest = "다음은 각 부분에 대한 요약입니다. 이 요약들을 하나로 합쳐서 자연스러운 최종 요약을 만들어주세요.";
+
+            return String.format("""
+%s
+
+%s
+
+【사용자 요청사항】
+%s
+
+【중요 안내】
+- 위에 제시된 형식을 반드시 준수해주세요
+- 각 섹션의 제목(##, **)을 정확히 사용해주세요
+- 불필요한 부연설명은 피하고 핵심 내용만 간결하게 작성해주세요
+- 한국어로 자연스럽게 작성해주세요
+
+【합칠 부분별 요약들】
+==========================================
+%s
+""", baseInstruction, typeSpecificInstruction, userRequest, String.join("\n\n---\n\n", summaries));
         }
     }
 
     private List<String> extractTagsWithLLM(String summaryText) {
-        String prompt = "다음 요약문에서 키워드 태그 3개를 쉼표로 구분해서 추출해줘. 예: 주식, 경제, 금리\n\n" + summaryText;
-        String response = callOpenAISummary(prompt);
-        return Arrays.stream(response.split(","))
+        List<String> baseTags = List.of(
+                "경제", "주식", "투자", "금융", "부동산",
+                "인공지능", "머신러닝", "딥러닝", "프로그래밍", "코딩",
+                "교육", "학습", "시험대비", "자기계발", "시간관리",
+                "정치", "국제정세", "사회이슈", "환경", "기후변화",
+                "윤리", "심리학", "철학", "문화", "역사",
+                "IT기술", "데이터분석", "UX디자인", "창업", "마케팅"
+        );
+        String baseTagList = String.join(", ", baseTags);
+        String prompt = String.format("""
+다음 내용을 대표하는 핵심 해시태그 3개를 추출해줘.
+**반드시 아래 기본 태그 목록 안에서만 골라야 해.**
+응답 형식은 해시태그 이름만 쉼표로 구분해서 줘. 예시: 투자, 인공지능, 윤리
+
+[기본 태그 목록]
+%s
+
+[요약 내용]
+%s
+""", baseTagList, summaryText);
+
+        String response = openAIClient.chat(prompt).block();
+        return Arrays.stream(response.split("[,\\n]"))
                 .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+                .filter(s -> !s.isBlank())
+                .limit(3)
+                .toList();
     }
 
     @Override
@@ -226,4 +482,139 @@ public class SummaryServiceImpl implements SummaryService {
         return tagRepository.findByTagName(tagName)
                 .orElseGet(() -> tagRepository.save(Tag.builder().tagName(tagName).build()));
     }
+
+    /**
+     * VTT 자막에서 영상의 총 길이(초)를 파싱합니다.
+     */
+    private int parseVideoDurationFromVTT(String vttText) {
+        try {
+            String[] lines = vttText.split("\\r?\\n");
+            int maxSeconds = 0;
+
+            for (String line : lines) {
+                // 타임스탬프 라인 찾기: "00:01:23.456 --> 00:02:34.567" 형식
+                if (line.contains("-->")) {
+                    String[] timeParts = line.split("-->");
+                    if (timeParts.length >= 2) {
+                        String endTime = timeParts[1].trim();
+                        int seconds = parseTimeToSeconds(endTime);
+                        maxSeconds = Math.max(maxSeconds, seconds);
+                    }
+                }
+            }
+
+            System.out.println("🕐 VTT에서 파싱된 영상 길이: " + maxSeconds + "초 (" + formatDuration(maxSeconds) + ")");
+            return maxSeconds;
+        } catch (Exception e) {
+            System.err.println("⚠️ VTT 파싱 중 오류: " + e.getMessage());
+            return 300; // 기본값 5분
+        }
+    }
+
+    /**
+     * "00:01:23.456" 형식의 시간을 초로 변환합니다.
+     */
+    private int parseTimeToSeconds(String timeStr) {
+        try {
+            // "00:01:23.456" -> ["00", "01", "23.456"]
+            String[] parts = timeStr.split(":");
+            if (parts.length >= 3) {
+                int hours = Integer.parseInt(parts[0]);
+                int minutes = Integer.parseInt(parts[1]);
+                double seconds = Double.parseDouble(parts[2]);
+                return (int) (hours * 3600 + minutes * 60 + seconds);
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ 시간 파싱 오류: " + timeStr);
+        }
+        return 0;
+    }
+
+    /**
+     * 초를 "X분 Y초" 형식으로 포맷팅합니다.
+     */
+    private String formatDuration(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        if (minutes > 0) {
+            return minutes + "분 " + seconds + "초";
+        } else {
+            return seconds + "초";
+        }
+    }
+
+    /**
+     * 영상 길이에 따라 동적 타임라인 구간을 생성합니다.
+     */
+    private String generateDynamicTimeline(int durationSeconds) {
+        if (durationSeconds <= 60) {
+            // 1분 이하: 2구간
+            int mid = durationSeconds / 2;
+            return String.format("""
+## 타임라인
+**0초~%s:** 영상 전반부의 주요 내용과 도입부 핵심 사항
+**%s~%s:** 영상 후반부의 핵심 내용과 결론 부분
+
+## 핵심 포인트
+전체 타임라인에서 가장 중요한 2-3가지 핵심 메시지를 정리해주세요.
+
+※ 실제 영상 시간에 맞춰 정확히 구분해주세요.""",
+                formatDuration(mid), formatDuration(mid), formatDuration(durationSeconds));
+
+        } else if (durationSeconds <= 180) {
+            // 3분 이하: 3구간
+            int third = durationSeconds / 3;
+            return String.format("""
+## 타임라인
+**0초~%s:** 영상 초반부의 주요 내용과 도입부
+**%s~%s:** 영상 중반부의 핵심 내용과 주요 논점
+**%s~%s:** 영상 후반부의 중요 내용과 결론
+
+## 핵심 포인트
+전체 타임라인에서 가장 중요한 2-3가지 핵심 메시지를 정리해주세요.
+
+※ 실제 영상 시간에 맞춰 정확히 구분해주세요.""",
+                formatDuration(third), formatDuration(third), formatDuration(third * 2),
+                formatDuration(third * 2), formatDuration(durationSeconds));
+
+        } else if (durationSeconds <= 600) {
+            // 10분 이하: 4구간
+            int quarter = durationSeconds / 4;
+            return String.format("""
+## 타임라인
+**0초~%s:** 영상 초반부의 주요 내용과 도입부 핵심 사항
+**%s~%s:** 영상 전반 중반부의 핵심 내용과 주요 논점
+**%s~%s:** 영상 후반 중반부의 중요 내용과 발전된 논의
+**%s~%s:** 영상 마무리 부분의 결론과 핵심 정리
+
+## 핵심 포인트
+전체 타임라인에서 가장 중요한 2-3가지 핵심 메시지를 정리해주세요.
+
+※ 실제 영상 시간에 맞춰 정확히 구분해주세요.""",
+                formatDuration(quarter), formatDuration(quarter), formatDuration(quarter * 2),
+                formatDuration(quarter * 2), formatDuration(quarter * 3),
+                formatDuration(quarter * 3), formatDuration(durationSeconds));
+
+        } else {
+            // 10분 초과: 5구간
+            int fifth = durationSeconds / 5;
+            return String.format("""
+## 타임라인
+**0초~%s:** 영상 도입부와 초반 핵심 내용
+**%s~%s:** 영상 전반부의 주요 논점과 설명
+**%s~%s:** 영상 중반부의 핵심 내용과 발전된 논의
+**%s~%s:** 영상 후반부의 중요 내용과 심화 논의
+**%s~%s:** 영상 마무리와 결론 부분
+
+## 핵심 포인트
+전체 타임라인에서 가장 중요한 2-3가지 핵심 메시지를 정리해주세요.
+
+※ 실제 영상 시간에 맞춰 정확히 구분해주세요.""",
+                formatDuration(fifth), formatDuration(fifth), formatDuration(fifth * 2),
+                formatDuration(fifth * 2), formatDuration(fifth * 3),
+                formatDuration(fifth * 3), formatDuration(fifth * 4),
+                formatDuration(fifth * 4), formatDuration(durationSeconds));
+        }
+    }
+
 }
