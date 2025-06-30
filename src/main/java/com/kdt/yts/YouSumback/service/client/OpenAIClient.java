@@ -55,7 +55,7 @@ public class OpenAIClient {
         );
 
         return webClient.post()
-                .uri("/v1/chat/completions")
+                .uri("/chat/completions")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + openAIConfig.getApiKey())
                 .bodyValue(requestBody)
                 .retrieve()
